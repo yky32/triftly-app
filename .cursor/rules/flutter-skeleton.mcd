@@ -1,0 +1,400 @@
+# Flutter Project - Cursor Rules
+
+## Project Overview
+This is a production-ready Flutter starter template with enterprise-grade features and best practices. The project follows a **feature-based modular architecture** with clear separation of concerns, using BLoC pattern for state management and Go Router for navigation.
+
+## Architecture Patterns
+- **Feature-based Architecture**: Each feature is self-contained with its own presentation, business logic, and data layers
+- **Clean Architecture**: Separation of concerns with core, features, and shared modules
+- **BLoC Pattern**: State management using flutter_bloc
+- **All widgets should be stateless** when possible
+
+### 1. Directory Structure
+```
+lib/
+├── main.dart                 # App entry point
+├── core/                     # Shared/core functionality
+│   ├── environment.dart      # Environment configuration
+│   ├── network/              # Network layer
+│   │   ├── api_client.dart   # HTTP client
+│   │   ├── api_interceptor.dart # Request/response interceptors
+│   │   ├── storage.dart      # Local storage
+│   │   └── logger.dart       # Logging service
+│   ├── dto/                  # Data Transfer Objects
+│   │   ├── common_response.dart
+│   │   └── {feature}_response.dart
+│   ├── theme/                # UI theming
+│   │   ├── theme.dart
+│   │   └── theme_extension.dart
+│   ├── localization/         # Localization setup
+│   │   ├── app_localizations.dart
+│   │   └── app_localizations_en.dart
+│   ├── l10n/                 # Localization files
+│   │   └── app_en.arb
+│   ├── enum/                 # Enums (routes, etc.)
+│   └── extensions/           # Dart extensions
+├── features/                 # Feature modules
+│   ├── {feature}/            # Each feature is self-contained
+│   │   ├── presentation/     # UI layer
+│   │   │   ├── pages/        # Screen widgets
+│   │   │   │   └── {feature}_page.dart
+│   │   │   └── bloc/         # State management
+│   │   │       ├── {feature}_bloc.dart
+│   │   │       ├── {feature}_event.dart
+│   │   │       └── {feature}_state.dart
+│   │   ├── domain/           # Business logic (future)
+│   │   └── data/             # Data layer (future)
+│   └── common/               # Shared features
+├── router/                   # Navigation configuration
+│   ├── app_router.dart       # Router setup
+│   └── app_page.dart         # Route definitions
+└── widgets/                  # Shared UI components
+    └── scaffold_with_nav_bar.dart
+```
+
+### 2. Naming Conventions
+
+#### Files and Directories
+- Use **snake_case** for file and directory names
+- Feature directories should be **singular** (e.g., `login/`, not `logins/`)
+- Page files should end with `_page.dart`
+- BLoC files should follow the pattern: `{feature}_bloc.dart`, `{feature}_event.dart`, `{feature}_state.dart`
+- Service files should end with `_service.dart` or describe their purpose (e.g., `api_client.dart`, `storage.dart`)
+
+#### Classes and Variables
+- Use **PascalCase** for class names
+- Use **camelCase** for variables, methods, and functions
+- BLoC classes should end with `Bloc` (e.g., `LoginBloc`)
+- Event classes should end with `Event` (e.g., `LoginRequest`)
+- State classes should end with `State` (e.g., `LoginLoading`)
+
+#### Constants and Enums
+- Use **SCREAMING_SNAKE_CASE** for constants
+- Use **PascalCase** for enum names and values
+- Route enums should follow the pattern: `AppPage.{feature}`
+
+### 3. Feature Architecture
+
+#### Feature Structure
+Each feature should be self-contained with:
+```
+features/{feature}/
+├── presentation/
+│   ├── pages/
+│   │   └── {feature}_page.dart
+│   └── bloc/
+│       ├── {feature}_bloc.dart
+│       ├── {feature}_event.dart
+│       └── {feature}_state.dart
+├── domain/           # Business logic (future expansion)
+└── data/            # Data layer (future expansion)
+```
+
+#### Adding New Features
+1. Create feature directory: `lib/features/{feature}/`
+2. Create presentation layer with pages and bloc
+3. Add route definition in `router/app_page.dart`
+4. Update router configuration in `router/app_router.dart`
+5. Add any necessary DTOs in `core/dto/`
+6. Implement API integration if needed
+
+### 4. State Management (BLoC Pattern)
+
+#### BLoC Structure
+```dart
+class {Feature}Bloc extends Bloc<{Feature}Event, {Feature}State> {
+  {Feature}Bloc() : super({Feature}Initial()) {
+    on<{Feature}Request>(_handle{Feature}Request);
+  }
+
+  void _handle{Feature}Request({Feature}Request event, Emitter<{Feature}State> emit) async {
+    emit({Feature}Loading());
+    
+    try {
+      // Business logic here
+      emit({Feature}Success(data: result));
+    } catch (e) {
+      emit({Feature}Failure(error: e));
+    }
+  }
+}
+```
+
+#### Event Structure
+```dart
+abstract class {Feature}Event extends Equatable {
+  const {Feature}Event();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class {Feature}Request extends {Feature}Event {
+  final String param;
+  
+  const {Feature}Request(this.param);
+  
+  @override
+  List<Object?> get props => [param];
+}
+```
+
+#### State Structure
+```dart
+abstract class {Feature}State extends Equatable {
+  const {Feature}State();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class {Feature}Initial extends {Feature}State {}
+class {Feature}Loading extends {Feature}State {}
+class {Feature}Success extends {Feature}State {
+  final Data data;
+  const {Feature}Success({required this.data});
+  
+  @override
+  List<Object?> get props => [data];
+}
+class {Feature}Failure extends {Feature}State {
+  final Object error;
+  const {Feature}Failure({required this.error});
+  
+  @override
+  List<Object?> get props => [error];
+}
+```
+
+### 5. Routing (Go Router)
+
+#### Route Definition
+- Define all routes in `router/app_page.dart`
+- Use descriptive route names and paths with icons
+- Follow the pattern: `{feature}("PageName", "/path", Icon(icon))`
+
+#### Router Configuration
+- Update `router/app_router.dart` for new routes
+- Use `StatefulShellRoute` for bottom navigation
+- Keep route builders simple and delegate to page widgets
+
+### 6. Core Module
+
+#### Network Layer (`core/network/`)
+- `api_client.dart`: HTTP client using Dio
+- `api_interceptor.dart`: Request/response interceptors
+- `storage.dart`: Secure storage using flutter_secure_storage
+- `logger.dart`: Logging service
+
+#### DTOs (`core/dto/`)
+- `common_response.dart`: Standard API response wrapper
+- `{feature}_response.dart`: Feature-specific response models
+
+#### Theme (`core/theme/`)
+- `theme.dart`: Light and dark theme definitions
+- `theme_extension.dart`: Custom theme properties
+
+#### Localization (`core/localization/`)
+- `app_localizations.dart`: Localization setup
+- `app_localizations_en.dart`: English translations
+- `l10n/app_en.arb`: Localization strings
+
+### 7. Theming
+
+#### Theme Structure
+- Define all styles in `core/theme/theme.dart`
+- Use `ThemeExtension` for custom properties
+- Never define styles inside components
+- Use consistent color schemes and typography
+
+#### Color Usage
+- Primary: `Color(0xFF015B49)` (Green)
+- Secondary: `Color(0xfff0f0f0)` (Light Gray)
+- Error: `Color(0xFFD80027)` (Red)
+- Highlight: `Color(0xFF00CFA6)` (Light Green)
+
+### 8. API Integration
+
+#### API Client Pattern
+```dart
+class ApiClient {
+  late final Dio _dio;
+
+  ApiClient() : _dio = Dio(BaseOptions(
+    baseUrl: dotenv.env['API_BASE_URL']!,
+    validateStatus: (status) => status != null && status < 400,
+  ))..interceptors.addAll([ApiInterceptor()]);
+
+  Future<ResponseType> methodName(parameters) async {
+    final response = await _dio.method('/endpoint', data: data);
+    final CommonResponse commonResponse = CommonResponse.fromMap(response.data);
+    
+    if (commonResponse.httpStatus == "OK") {
+      return ResponseType.fromMap(response.data['data']);
+    } else {
+      throw Exception('Error: ${commonResponse.message}');
+    }
+  }
+}
+```
+
+#### DTO Structure
+- Use `CommonResponse` wrapper for all API responses
+- Create specific response DTOs for each feature
+- Include proper error handling and validation
+
+### 9. Environment Configuration
+
+#### Environment Setup
+- Use `flutter_dotenv` for environment variables
+- Support multiple environments: dev, staging, prod
+- Load environment in `main()` before running the app
+- Use `--dart-define=ENV=dev` for environment switching
+
+#### Environment Files
+- Create `.env.dev`, `.env.stag`, `.env.prod` in `env/` directory
+- Include API URLs, tokens, and other configuration
+- Never commit sensitive data to version control
+
+### 10. Localization
+
+#### Localization Setup
+- Use `flutter_localizations` for internationalization
+- Define strings in `core/l10n/app_en.arb`
+- Generate localization files automatically
+- Support multiple locales through `AppLocalizations`
+
+### 11. Logging
+
+#### Logger Usage
+- Use `LoggerUtil` for consistent logging
+- Include different log levels: `e()`, `d()`, `i()`, `t()`, `w()`
+- Log errors with stack traces for debugging
+- Use structured logging for better debugging
+
+### 12. Code Quality
+
+#### Linting
+- Follow Flutter lints recommendations
+- Use `flutter_lints` package
+- Configure rules in `analysis_options.yaml`
+- Maintain consistent code formatting
+
+#### Error Handling
+- Use try-catch blocks for async operations
+- Provide meaningful error messages
+- Handle errors gracefully in UI
+- Log errors for debugging
+
+### 13. Testing Guidelines
+
+#### Test Structure
+- Create tests in `test/` directory
+- Follow the pattern: `{feature}_test.dart`
+- Test BLoCs, services, and widgets separately
+- Use mocks for external dependencies
+
+### 14. Performance Best Practices
+
+#### Widget Optimization
+- Use `const` constructors where possible
+- Implement proper widget lifecycle management
+- Avoid unnecessary rebuilds
+- Use `ListView.builder` for large lists
+
+#### State Management
+- Keep BLoCs focused and specific
+- Avoid creating large, monolithic BLoCs
+- Use proper state immutability
+- Dispose of resources properly
+
+### 15. Security
+
+#### Data Storage
+- Use `flutter_secure_storage` for sensitive data
+- Never store sensitive data in plain text
+- Implement proper token management
+- Use secure communication (HTTPS)
+
+### 16. Platform Support
+
+#### Current Platforms
+- Android (primary)
+- iOS (primary)
+- Desktop and Web platforms removed for focus
+
+#### Platform-Specific Code
+- Keep platform-specific code minimal
+- Use conditional imports when necessary
+- Test on both platforms regularly
+
+## Development Workflow
+
+### 1. Adding New Features
+1. Create feature directory in `features/{feature}/`
+2. Create presentation layer with pages and bloc
+3. Add route definition in `router/app_page.dart`
+4. Update router configuration in `router/app_router.dart`
+5. Add any necessary DTOs in `core/dto/`
+6. Implement API integration if needed
+7. Add tests
+
+### 2. Code Review Checklist
+- [ ] Follows naming conventions
+- [ ] Uses proper state management
+- [ ] Includes error handling
+- [ ] Has proper logging
+- [ ] Follows theming guidelines
+- [ ] Includes tests
+- [ ] No hardcoded values
+- [ ] Proper resource disposal
+- [ ] Feature is self-contained
+
+### 3. Deployment Checklist
+- [ ] Environment variables configured
+- [ ] API endpoints updated
+- [ ] Version numbers updated
+- [ ] Tests passing
+- [ ] Performance optimized
+- [ ] Security reviewed
+
+## Dependencies
+
+### Core Dependencies
+- `flutter_bloc`: State management
+- `go_router`: Navigation
+- `dio`: HTTP client
+- `flutter_secure_storage`: Secure storage
+- `flutter_form_builder`: Form handling
+- `flutter_localizations`: Internationalization
+- `flutter_dotenv`: Environment management
+- `logger`: Logging
+- `equatable`: Value equality
+
+### Development Dependencies
+- `flutter_test`: Testing framework
+- `flutter_lints`: Code quality
+
+## Current Features
+
+### Implemented Features
+- **Login**: Authentication with BLoC pattern
+- **Home**: Basic home page
+- **Settings**: Settings page
+- **Landing**: Landing page (currently points to login)
+
+### Core Infrastructure
+- **Network Layer**: API client with interceptors
+- **Storage**: Secure storage implementation
+- **Theme**: Light and dark theme support
+- **Localization**: Multi-language support
+- **Routing**: Go Router with bottom navigation
+
+## Notes
+- This project follows enterprise-grade Flutter development practices
+- Maintain consistency across all code changes
+- Document any architectural decisions
+- Keep the codebase clean and maintainable
+- Regular refactoring is encouraged
+- Each feature should be self-contained and testable
+- Use the feature-based architecture for scalability
