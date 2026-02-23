@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sample_app/widgets/nav_bar_members_widget.dart';
+import 'package:triftly/widgets/nav_bar_members_widget.dart';
 
 class ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;

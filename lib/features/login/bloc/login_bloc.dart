@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sample_app/core/dto/login_response.dart';
-import 'package:sample_app/core/network//api_client.dart';
+import 'package:triftly/core/dto/login_response.dart';
+import 'package:triftly/core/network//api_client.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';

@@ -1,6 +1,8 @@
-# Sample Flutter App
+# Triftly
 
-A production-ready Flutter starter template with enterprise-grade features and best practices.
+**Drift Through Your Day – Plans, Maps, Budget**
+
+A production-ready Flutter app with enterprise-grade features and best practices.
 
 ## 🚀 Core Features
 

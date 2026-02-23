@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sample_app/router/app_page.dart';
+import 'package:triftly/router/app_page.dart';
 
 /// Bottom nav bar driven by [AppPage]. Shows only pages with navBarMemberIndex != 99.
 class NavBarMembersWidget extends StatelessWidget {

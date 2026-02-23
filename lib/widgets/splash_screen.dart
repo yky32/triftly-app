@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Sample App',
+              'Triftly',
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,

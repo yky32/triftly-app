@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sample_app/core/environment.dart';
-import 'package:sample_app/core/localization/app_localizations.dart';
-import 'package:sample_app/core/theme/theme.dart';
-import 'package:sample_app/features/login/bloc/login_bloc.dart';
-import 'package:sample_app/router/app_router.dart';
+import 'package:triftly/core/environment.dart';
+import 'package:triftly/core/localization/app_localizations.dart';
+import 'package:triftly/core/theme/theme.dart';
+import 'package:triftly/features/login/bloc/login_bloc.dart';
+import 'package:triftly/router/app_router.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
 void main() {
@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
-        title: 'Sample App',
+        title: 'Triftly',
         theme: CustomTheme.lightThemeData(),
         darkTheme: CustomTheme.darkThemeData(),
         themeMode: ThemeMode.system,

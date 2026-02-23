@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sample_app/features/login/bloc/login_bloc.dart';
-import 'package:sample_app/router/app_page.dart';
+import 'package:triftly/features/login/bloc/login_bloc.dart';
+import 'package:triftly/router/app_page.dart';
 
 /// Skeleton settings page. Sign In / Sign Out only.
 class SettingsPage extends StatelessWidget {

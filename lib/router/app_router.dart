@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sample_app/features/home/presentation/pages/home_page.dart';
-import 'package:sample_app/features/login/presentation/pages/login_page.dart';
-import 'package:sample_app/features/settings/presentation/pages/settings_page.dart';
-import 'package:sample_app/router/app_page.dart';
-import 'package:sample_app/widgets/scaffold_with_nav_bar.dart';
-import 'package:sample_app/widgets/splash_screen.dart';
+import 'package:triftly/features/home/presentation/pages/home_page.dart';
+import 'package:triftly/features/login/presentation/pages/login_page.dart';
+import 'package:triftly/features/settings/presentation/pages/settings_page.dart';
+import 'package:triftly/router/app_page.dart';
+import 'package:triftly/widgets/scaffold_with_nav_bar.dart';
+import 'package:triftly/widgets/splash_screen.dart';
 
 /// Placeholder pages for nav tabs (skeleton only).
 Widget _explorePageBuilder() => const _PlaceholderPage(title: 'Explore', icon: Icons.explore);
