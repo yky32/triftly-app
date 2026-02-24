@@ -1,8 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/theme/app_colors.dart';
 
 class TripsPage extends StatelessWidget {
   const TripsPage({super.key});
+
+  static final List<_TripItem> _sampleTrips = [
+    _TripItem(
+      name: 'Alpine Meadow Path',
+      country: 'Switzerland',
+      dateLabel: 'August 2022 (8 days)',
+    ),
+    _TripItem(
+      name: 'Cottage Breeze Loop',
+      country: 'United Kingdom',
+      dateLabel: 'July 2023 (1.5 days)',
+    ),
+    _TripItem(
+      name: 'Waterfall & Sail',
+      country: 'Netherlands',
+      dateLabel: 'June 2023 (5 days)',
+    ),
+    _TripItem(
+      name: 'Windmill Country',
+      country: 'Belgium',
+      dateLabel: 'September 2022 (3 days)',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +44,45 @@ class TripsPage extends StatelessWidget {
               GestureDetector(
                 onTap: () => FocusScope.of(context).unfocus(),
                 behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    context.l10n.page_my_trips,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: colorScheme.onSurface,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: Text(
+                          context.l10n.page_my_trips,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              context.l10n.trips_view_all,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 12,
+                              color: colorScheme.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               _TripsSearchBar(hintText: context.l10n.trips_search_hint),
@@ -36,12 +91,179 @@ class TripsPage extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => FocusScope.of(context).unfocus(),
                   behavior: HitTestBehavior.opaque,
-                  child: const SizedBox.shrink(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const crossAxisSpacing = 12.0;
+                      const mainAxisSpacing = 12.0;
+                      const crossAxisCount = 2;
+                      final itemWidth =
+                          (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
+                      return GridView.builder(
+                        padding: EdgeInsets.zero,
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: itemWidth / 240,
+                          crossAxisSpacing: crossAxisSpacing,
+                          mainAxisSpacing: mainAxisSpacing,
+                        ),
+                        itemCount: _sampleTrips.length,
+                        itemBuilder: (context, index) {
+                          return _TripCard(item: _sampleTrips[index]);
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TripItem {
+  const _TripItem({
+    required this.name,
+    required this.country,
+    required this.dateLabel,
+  });
+  final String name;
+  final String country;
+  final String dateLabel;
+}
+
+class _TripCard extends StatelessWidget {
+  const _TripCard({required this.item});
+
+  final _TripItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppColors.tealMist.withValues(alpha: 0.6),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.landscape_rounded,
+                size: 36,
+                color: colorScheme.primary.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.name,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.flag_rounded,
+                      size: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        item.country,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        item.dateLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {},
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      context.l10n.trips_show_details,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

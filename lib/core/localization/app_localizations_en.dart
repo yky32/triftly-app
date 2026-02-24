@@ -49,4 +49,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trips_search_hint => 'Search trips';
+
+  @override
+  String get trips_view_all => 'View all';
+
+  @override
+  String get trips_show_details => 'Show details';
 }

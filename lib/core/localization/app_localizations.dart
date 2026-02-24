@@ -177,6 +177,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search trips'**
   String get trips_search_hint;
+
+  /// No description provided for @trips_view_all.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get trips_view_all;
+
+  /// No description provided for @trips_show_details.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get trips_show_details;
 }
 
 class _AppLocalizationsDelegate
