@@ -4,7 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:triftly/core/extensions/localizations.dart';
-import 'package:triftly/features/login/bloc/login_bloc.dart';
+import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_page.dart';
 
 class LoginPage extends StatelessWidget {
@@ -50,18 +50,32 @@ class LoginPage extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 24),
-                        child: Text(
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(AppPage.today.path);
+                            }
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                        ),
+                        Text(
                           context.l10n.page_login,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                      ),
+                      ],
                     ),
+                    const SizedBox(height: 24),
                     FormBuilderTextField(
                       name: 'email',
                       decoration: InputDecoration(

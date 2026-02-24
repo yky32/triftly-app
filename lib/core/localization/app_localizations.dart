@@ -153,6 +153,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get page_today;
+
+  /// No description provided for @settings_app_version.
+  ///
+  /// In en, this message translates to:
+  /// **'App Version'**
+  String get settings_app_version;
+
+  /// No description provided for @settings_language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settings_language;
+
+  /// No description provided for @settings_language_value.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settings_language_value;
+
+  /// No description provided for @trips_search_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search trips'**
+  String get trips_search_hint;
 }
 
 class _AppLocalizationsDelegate

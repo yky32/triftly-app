@@ -8,5 +8,9 @@
   "page_routine_builder": "Routine Builder",
   "page_settings": "Settings",
   "page_spend_tracker": "Spend Tracker",
-  "page_today": "Today"
+  "page_today": "Today",
+  "settings_app_version": "App Version",
+  "settings_language": "Language",
+  "settings_language_value": "English",
+  "trips_search_hint": "Search trips"
 }

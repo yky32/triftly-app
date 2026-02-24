@@ -37,4 +37,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get page_today => 'Today';
+
+  @override
+  String get settings_app_version => 'App Version';
+
+  @override
+  String get settings_language => 'Language';
+
+  @override
+  String get settings_language_value => 'English';
+
+  @override
+  String get trips_search_hint => 'Search trips';
 }

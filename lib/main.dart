@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/environment.dart';
 import 'package:triftly/core/localization/app_localizations.dart';
 import 'package:triftly/core/theme/theme.dart';
-import 'package:triftly/features/login/bloc/login_bloc.dart';
+import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_router.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
