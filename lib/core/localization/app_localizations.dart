@@ -94,18 +94,6 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
-  /// No description provided for @action_cancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get action_cancel;
-
-  /// No description provided for @action_confirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
-  String get action_confirm;
-
   /// No description provided for @login_page_email.
   ///
   /// In en, this message translates to:
@@ -123,6 +111,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Login'**
   String get login_page_submit;
+
+  /// No description provided for @page_login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get page_login;
+
+  /// No description provided for @page_map.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get page_map;
+
+  /// No description provided for @page_my_trips.
+  ///
+  /// In en, this message translates to:
+  /// **'My Trips'**
+  String get page_my_trips;
+
+  /// No description provided for @page_routine_builder.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine Builder'**
+  String get page_routine_builder;
+
+  /// No description provided for @page_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get page_settings;
+
+  /// No description provided for @page_spend_tracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend Tracker'**
+  String get page_spend_tracker;
+
+  /// No description provided for @page_today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get page_today;
 }
 
 class _AppLocalizationsDelegate

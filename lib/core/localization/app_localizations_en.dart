@@ -9,12 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get action_cancel => 'Cancel';
-
-  @override
-  String get action_confirm => 'Confirm';
-
-  @override
   String get login_page_email => 'Email';
 
   @override
@@ -22,4 +16,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get login_page_submit => 'Login';
+
+  @override
+  String get page_login => 'Login';
+
+  @override
+  String get page_map => 'Map';
+
+  @override
+  String get page_my_trips => 'My Trips';
+
+  @override
+  String get page_routine_builder => 'Routine Builder';
+
+  @override
+  String get page_settings => 'Settings';
+
+  @override
+  String get page_spend_tracker => 'Spend Tracker';
+
+  @override
+  String get page_today => 'Today';
 }

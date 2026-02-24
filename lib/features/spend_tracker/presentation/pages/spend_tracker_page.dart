@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triftly/core/extensions/localizations.dart';
 
 class SpendTrackerPage extends StatelessWidget {
   const SpendTrackerPage({super.key});
@@ -8,13 +9,15 @@ class SpendTrackerPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Align(
+            alignment: Alignment.topLeft,
             child: Text(
-              'Spend Tracker',
-              style: Theme.of(context).textTheme.headlineSmall,
+              context.l10n.page_spend_tracker,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),

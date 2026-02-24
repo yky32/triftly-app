@@ -32,7 +32,7 @@ class LoginPage extends StatelessWidget {
           key: formKey,
           autovalidateMode: AutovalidateMode.onUnfocus,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: BlocConsumer<LoginBloc, LoginState>(
               listener: (context, state) {
                 if (state is LoginSuccess) {
@@ -55,8 +55,10 @@ class LoginPage extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 8, bottom: 24),
                         child: Text(
-                          'Login',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                          context.l10n.page_login,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),

@@ -1,7 +1,12 @@
 {
-  "action_cancel": "Cancel",
-  "action_confirm": "Confirm",
   "login_page_email": "Email",
   "login_page_password": "Password",
-  "login_page_submit": "Login"
+  "login_page_submit": "Login",
+  "page_login": "Login",
+  "page_map": "Map",
+  "page_my_trips": "My Trips",
+  "page_routine_builder": "Routine Builder",
+  "page_settings": "Settings",
+  "page_spend_tracker": "Spend Tracker",
+  "page_today": "Today"
 }

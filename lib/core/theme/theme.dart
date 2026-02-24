@@ -1,69 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:triftly/core/theme/app_colors.dart';
 part 'theme_extension.dart';
 
-final _textTheme = const TextTheme(
+/// Typography: Display (headings) = Satoshi Bold, Body = Satoshi Regular (design_summary).
+const String _fontFamily = 'Satoshi';
+
+final TextTheme _textTheme = const TextTheme(
   displayLarge: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 36.0,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
   ),
   displayMedium: TextStyle(
-    fontWeight: FontWeight.w600,
+    fontFamily: _fontFamily,
+    fontWeight: FontWeight.w700,
     fontSize: 32.0,
   ),
   titleLarge: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 28.0,
+    fontWeight: FontWeight.w700,
   ),
   titleMedium: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 24.0,
     fontWeight: FontWeight.w600,
   ),
   titleSmall: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 18.0,
+    fontWeight: FontWeight.w600,
   ),
   bodyLarge: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 16.0,
     fontWeight: FontWeight.w500,
   ),
   bodyMedium: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 14.0,
     fontWeight: FontWeight.w400,
   ),
   bodySmall: TextStyle(
+    fontFamily: _fontFamily,
     fontSize: 12.0,
     fontWeight: FontWeight.w400,
   ),
-).apply(
-  bodyColor: const Color(0xFF1D1D1D),
+  labelLarge: TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 14.0,
+    fontWeight: FontWeight.w500,
+  ),
+  headlineSmall: TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 20.0,
+    fontWeight: FontWeight.w600,
+  ),
 );
 
 class CustomTheme {
   static ThemeData lightThemeData() {
     final textThemeLight = _textTheme.apply(
-      displayColor: const Color(0xFFFFFFFF),
-      bodyColor: const Color(0xFFFFFFFF),
+      displayColor: AppColors.onSurface,
+      bodyColor: AppColors.onSurface,
     );
     return ThemeData.light(
       useMaterial3: true,
     ).copyWith(
-      scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+      scaffoldBackgroundColor: AppColors.cloudWhite,
       appBarTheme: AppBarTheme(
         centerTitle: true,
-        titleTextStyle: textThemeLight.bodyLarge,
+        titleTextStyle: textThemeLight.bodyLarge?.copyWith(
+          color: AppColors.onSurface,
+        ),
       ),
       colorScheme: const ColorScheme.light(
-        primary: Color(0xFF2563EB), // Professional Blue
-        secondary: Color(0xFF059669), // Parking Green
-        tertiary: Color(0xFF7C3AED), // Premium Purple
-        surface: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF1F2937),
-        surfaceContainerHighest: Color(0xFFF8FAFC),
-        onSurfaceVariant: Color(0xFF6B7280),
-        error: Color(0xFFDC2626),
-        onError: Color(0xFFFFFFFF),
+        primary: AppColors.driftTeal,
+        onPrimary: Colors.white,
+        secondary: AppColors.calmGreen,
+        onSecondary: Colors.white,
+        tertiary: AppColors.softAmber,
+        surface: AppColors.cloudWhite,
+        onSurface: AppColors.slate,
+        surfaceContainerHighest: AppColors.fogGray,
+        onSurfaceVariant: AppColors.mistGray,
+        error: AppColors.mutedRed,
+        onError: Colors.white,
       ),
       buttonTheme: ButtonThemeData(
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF2563EB),
+          primary: AppColors.driftTeal,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -71,9 +97,7 @@ class CustomTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          minimumSize: const WidgetStatePropertyAll(
-            Size(64, 50),
-          ),
+          minimumSize: const WidgetStatePropertyAll(Size(64, 50)),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.0),
@@ -84,44 +108,23 @@ class CustomTheme {
       inputDecorationTheme: InputDecorationTheme(
         floatingLabelBehavior: FloatingLabelBehavior.never,
         hintStyle: textThemeLight.bodySmall?.copyWith(
-          color: Color(0xfff0f0f0),
+          color: AppColors.mistGray,
         ),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF909090),
+        color: AppColors.fogGray,
         space: 0,
       ),
-      dropdownMenuTheme: DropdownMenuThemeData(
-        inputDecorationTheme: InputDecorationTheme(
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 5.0,
-            horizontal: 10.0,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: const BorderSide(
-              color: Color(0xFF909090),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: const BorderSide(
-              color: Color(0xFF909090),
-            ),
-          ),
-        ),
-      ),
       tabBarTheme: TabBarThemeData(
-        indicatorColor: const Color(0xFF313131),
+        indicatorColor: AppColors.driftTeal,
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle: textThemeLight.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
-          height: 1.0,
+          color: AppColors.onSurface,
         ),
         unselectedLabelStyle: textThemeLight.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
-          height: 1.0,
-          color: const Color(0xFF909090),
+          color: AppColors.mistGray,
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
@@ -133,21 +136,19 @@ class CustomTheme {
         ),
       ),
       dialogTheme: const DialogThemeData(
-        surfaceTintColor: Color(0xFFFFFFFF),
+        surfaceTintColor: AppColors.cloudWhite,
       ),
       textTheme: textThemeLight,
-      extensions: [
-        const CustomThemeExtension(
-          highlightColor: Color(0xFF10B981),
-        ),
+      extensions: const [
+        CustomThemeExtension(highlightColor: AppColors.calmGreen),
       ],
     );
   }
 
   static ThemeData darkThemeData() {
     final textThemeDark = _textTheme.apply(
-      displayColor: const Color(0xFFFFFFFF),
-      bodyColor: const Color(0xFFFFFFFF),
+      displayColor: AppColors.cloudWhite,
+      bodyColor: AppColors.cloudWhite,
     );
     return ThemeData.dark(
       useMaterial3: true,
@@ -158,19 +159,20 @@ class CustomTheme {
         titleTextStyle: textThemeDark.bodyLarge,
       ),
       colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF3B82F6), // Brighter Blue for dark
-        secondary: Color(0xFF10B981), // Bright Green for dark
-        tertiary: Color(0xFF8B5CF6), // Bright Purple for dark
+        primary: AppColors.driftTeal,
+        onPrimary: Colors.black87,
+        secondary: AppColors.calmGreen,
+        tertiary: AppColors.softAmber,
         surface: Color(0xFF1F2937),
-        onSurface: Color(0xFFFFFFFF),
+        onSurface: AppColors.cloudWhite,
         surfaceContainerHighest: Color(0xFF374151),
-        onSurfaceVariant: Color(0xFF9CA3AF),
-        error: Color(0xFFEF4444),
-        onError: Color(0xFFFFFFFF),
+        onSurfaceVariant: AppColors.mistGray,
+        error: AppColors.mutedRed,
+        onError: Colors.white,
       ),
       buttonTheme: ButtonThemeData(
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF3B82F6),
+          primary: AppColors.driftTeal,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -178,9 +180,7 @@ class CustomTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          minimumSize: const WidgetStatePropertyAll(
-            Size(64, 50),
-          ),
+          minimumSize: const WidgetStatePropertyAll(Size(64, 50)),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.0),
@@ -191,44 +191,22 @@ class CustomTheme {
       inputDecorationTheme: InputDecorationTheme(
         floatingLabelBehavior: FloatingLabelBehavior.never,
         hintStyle: textThemeDark.bodyMedium?.copyWith(
-          color: Color(0xffd1d1d1),
+          color: AppColors.mistGray,
         ),
       ),
       dividerTheme: const DividerThemeData(
         color: Color(0xFF676F7B),
         space: 0,
       ),
-      dropdownMenuTheme: DropdownMenuThemeData(
-        inputDecorationTheme: InputDecorationTheme(
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 5.0,
-            horizontal: 10.0,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: const BorderSide(
-              color: Color(0xFF676F7B),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            borderSide: const BorderSide(
-              color: Color(0xFF676F7B),
-            ),
-          ),
-        ),
-      ),
       tabBarTheme: TabBarThemeData(
-        indicatorColor: const Color(0xFF313131),
+        indicatorColor: AppColors.driftTeal,
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle: textThemeDark.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
-          height: 1.0,
         ),
         unselectedLabelStyle: textThemeDark.bodySmall?.copyWith(
           fontWeight: FontWeight.w500,
-          height: 1.0,
-          color: const Color(0xFF676F7B),
+          color: AppColors.mistGray,
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
@@ -243,10 +221,8 @@ class CustomTheme {
         surfaceTintColor: Color(0xFF1A1F24),
       ),
       textTheme: textThemeDark,
-      extensions: [
-        const CustomThemeExtension(
-          highlightColor: Color(0xFF34D399),
-        ),
+      extensions: const [
+        CustomThemeExtension(highlightColor: AppColors.calmGreen),
       ],
     );
   }
