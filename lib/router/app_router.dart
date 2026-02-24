@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:triftly/features/home/presentation/pages/home_page.dart';
-import 'package:triftly/features/login/presentation/pages/login_page.dart';
+import 'package:triftly/features/map_view/presentation/pages/map_view_page.dart';
+import 'package:triftly/features/routine_builder/presentation/pages/routine_builder_page.dart';
 import 'package:triftly/features/settings/presentation/pages/settings_page.dart';
+import 'package:triftly/features/spend_tracker/presentation/pages/spend_tracker_page.dart';
+import 'package:triftly/features/today/presentation/pages/today_page.dart';
+import 'package:triftly/features/trips/presentation/pages/trips_page.dart';
+import 'package:triftly/features/login/presentation/pages/login_page.dart';
 import 'package:triftly/router/app_page.dart';
-import 'package:triftly/widgets/scaffold_with_nav_bar.dart';
+import 'package:triftly/widgets/nav_bar/scaffold_with_nav_bar.dart';
 import 'package:triftly/widgets/splash_screen.dart';
-
-/// Placeholder pages for nav tabs (skeleton only).
-Widget _explorePageBuilder() => const _PlaceholderPage(title: 'Explore', icon: Icons.explore);
-Widget _activityPageBuilder() => const _PlaceholderPage(title: 'Activity', icon: Icons.dashboard);
 
 class AppRouter {
   AppRouter._();
 
   static final Map<AppPage, Widget Function()> _appPages = {
-    AppPage.home: () => const HomePage(),
-    AppPage.explore: _explorePageBuilder,
-    AppPage.activity: _activityPageBuilder,
-    AppPage.settings: () => const SettingsPage(),
+    AppPage.today: () => const TodayPage(),
+    AppPage.trips: () => const TripsPage(),
+    AppPage.routine: () => const RoutineBuilderPage(),
+    AppPage.map: () => const MapViewPage(),
+    AppPage.spend: () => const SpendTrackerPage(),
   };
 
   static final Map<AppPage, Widget Function()> _standaloneAppPages = {
     AppPage.login: () => const LoginPage(),
+    AppPage.settings: () => const SettingsPage(),
   };
 
   static List<StatefulShellBranch> get _navigationBranches {
@@ -79,28 +81,4 @@ class AppRouter {
       ),
     ],
   );
-}
-
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.title, required this.icon});
-
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-          ],
-        ),
-      ),
-    );
-  }
 }

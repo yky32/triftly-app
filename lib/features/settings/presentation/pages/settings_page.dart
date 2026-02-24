@@ -4,35 +4,44 @@ import 'package:go_router/go_router.dart';
 import 'package:triftly/features/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_page.dart';
 
-/// Skeleton settings page. Sign In / Sign Out only.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Center(
-        child: BlocBuilder<LoginBloc, LoginState>(
-          builder: (context, state) {
-            if (state is LoginSuccess) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Signed in'),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => _handleLogout(context),
-                    child: const Text('Sign Out'),
-                  ),
-                ],
-              );
-            }
-            return ElevatedButton(
-              onPressed: () => context.go(AppPage.login.path),
-              child: const Text('Sign In'),
-            );
-          },
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Settings',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 24),
+                BlocBuilder<LoginBloc, LoginState>(
+                  builder: (context, state) {
+                    if (state is LoginSuccess) {
+                      return TextButton(
+                        onPressed: () => _handleLogout(context),
+                        child: const Text('Sign Out'),
+                      );
+                    }
+                    return TextButton(
+                      onPressed: () => context.go(AppPage.login.path),
+                      child: const Text('Sign In'),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
