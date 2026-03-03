@@ -32,7 +32,7 @@ class LoginPage extends StatelessWidget {
           key: formKey,
           autovalidateMode: AutovalidateMode.onUnfocus,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: BlocConsumer<LoginBloc, LoginState>(
               listener: (context, state) {
                 if (state is LoginSuccess) {
