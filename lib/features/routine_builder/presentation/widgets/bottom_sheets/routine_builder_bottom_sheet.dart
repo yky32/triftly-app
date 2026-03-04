@@ -28,10 +28,14 @@ class RoutineTripResult {
   const RoutineTripResult({
     required this.startDate,
     required this.endDate,
+    this.name = '',
   });
 
   final DateTime startDate;
   final DateTime endDate;
+
+  /// Name of the trip (user-editable in the bottom sheet).
+  final String name;
 
   /// Days of trip (inclusive). Uses calendar-day count; correct for any year (365/366) and month lengths (e.g. Feb 28/29).
   int get daysOfTrip => calendarDaysBetween(startDate, endDate);
@@ -46,20 +50,23 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
     super.key,
     this.initialStartDate,
     this.initialEndDate,
+    this.initialName,
     this.title = 'Select trip dates',
     this.confirmLabel = 'Confirm',
   });
 
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
+  final String? initialName;
   final String title;
   final String confirmLabel;
 
-  /// Shows the bottom sheet and returns the selected range, or `null` if dismissed.
+  /// Shows the bottom sheet and returns the selected range (and trip name), or `null` if dismissed.
   static Future<RoutineTripResult?> show(
     BuildContext context, {
     DateTime? initialStartDate,
     DateTime? initialEndDate,
+    String? initialName,
     String? title,
     String? confirmLabel,
   }) {
@@ -70,6 +77,7 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
       builder: (context) => RoutineBuilderBottomSheet(
         initialStartDate: initialStartDate,
         initialEndDate: initialEndDate,
+        initialName: initialName,
         title: title ?? 'Select trip dates',
         confirmLabel: confirmLabel ?? 'Confirm',
       ),
@@ -85,9 +93,16 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
   late DateTime _viewMonth;
   DateTime? _startDate;
   DateTime? _endDate;
+  late TextEditingController _nameController;
 
   static const List<String> _weekdayLabels = [
-    'S', 'M', 'T', 'W', 'T', 'F', 'S'
+    'S',
+    'M',
+    'T',
+    'W',
+    'T',
+    'F',
+    'S'
   ];
 
   @override
@@ -97,6 +112,13 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
     _viewMonth = DateTime(now.year, now.month);
     _startDate = widget.initialStartDate;
     _endDate = widget.initialEndDate;
+    _nameController = TextEditingController(text: widget.initialName ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   void _onDateTap(DateTime date) {
@@ -120,7 +142,8 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
 
   bool _isInRange(DateTime date) {
     if (_startDate == null) return false;
-    final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+    final start =
+        DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
     final end = _endDate != null
         ? DateTime(_endDate!.year, _endDate!.month, _endDate!.day)
         : start;
@@ -150,6 +173,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
     Navigator.of(context).pop(RoutineTripResult(
       startDate: DateTime(start.year, start.month, start.day),
       endDate: DateTime(end.year, end.month, end.day),
+      name: _nameController.text.trim(),
     ));
   }
 
@@ -167,17 +191,22 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
       _endDate != null &&
       !_endDate!.isBefore(_startDate!);
 
+  void _unfocusNameField() {
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final padding = MediaQuery.of(context).padding;
+    final mediaQuery = MediaQuery.of(context);
+    final padding = mediaQuery.padding;
+    final viewInsets = mediaQuery.viewInsets;
     final isDark = theme.brightness == Brightness.dark;
     final surfaceColor = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final primary = theme.colorScheme.primary;
-    final primaryContainer = isDark
-        ? primary.withValues(alpha: 0.3)
-        : AppColors.tealMist;
+    final primaryContainer =
+        isDark ? primary.withValues(alpha: 0.3) : AppColors.tealMist;
 
     return Container(
       decoration: BoxDecoration(
@@ -188,106 +217,138 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
         left: 24 + padding.left,
         right: 24 + padding.right,
         top: 20,
-        bottom: 24 + padding.bottom,
+        bottom: 24 + padding.bottom + viewInsets.bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            widget.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: onSurface,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _MonthNavigation(
-            leftMonth: _viewMonth,
-            onPrev: () {
-              setState(() {
-                _viewMonth = DateTime(_viewMonth.year, _viewMonth.month - 1);
-              });
-            },
-            onNext: () {
-              setState(() {
-                _viewMonth = DateTime(_viewMonth.year, _viewMonth.month + 1);
-              });
-            },
-            textStyle: theme.textTheme.titleSmall?.copyWith(color: onSurface),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: SingleChildScrollView(
+        child: GestureDetector(
+          onTap: _unfocusNameField,
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _MonthGrid(
-                  month: _viewMonth,
-                  startDate: _startDate,
-                  endDate: _endDate,
-                  primary: primary,
-                  primaryContainer: primaryContainer,
-                  onSurface: onSurface,
-                  surfaceColor: surfaceColor,
-                  isStart: _isStart,
-                  isEnd: _isEnd,
-                  isInRange: _isInRange,
-                  onDateTap: _onDateTap,
-                  weekdayLabels: _weekdayLabels,
-                  theme: theme,
+              Text(
+                widget.title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: onSurface,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _MonthGrid(
-                  month: DateTime(_viewMonth.year, _viewMonth.month + 1),
-                  startDate: _startDate,
-                  endDate: _endDate,
-                  primary: primary,
-                  primaryContainer: primaryContainer,
-                  onSurface: onSurface,
-                  surfaceColor: surfaceColor,
-                  isStart: _isStart,
-                  isEnd: _isEnd,
-                  isInRange: _isInRange,
-                  onDateTap: _onDateTap,
-                  weekdayLabels: _weekdayLabels,
-                  theme: theme,
+              const SizedBox(height: 16),
+              Text(
+                'Trip name',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  hintText: 'Tokyo Shopping Trip...',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 0,
+                    vertical: 12,
+                  ),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 20),
+              _MonthNavigation(
+                leftMonth: _viewMonth,
+                onPrev: () {
+                  setState(() {
+                    _viewMonth =
+                        DateTime(_viewMonth.year, _viewMonth.month - 1);
+                  });
+                },
+                onNext: () {
+                  setState(() {
+                    _viewMonth =
+                        DateTime(_viewMonth.year, _viewMonth.month + 1);
+                  });
+                },
+                textStyle:
+                    theme.textTheme.titleSmall?.copyWith(color: onSurface),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _MonthGrid(
+                      month: _viewMonth,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      primary: primary,
+                      primaryContainer: primaryContainer,
+                      onSurface: onSurface,
+                      surfaceColor: surfaceColor,
+                      isStart: _isStart,
+                      isEnd: _isEnd,
+                      isInRange: _isInRange,
+                      onDateTap: _onDateTap,
+                      weekdayLabels: _weekdayLabels,
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _MonthGrid(
+                      month: DateTime(_viewMonth.year, _viewMonth.month + 1),
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      primary: primary,
+                      primaryContainer: primaryContainer,
+                      onSurface: onSurface,
+                      surfaceColor: surfaceColor,
+                      isStart: _isStart,
+                      isEnd: _isEnd,
+                      isInRange: _isInRange,
+                      onDateTap: _onDateTap,
+                      weekdayLabels: _weekdayLabels,
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _canConfirm ? _onConfirm : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.fogGray.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.today_outlined, size: 20, color: onSurface),
+                        const SizedBox(width: 8),
+                        Text(
+                          _daysOfTrip == 0
+                              ? 'Select start and end date'
+                              : '$_daysOfTrip day${_daysOfTrip == 1 ? '' : 's'} of trip',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _canConfirm ? _onConfirm : null,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.fogGray.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.today_outlined, size: 20, color: onSurface),
-                    const SizedBox(width: 8),
-                    Text(
-                      _daysOfTrip == 0
-                          ? 'Select start and end date'
-                          : '$_daysOfTrip day${_daysOfTrip == 1 ? '' : 's'} of trip',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: onSurface,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -405,9 +466,8 @@ class _MonthGrid extends StatelessWidget {
       return SizedBox(width: cellSize, height: cellSize);
     }
     final now = DateTime.now();
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
     return _DayCell(
       date: date,
       cellSize: cellSize,
