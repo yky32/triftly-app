@@ -2,6 +2,10 @@
 
 This project is a **skeleton starter** aligned with the Depozio app structure. Use it as a template for new projects (clone and rename).
 
+## Design focus
+
+- **Light mode first** — All UI (screens, components, colors, contrast) is designed and tuned for light mode. Dark mode is supported via theme switching but is secondary; polish dark-mode specifics later if needed.
+
 ## Structure (Depozio-aligned)
 
 - **Router** (`lib/router/`)

@@ -1,0 +1,11 @@
+# Appfile for fastlane
+# Documentation: https://docs.fastlane.tools/advanced/#appfile
+
+app_identifier("com.triftly") # The bundle identifier of your app (matches ios Runner)
+apple_id(ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com") # Your Apple email address
+
+# Specify team ID (for code signing)
+team_id("3G34999H3A")
+
+# Specify App Store Connect team ID (for App Store operations)
+itc_team_id("128328295") # "KAI YIN YU"

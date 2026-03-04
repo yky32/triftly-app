@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/theme/theme_bloc.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_page.dart';
 
@@ -48,6 +49,22 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
+              BlocBuilder<ThemeBloc, ThemeMode>(
+                builder: (context, themeMode) {
+                  final themeSubtitle = themeMode == ThemeMode.dark
+                      ? context.l10n.settings_theme_dark
+                      : context.l10n.settings_theme_light;
+                  return _SettingsIsland(
+                    icon: Icons.palette_outlined,
+                    title: context.l10n.settings_theme,
+                    subtitle: themeSubtitle,
+                    colorScheme: colorScheme,
+                    textTheme: theme.textTheme,
+                    onTap: () => _showThemePicker(context),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
               _SettingsIsland(
                 icon: Icons.language,
                 title: context.l10n.settings_language,
@@ -93,6 +110,41 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  void _showThemePicker(BuildContext context) {
+    final themeBloc = context.read<ThemeBloc>();
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.light_mode, color: colorScheme.primary),
+                title: Text(context.l10n.settings_theme_light),
+                onTap: () {
+                  themeBloc.add(ThemeModeRequested(ThemeMode.light));
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.dark_mode, color: colorScheme.primary),
+                title: Text(context.l10n.settings_theme_dark),
+                onTap: () {
+                  themeBloc.add(ThemeModeRequested(ThemeMode.dark));
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleLogout(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -118,7 +170,7 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-/// One island for one function. Non-clickable row: [icon] [title / subtitle].
+/// One island for one function. [icon] [title / subtitle]. Optional [onTap] for tappable row.
 class _SettingsIsland extends StatelessWidget {
   const _SettingsIsland({
     required this.icon,
@@ -126,6 +178,7 @@ class _SettingsIsland extends StatelessWidget {
     required this.subtitle,
     required this.colorScheme,
     required this.textTheme,
+    this.onTap,
   });
 
   final IconData icon;
@@ -133,47 +186,66 @@ class _SettingsIsland extends StatelessWidget {
   final String subtitle;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final row = Row(
+      children: [
+        Icon(
+          icon,
+          size: 24,
+          color: colorScheme.primary,
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: row,
+          ),
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 24,
-            color: colorScheme.primary,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: row,
     );
   }
 }

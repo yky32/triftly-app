@@ -48,6 +48,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings_language_value => 'English';
 
   @override
+  String get settings_theme => 'Appearance';
+
+  @override
+  String get settings_theme_light => 'Light';
+
+  @override
+  String get settings_theme_dark => 'Dark';
+
+  @override
   String get trips_search_hint => 'Search trips';
 
   @override

@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:triftly/core/environment.dart';
 import 'package:triftly/core/localization/app_localizations.dart';
 import 'package:triftly/core/theme/theme.dart';
+import 'package:triftly/core/theme/theme_bloc.dart';
+import 'package:triftly/core/theme/theme_preference.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_router.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -23,14 +26,18 @@ void main() {
       FlutterError.presentError(details);
     };
 
-    runApp(const MyApp());
+    final prefs = await SharedPreferences.getInstance();
+    final themePreference = ThemePreference(prefs);
+    runApp(MyApp(themePreference: themePreference));
   }, (error, stack) {
     debugPrint('Zone error: $error\n$stack');
   });
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.themePreference});
+
+  final ThemePreference themePreference;
 
   @override
   Widget build(BuildContext context) {
@@ -39,19 +46,26 @@ class MyApp extends StatelessWidget {
         BlocProvider<LoginBloc>(
           create: (BuildContext context) => LoginBloc(),
         ),
+        BlocProvider<ThemeBloc>(
+          create: (BuildContext context) => ThemeBloc(themePreference),
+        ),
       ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'Triftly',
-        theme: CustomTheme.lightThemeData(),
-        darkTheme: CustomTheme.darkThemeData(),
-        themeMode: ThemeMode.system,
-        supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: AppRouter.router,
-        localizationsDelegates: [
-          ...AppLocalizations.localizationsDelegates,
-          FormBuilderLocalizations.delegate,
-        ],
+      child: BlocBuilder<ThemeBloc, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'Triftly',
+            theme: CustomTheme.lightThemeData(),
+            darkTheme: CustomTheme.darkThemeData(),
+            themeMode: themeMode,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: AppRouter.router,
+            localizationsDelegates: [
+              ...AppLocalizations.localizationsDelegates,
+              FormBuilderLocalizations.delegate,
+            ],
+          );
+        },
       ),
     );
   }

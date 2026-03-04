@@ -1,0 +1,716 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Get the project root directory (two levels up from fastlane directory)
+# Fastfile is in ios/fastlane/, so ../.. gets us to project root
+FASTLANE_DIR = File.dirname(__FILE__)
+IOS_DIR = File.expand_path("..", FASTLANE_DIR)
+PROJECT_ROOT = File.expand_path("..", IOS_DIR)
+
+# PATH that prefers system Ruby 2.6 (avoids Homebrew Ruby 3.4 when running bundle/pod from fastlane)
+def path_for_system_ruby
+  "/usr/bin:/usr/local/bin:#{ENV['PATH']}"
+end
+
+# User gem dir so bundle finds gems (e.g. concurrent-ruby 1.3.4) without sudo
+def gem_home_for_bundle
+  home = ENV["HOME"] || ENV["USERPROFILE"] || Dir.home
+  "#{home}/.gem/ruby/#{RbConfig::CONFIG['ruby_version']}"
+end
+
+# GEM_PATH: user dir first (concurrent-ruby 1.3.4), then system (ffi native for current arch)
+def gem_path_for_bundle
+  "#{gem_home_for_bundle}:/Library/Ruby/Gems/2.6.0"
+end
+
+# Helper function to find pod command
+def find_pod_command
+  possible_paths = [
+    "/Library/Ruby/Gems/2.6.0/bin/pod",
+    "/usr/local/bin/pod",
+    "/opt/homebrew/bin/pod"
+  ]
+  possible_paths.each do |path|
+    return path if File.exist?(path)
+  end
+  pod_path = `which pod 2>/dev/null`.strip
+  return pod_path unless pod_path.empty?
+  return "pod"
+end
+
+# Run pod install. Prefer bundle exec (using same Ruby as Fastfile); fall back to system pod if bundle fails.
+# Returns true if bundle exec pod succeeded (so Flutter can use pod wrapper), false if we used system pod.
+def run_pod_install
+  UI.message("Running pod install (trying bundle exec first)...")
+  ruby_bin = RbConfig.ruby
+  begin
+    # Run pod under Rosetta (x86_64) so system ffi_c extension loads on Apple Silicon
+    gem_home = gem_home_for_bundle
+    gem_path = gem_path_for_bundle
+    sh("cd #{IOS_DIR} && env PATH=\"#{path_for_system_ruby}\" GEM_HOME=\"#{gem_home}\" GEM_PATH=\"#{gem_path}\" arch -x86_64 #{ruby_bin} -S bundle exec pod install --repo-update", log: true)
+    UI.success("✅ pod install completed (bundle exec)")
+    return true
+  rescue => ex
+    UI.important("⚠️  bundle exec pod failed: #{ex.message}")
+    UI.important("Trying system pod (with PATH so pod uses system Ruby)...")
+    pod_cmd = find_pod_command
+    begin
+      # Use /usr/bin first so pod's shebang finds system Ruby, avoiding GemNotFound
+      system_path = "/usr/bin:#{ENV['PATH']}"
+      sh("cd #{IOS_DIR} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH PATH=\"#{system_path}\" #{pod_cmd} install --repo-update", log: true)
+      UI.success("✅ pod install completed (system pod)")
+      return false
+    rescue => sys_ex
+      UI.important("⚠️  system pod also failed: #{sys_ex.message}")
+      UI.user_error!(
+        "Pod install failed (bundle exec and system pod). " \
+        "Run from Ruby 2.6 (e.g. rbenv use 2.6), or from project root: cd ios && bundle install && bundle exec pod install --repo-update"
+      )
+    end
+  end
+end
+
+# Ensure a pod wrapper exists so Flutter's internal pod install uses bundle exec (avoids "CocoaPods broken" when Ruby differs)
+def ensure_pod_wrapper_for_flutter
+  wrapper_dir = File.join(IOS_DIR, ".pod_wrapper")
+  FileUtils.mkdir_p(wrapper_dir)
+  wrapper_script = File.join(wrapper_dir, "pod")
+  gem_home = gem_home_for_bundle
+  gem_path = gem_path_for_bundle
+  script_content = <<~BASH
+    #!/bin/bash
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
+    export GEM_HOME="#{gem_home}"
+    export GEM_PATH="#{gem_path}"
+    cd #{IOS_DIR.inspect} && arch -x86_64 bundle exec pod "$@"
+  BASH
+  need_write = !File.exist?(wrapper_script) || File.read(wrapper_script) != script_content
+  if need_write
+    File.write(wrapper_script, script_content)
+    File.chmod(0755, wrapper_script)
+    UI.message("Created pod wrapper at #{wrapper_script}")
+  end
+  wrapper_dir
+end
+
+default_platform(:ios)
+
+# Helper function to increment build number in pubspec.yaml
+def increment_build_number_in_pubspec
+  pubspec_path = File.join(PROJECT_ROOT, "pubspec.yaml")
+  
+  unless File.exist?(pubspec_path)
+    UI.user_error!("❌ pubspec.yaml not found at #{pubspec_path}")
+  end
+  
+  # Read the file
+  content = File.read(pubspec_path)
+  
+  # Extract current version (format: version: 1.0.0+18)
+  version_match = content.match(/^version:\s*(\d+\.\d+\.\d+)\+(\d+)/)
+  
+  unless version_match
+    UI.user_error!("❌ Could not parse version from pubspec.yaml. Expected format: version: 1.0.0+18")
+  end
+  
+  version_name = version_match[1]  # e.g., "1.0.0"
+  current_build = version_match[2].to_i  # e.g., 18
+  new_build = current_build + 1
+  
+  UI.message("📦 Incrementing build number: #{current_build} → #{new_build}")
+  
+  # Replace the version line
+  new_content = content.gsub(/^version:\s*\d+\.\d+\.\d+\+\d+/, "version: #{version_name}+#{new_build}")
+  
+  # Write back to file
+  File.write(pubspec_path, new_content)
+  
+  UI.success("✅ Build number updated to #{new_build}")
+  
+  return new_build
+end
+
+# Helper function to generate release notes from git commits
+def generate_release_notes
+  begin
+    # Check if we're in a git repository
+    unless system("cd #{PROJECT_ROOT} && git rev-parse --git-dir > /dev/null 2>&1")
+      UI.important("⚠️  Not a git repository, using default release notes")
+      return "[Feature: Manual build]\n[Build time: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}]"
+    end
+    
+    # Get the last 3 commit messages (excluding merge commits)
+    # Use a separator to split commits, then get subject line for each
+    commit_output = `cd #{PROJECT_ROOT} && git log -10 --pretty=format:"%H|%s" --no-merges`.strip
+    
+    # Filter out build number auto-commit messages and collect valid commits
+    valid_commits = []
+    commit_output.split("\n").each do |line|
+      next if line.empty?
+      
+      # Extract commit message (after the | separator)
+      parts = line.split("|", 2)
+      next if parts.length < 2
+      
+      commit_msg = parts[1].strip
+      
+      # Skip if it's a build number commit
+      next if commit_msg.include?("Auto-increment build number") || commit_msg.include?("chore: Auto-increment")
+      
+      # Clean up the commit message (limit length)
+      cleaned = commit_msg[0..150] if commit_msg.length > 150
+      cleaned ||= commit_msg
+      
+      valid_commits << cleaned unless cleaned.empty?
+      
+      # Stop when we have 3 valid commits
+      break if valid_commits.length >= 3
+    end
+    
+    # Fallback if still no valid commits
+    if valid_commits.empty?
+      valid_commits = ["Manual build"]
+    end
+    
+    # Get current datetime
+    build_time = Time.now.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Format release notes with last 3 commits
+    release_notes_parts = []
+    valid_commits.each_with_index do |commit_msg, index|
+      release_notes_parts << "[Feature #{index + 1}: #{commit_msg}]"
+    end
+    release_notes_parts << "[Build time: #{build_time}]"
+    
+    release_notes = release_notes_parts.join("\n")
+    
+    UI.message("📝 Generated release notes from last #{valid_commits.length} commit(s):")
+    UI.message(release_notes)
+    
+    return release_notes
+  rescue => ex
+    UI.important("⚠️  Failed to generate release notes from git: #{ex.message}")
+    build_time = Time.now.strftime('%Y-%m-%d %H:%M:%S')
+    return "[Feature: Manual build]\n[Build time: #{build_time}]"
+  end
+end
+
+# Helper function to commit and push build number change
+def commit_and_push_build_number(new_build_number)
+  UI.message("📝 Committing build number change...")
+  
+  begin
+    # Check if we're in a git repository
+    unless system("cd #{PROJECT_ROOT} && git rev-parse --git-dir > /dev/null 2>&1")
+      UI.important("⚠️  Not a git repository, skipping commit")
+      return
+    end
+    
+    # Check if there are uncommitted changes to pubspec.yaml
+    git_status = `cd #{PROJECT_ROOT} && git status --porcelain pubspec.yaml`.strip
+    if git_status.empty?
+      UI.important("ℹ️  No changes to pubspec.yaml, skipping commit")
+      return
+    end
+    
+    # Stage the pubspec.yaml file
+    sh("cd #{PROJECT_ROOT} && git add pubspec.yaml")
+    
+    # Commit with a descriptive message
+    # Use multiple -m flags for multi-line commit message
+    sh("cd #{PROJECT_ROOT} && git commit -m 'chore: Auto-increment build number to #{new_build_number}' -m 'Build number automatically incremented by Fastfile' -m 'Updated to 1.0.0+#{new_build_number}'")
+    
+    UI.success("✅ Build number change committed")
+    
+    # Push to remote
+    UI.message("🚀 Pushing to remote repository...")
+    sh("cd #{PROJECT_ROOT} && git push")
+    
+    UI.success("✅ Build number change pushed to remote")
+  rescue => ex
+    UI.important("⚠️  Failed to commit/push build number: #{ex.message}")
+    UI.important("   You may need to commit and push manually")
+  end
+end
+
+platform :ios do
+  desc "Build iOS app for development (Debug)"
+  lane :build_debug do
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Run pod install explicitly to ensure CocoaPods dependencies are up to date
+    run_pod_install
+    
+    # Build iOS app in debug mode
+    # Using clean environment to avoid Bundler conflicts with CocoaPods
+    sh("cd #{PROJECT_ROOT} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH flutter build ios --debug --no-codesign")
+    
+    UI.success("✅ iOS Debug build completed!")
+  end
+
+  desc "Build iOS app for release"
+  lane :build_release do
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Run pod install explicitly to ensure CocoaPods dependencies are up to date
+    run_pod_install
+    
+    # Build iOS app in release mode
+    # Using clean environment to avoid Bundler conflicts with CocoaPods
+    sh("cd #{PROJECT_ROOT} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH flutter build ios --release --no-codesign")
+    
+    UI.success("✅ iOS Release build completed!")
+  end
+
+  desc "Build iOS app and create IPA (requires code signing)"
+  desc "Options: export_method - 'development', 'ad-hoc', 'app-store', or 'enterprise' (default: 'development')"
+  desc "         env - environment to use: 'dev', 'stag', or 'prod' (default: 'prod' for app-store, 'dev' for others)"
+  lane :build_ipa do |options|
+    export_method = options[:export_method] || "development"
+    # Use provided env or determine from export_method
+    env_value = options[:env] || (export_method == "app-store" ? "prod" : "dev")
+    
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Ensure Ruby gems are installed (use PATH + GEM_HOME for system Ruby / user gems)
+    UI.message("Ensuring bundle is up to date (ios/Gemfile)...")
+    begin
+      gem_home = gem_home_for_bundle
+      sh("cd #{IOS_DIR} && env PATH=\"#{path_for_system_ruby}\" GEM_HOME=\"#{gem_home}\" GEM_PATH=\"#{gem_home}\" bundle install", log: true)
+    rescue => ex
+      UI.important("⚠️  bundle install had an issue: #{ex.message}")
+    end
+    
+    # Run pod install (bundle exec or system pod)
+    bundle_pod_ok = run_pod_install
+    
+    # Build iOS app: ensure Flutter sees the same pod we used (wrapper or system pod dir in PATH)
+    UI.message("🔧 Building with ENV=#{env_value} (using env/.env.#{env_value})")
+    if bundle_pod_ok
+      pod_wrapper_dir = ensure_pod_wrapper_for_flutter
+      build_path = "#{pod_wrapper_dir}:#{ENV['PATH']}"
+    else
+      # So Flutter's pod uses system Ruby (2.6), put /usr/bin first so pod's shebang finds it
+      pod_cmd = find_pod_command
+      pod_dir = (pod_cmd && pod_cmd.to_s.start_with?("/")) ? File.dirname(pod_cmd) : ""
+      build_path = pod_dir.empty? ? ENV['PATH'] : "/usr/bin:#{pod_dir}:#{ENV['PATH']}"
+    end
+    build_env = "PATH=#{build_path}"
+    sh("cd #{PROJECT_ROOT} && #{build_env} flutter build ios --release --dart-define=ENV=#{env_value}")
+    
+    # Build IPA using xcodebuild
+    # Configure export to use automatic signing (matching the archive)
+    # For app-store, ensure we're using Distribution certificate
+    export_opts = {
+      method: export_method,
+      signingStyle: "automatic",
+      teamID: "3G34999H3A"  # Your team ID from Appfile
+    }
+    
+    # For app-store, ensure provisioning profiles are installed so export finds them
+    if export_method == "app-store"
+      UI.message("📦 Building for App Store - ensuring provisioning profiles are available...")
+      begin
+        get_provisioning_profile(
+          app_identifier: "com.triftly",
+          adhoc: false,
+          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+          team_id: "3G34999H3A"
+        )
+        UI.success("✅ Provisioning profiles ready")
+      rescue => ex
+        UI.important("⚠️  Could not fetch profiles (you may need to run setup_appstore_signing with 2FA): #{ex.message}")
+      end
+    end
+
+    build_app(
+      workspace: "#{IOS_DIR}/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: export_method,
+      output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
+      export_options: export_opts
+    )
+    
+    UI.success("✅ IPA created successfully!")
+    UI.message("📦 IPA location: #{PROJECT_ROOT}/build/ios/ipa/")
+  end
+
+  desc "Build IPA and upload to TestFlight"
+  desc "Options: skip_build - set to true to skip building and use existing IPA (default: false)"
+  desc "         env - environment to use: 'dev', 'stag', or 'prod' (default: 'prod')"
+  lane :upload_testflight do |options|
+    skip_build = options[:skip_build] || false
+    env_value = options[:env] || "prod"  # Default to prod for TestFlight
+    
+    unless skip_build
+      # Automatically increment build number before building
+      UI.important("🔢 Auto-incrementing build number...")
+      new_build_number = increment_build_number_in_pubspec
+      
+      # Commit and push the build number change
+      commit_and_push_build_number(new_build_number)
+      UI.important("")
+      
+      UI.important("📦 Building IPA for App Store...")
+      UI.important("⚠️  Note: App Store builds require Distribution certificate and App Store provisioning profile")
+      UI.important("")
+      
+      build_success = false
+      retry_count = 0
+      max_retries = 1
+      
+      begin
+        # Build IPA with app-store export method for TestFlight
+        # Pass the environment to build_ipa
+        build_ipa(export_method: "app-store", env: env_value)
+        build_success = true
+      rescue => ex
+        error_msg = ex.message
+        
+        # Check if it's a certificate/provisioning profile error
+        is_signing_error = error_msg.include?("provisioning profile") || 
+                          error_msg.include?("certificate") || 
+                          error_msg.include?("signing") ||
+                          error_msg.include?("CodeSign") ||
+                          error_msg.include?("packaging")
+        
+        if is_signing_error && retry_count < max_retries
+          retry_count += 1
+          UI.important("")
+          UI.important("🔧 Detected code signing issue. Attempting to configure certificates automatically...")
+          UI.important("")
+          
+          begin
+            # Try to setup App Store signing automatically
+            setup_appstore_signing
+            UI.important("")
+            UI.important("🔄 Retrying build with newly configured certificates...")
+            UI.important("")
+            
+            # Retry the build
+            build_ipa(export_method: "app-store", env: env_value)
+            build_success = true
+          rescue => setup_ex
+            UI.error("")
+            UI.error("❌ Automatic certificate setup failed: #{setup_ex.message}")
+            UI.error("")
+            UI.error("   This usually means you need to set up App Store distribution certificates.")
+            UI.error("")
+            UI.error("   📋 Manual Setup (Xcode):")
+            UI.error("      1. open ios/Runner.xcworkspace")
+            UI.error("      2. Select Runner target → Signing & Capabilities")
+            UI.error("      3. Enable 'Automatically manage signing'")
+            UI.error("      4. Select your team (3G34999H3A)")
+            UI.error("      5. Xcode will create App Store provisioning profile automatically")
+            UI.error("")
+            UI.error("   🔧 Or try manual CLI setup:")
+            UI.error("      bundle exec fastlane ios setup_appstore_signing")
+            UI.error("")
+            UI.error("   💡 Alternative: Build development IPA for local testing:")
+            UI.error("      bundle exec fastlane ios build_ipa")
+            UI.error("")
+            raise
+          end
+        else
+          # Not a signing error or already retried
+          UI.error("❌ Failed to build IPA for App Store")
+          UI.error("   Error: #{error_msg}")
+          UI.error("")
+          
+          if is_signing_error
+            UI.error("   This appears to be a code signing issue.")
+            UI.error("   Try running: bundle exec fastlane ios setup_appstore_signing")
+          end
+          UI.error("")
+          raise
+        end
+      end
+      
+      unless build_success
+        UI.user_error!("Failed to build IPA for App Store after setup attempts")
+      end
+    end
+    
+    # Find the IPA file
+    ipa_path = "#{PROJECT_ROOT}/build/ios/ipa/Runner.ipa"
+    
+    unless File.exist?(ipa_path)
+      UI.user_error!("❌ IPA file not found at #{ipa_path}.\n" +
+                    "   Please build the IPA first or run without skip_build option.\n" +
+                    "   For development/testing, use: bundle exec fastlane ios build_ipa")
+    end
+    
+    UI.message("🚀 Uploading to TestFlight...")
+    
+    # Generate release notes from git commit for TestFlight "What to Test" content
+    release_notes = generate_release_notes
+    UI.message("📝 TestFlight release notes:")
+    UI.message(release_notes)
+    UI.message("")
+    
+    begin
+      # Upload to TestFlight with "What to Test" notes
+      # Using localized_build_info to set TestFlight app test content
+      upload_to_testflight(
+        ipa: ipa_path,
+        skip_waiting_for_build_processing: false,  # Wait for processing to complete
+        skip_submission: true,  # Don't automatically submit for review
+        distribute_external: false,  # Internal testing only (set to true for external)
+        notify_external_testers: false,  # Don't notify testers automatically
+        changelog: release_notes,  # Release notes for App Store Connect
+        localized_build_info: {
+          'en-US' => {
+            whats_new: release_notes  # "What to Test" content shown in TestFlight app
+          }
+        }
+      )
+      
+      UI.success("✅ Successfully uploaded to TestFlight!")
+      UI.message("📱 Check App Store Connect for build processing status")
+    rescue => ex
+      error_msg = ex.message
+      
+      # Check if it's an "app not found" error
+      if error_msg.include?("Couldn't find app") || error_msg.include?("not found on the account")
+        UI.important("")
+        UI.important("🔧 App not found in App Store Connect. Attempting to create it automatically...")
+        UI.important("")
+        
+        begin
+          # Try to create the app automatically
+          create_app
+          UI.important("")
+          UI.important("🔄 Retrying upload to TestFlight...")
+          UI.important("")
+          
+          # Retry the upload with release notes
+          upload_to_testflight(
+            ipa: ipa_path,
+            skip_waiting_for_build_processing: false,
+            skip_submission: true,
+            distribute_external: false,
+            notify_external_testers: false,
+            changelog: release_notes,  # Release notes for App Store Connect
+            localized_build_info: {
+              'en-US' => {
+                whats_new: release_notes  # "What to Test" content shown in TestFlight app
+              }
+            }
+          )
+          
+          UI.success("✅ Successfully uploaded to TestFlight!")
+          UI.message("📱 Check App Store Connect for build processing status")
+        rescue => create_ex
+          UI.error("")
+          UI.error("❌ Failed to create app or upload: #{create_ex.message}")
+          UI.error("")
+          UI.error("   📋 Manual Setup Steps:")
+          UI.error("")
+          UI.error("   1. Go to App Store Connect: https://appstoreconnect.apple.com")
+          UI.error("   2. Sign in with your Apple ID: wayneyu.dev@gmail.com")
+          UI.error("   3. Click 'My Apps' → Click the '+' button → 'New App'")
+          UI.error("   4. Fill in the required information:")
+          UI.error("      - Platform: iOS")
+          UI.error("      - Name: Triftly (or your app name)")
+          UI.error("      - Primary Language: (select your language)")
+        UI.error("      - Bundle ID: com.triftly")
+        UI.error("      - SKU: (any unique identifier, e.g., 'triftly-001')")
+          UI.error("      - User Access: Full Access (or as needed)")
+          UI.error("   5. Click 'Create'")
+          UI.error("")
+          UI.error("   ⚠️  Note: After creating the app, wait a few minutes for it to propagate")
+          UI.error("      Then try uploading again.")
+          UI.error("")
+          UI.error("   💡 Or try creating the app using Fastlane:")
+          UI.error("      bundle exec fastlane ios create_app")
+          UI.error("")
+          raise
+        end
+      else
+        UI.error("❌ Failed to upload to TestFlight")
+        UI.error("   Error: #{error_msg}")
+        UI.error("")
+        raise
+      end
+    end
+  end
+
+  desc "Create app in App Store Connect"
+  desc "This will register your app in App Store Connect if it doesn't exist"
+  lane :create_app do
+    UI.message("📱 Creating app in App Store Connect...")
+    UI.important("⚠️  This requires App Store Connect access")
+    
+    begin
+      produce(
+        username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+        app_identifier: "com.triftly",
+        app_name: "Triftly",
+        team_id: "3G34999H3A",
+        skip_itc: false,  # Don't skip App Store Connect creation
+        skip_devcenter: false  # Don't skip Developer Center
+      )
+      
+      UI.success("✅ App created successfully in App Store Connect!")
+      UI.message("📝 You can now upload to TestFlight using: bundle exec fastlane ios upload_testflight")
+    rescue => ex
+      error_msg = ex.message
+      
+      if error_msg.include?("already exists") || error_msg.include?("already registered")
+        UI.important("ℹ️  App already exists in App Store Connect")
+        UI.message("   You can proceed with uploading to TestFlight")
+      else
+        UI.error("❌ Failed to create app: #{error_msg}")
+        UI.error("")
+        UI.error("   📋 Manual Setup:")
+        UI.error("      1. Go to https://appstoreconnect.apple.com")
+        UI.error("      2. Sign in and create the app manually")
+        UI.error("      3. Bundle ID: com.triftly")
+        UI.error("")
+        raise
+      end
+    end
+  end
+
+  desc "Setup App Store distribution certificates and provisioning profiles"
+  desc "This will download/create Distribution certificate and App Store provisioning profile"
+  lane :setup_appstore_signing do
+    UI.message("🔧 Setting up App Store distribution signing...")
+    UI.important("⚠️  This requires App Store Connect API access or Apple ID authentication")
+    
+    begin
+      # Get or create App Store Distribution certificate
+      UI.message("📜 Getting App Store Distribution certificate...")
+      get_certificates(
+        development: false,  # Get Distribution certificate
+        username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+        team_id: "3G34999H3A"
+      )
+      
+      # Get or create App Store provisioning profile for main app
+      UI.message("📋 Getting App Store provisioning profile for main app...")
+      get_provisioning_profile(
+        app_identifier: "com.triftly",
+        username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+        team_id: "3G34999H3A"
+      )
+
+      UI.success("✅ App Store distribution certificates and profiles are ready!")
+      UI.message("📝 You can now build for App Store using: bundle exec fastlane ios build_ipa export_method:app-store")
+    rescue => ex
+      UI.important("⚠️  Automatic certificate setup failed: #{ex.message}")
+      UI.important("")
+      UI.important("   Alternative: Set up manually in Xcode:")
+      UI.important("   1. open ios/Runner.xcworkspace")
+      UI.important("   2. Select Runner target → Signing & Capabilities")
+      UI.important("   3. Enable 'Automatically manage signing'")
+      UI.important("   4. Select your team")
+      UI.important("")
+      raise
+    end
+  end
+
+  desc "Increment build number"
+  lane :increment_build do
+    increment_build_number(
+      xcodeproj: "#{IOS_DIR}/Runner.xcodeproj"
+    )
+    UI.success("✅ Build number incremented!")
+  end
+
+  desc "Clean iOS build artifacts"
+  lane :clean do
+    sh("cd #{PROJECT_ROOT} && flutter clean")
+    sh("cd #{IOS_DIR} && rm -rf Pods Podfile.lock")
+    begin
+      sh("cd #{IOS_DIR} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH /opt/homebrew/bin/pod install", log: false)
+    rescue => ex
+      # Silently continue - user can run pod install manually if needed
+    end
+    UI.success("✅ Clean completed!")
+  end
+end
+
+platform :android do
+  desc "Build Android app for development (Debug)"
+  lane :build_debug do
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Build Android app in debug mode
+    sh("cd #{PROJECT_ROOT} && flutter build apk --debug")
+    
+    UI.success("✅ Android Debug APK built successfully!")
+    UI.message("📦 APK location: #{PROJECT_ROOT}/build/app/outputs/flutter-apk/app-debug.apk")
+  end
+
+  desc "Build Android app for release (APK)"
+  lane :build_release_apk do
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Build Android app in release mode (APK)
+    sh("cd #{PROJECT_ROOT} && flutter build apk --release")
+    
+    UI.success("✅ Android Release APK built successfully!")
+    UI.message("📦 APK location: #{PROJECT_ROOT}/build/app/outputs/flutter-apk/app-release.apk")
+  end
+
+  desc "Build Android app for release (App Bundle)"
+  lane :build_release_bundle do
+    # Get dependencies
+    sh("cd #{PROJECT_ROOT} && flutter pub get")
+    
+    # Build Android app in release mode (App Bundle)
+    sh("cd #{PROJECT_ROOT} && flutter build appbundle --release")
+    
+    UI.success("✅ Android Release App Bundle built successfully!")
+    UI.message("📦 AAB location: #{PROJECT_ROOT}/build/app/outputs/bundle/release/app-release.aab")
+  end
+
+  desc "Clean Android build artifacts"
+  lane :clean do
+    sh("cd #{PROJECT_ROOT} && flutter clean")
+    sh("cd #{PROJECT_ROOT}/android && ./gradlew clean")
+    UI.success("✅ Clean completed!")
+  end
+end
+
+# Common lanes that work for both platforms
+desc "Get Flutter dependencies"
+lane :get_dependencies do
+  sh("cd #{PROJECT_ROOT} && flutter pub get")
+  UI.success("✅ Dependencies fetched!")
+end
+
+desc "Run Flutter tests"
+lane :test do
+  sh("cd #{PROJECT_ROOT} && flutter test")
+  UI.success("✅ Tests completed!")
+end
+
+desc "Clean all build artifacts"
+lane :clean_all do
+  sh("cd #{PROJECT_ROOT} && flutter clean")
+  sh("cd #{IOS_DIR} && rm -rf Pods Podfile.lock")
+  begin
+    sh("cd #{IOS_DIR} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH /opt/homebrew/bin/pod install", log: false)
+  rescue => ex
+    # Silently continue - user can run pod install manually if needed
+  end
+  sh("cd #{PROJECT_ROOT}/android && ./gradlew clean")
+  UI.success("✅ All build artifacts cleaned!")
+end
+

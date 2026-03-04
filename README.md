@@ -54,4 +54,4 @@ To create a new locale, create a new file inside the `l10n` folder and run the a
 
 ## State Management
 
-Use `Bloc` or `Cubit` in the `flutter_bloc` package to manage state. Define the logics as specific as possible, e.g. Create a `LoginBloc` and a `ForgotPasswordBloc`, avoid creating a `UserBloc` for all authenication related logic.
+Use **Bloc only** (no Cubit). All state is managed via [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) with events and states. Define blocs as specific as possible—e.g. `LoginBloc`, `ThemeBloc`, `ForgotPasswordBloc`—and avoid a single catch‑all bloc (e.g. no `UserBloc` for all auth logic).

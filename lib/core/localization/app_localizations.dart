@@ -172,6 +172,24 @@ abstract class AppLocalizations {
   /// **'English'**
   String get settings_language_value;
 
+  /// No description provided for @settings_theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settings_theme;
+
+  /// No description provided for @settings_theme_light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settings_theme_light;
+
+  /// No description provided for @settings_theme_dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settings_theme_dark;
+
   /// No description provided for @trips_search_hint.
   ///
   /// In en, this message translates to:

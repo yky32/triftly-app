@@ -12,6 +12,9 @@
   "settings_app_version": "App Version",
   "settings_language": "Language",
   "settings_language_value": "English",
+  "settings_theme": "Appearance",
+  "settings_theme_light": "Light",
+  "settings_theme_dark": "Dark",
   "trips_search_hint": "Search trips",
   "trips_view_all": "View all",
   "trips_show_details": "Show details"
