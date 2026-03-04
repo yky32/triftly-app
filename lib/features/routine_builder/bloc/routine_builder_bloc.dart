@@ -4,7 +4,8 @@ import 'package:triftly/widgets/bottom_sheets/routine_builder_bottom_sheet/routi
 part 'routine_builder_event.dart';
 part 'routine_builder_state.dart';
 
-class RoutineBuilderBloc extends Bloc<RoutineBuilderEvent, RoutineBuilderState> {
+class RoutineBuilderBloc
+    extends Bloc<RoutineBuilderEvent, RoutineBuilderState> {
   RoutineBuilderBloc() : super(const RoutineBuilderState()) {
     on<TripSelected>(_onTripSelected);
     on<TripCleared>(_onTripCleared);

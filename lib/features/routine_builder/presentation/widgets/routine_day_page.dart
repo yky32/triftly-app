@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_item_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_metadata_bottom_sheet.dart';
 
 /// One swipeable page per day of the trip (stateless).
 class RoutineDayPage extends StatelessWidget {
@@ -29,7 +30,8 @@ class RoutineDayPage extends StatelessWidget {
       startTime: '10:00 AM',
       endTime: '11:45 AM',
       title: 'Tokyo Station → Odawara Station',
-      description: 'JR Tokaido Line. Reserved seat recommended for Hakone direction.',
+      description:
+          'JR Tokaido Line. Reserved seat recommended for Hakone direction.',
       location: '1-9-1 Marunouchi, Chiyoda-ku, Tokyo',
       icon: Icons.train,
       color: Color(0xFF2E7D32),
@@ -83,6 +85,20 @@ class RoutineDayPage extends StatelessWidget {
                   ),
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => RoutineDayMetadataBottomSheet.show(
+                  context,
+                  dayIndex: dayIndex,
+                  date: date,
+                ),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(40, 40),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -109,7 +125,8 @@ class RoutineDayPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.add, size: 20, color: theme.colorScheme.onSurface),
+                    child: Icon(Icons.add,
+                        size: 20, color: theme.colorScheme.onSurface),
                   ),
                 ),
               ),
@@ -132,8 +149,18 @@ class RoutineDayPage extends StatelessWidget {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
@@ -199,7 +226,8 @@ class _ItineraryTimeline extends StatelessWidget {
                             color: spots[i].color.withValues(alpha: 0.18),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.shadow.withValues(alpha: 0.06),
+                                color: theme.colorScheme.shadow
+                                    .withValues(alpha: 0.06),
                                 blurRadius: 4,
                                 offset: const Offset(0, 1),
                               ),
@@ -226,89 +254,90 @@ class _ItineraryTimeline extends StatelessWidget {
                     ),
                   ),
                 ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.shadow.withValues(alpha: 0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          spots[i].title,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.shadow
+                                .withValues(alpha: 0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          spots[i].description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.schedule_outlined,
-                              size: 14,
-                              color: AppColors.mistGray,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            spots[i].title,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${spots[i].startTime} – ${spots[i].endTime}',
-                              style: theme.textTheme.bodySmall?.copyWith(
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            spots[i].description,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_outlined,
+                                size: 14,
                                 color: AppColors.mistGray,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: AppColors.mistGray,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                spots[i].location,
+                              const SizedBox(width: 4),
+                              Text(
+                                '${spots[i].startTime} – ${spots[i].endTime}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: AppColors.mistGray,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppColors.mistGray,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  spots[i].location,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppColors.mistGray,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
               ],
             ),
           ),
