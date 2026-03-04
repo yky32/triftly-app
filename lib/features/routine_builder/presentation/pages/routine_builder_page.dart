@@ -23,24 +23,27 @@ class _RoutineBuilderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: BlocBuilder<RoutineBuilderBloc, RoutineBuilderState>(
-            builder: (context, state) {
-              final hasTrip = state.trip != null;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(context, onAdd: () => _openTripSheet(context)),
-                  if (hasTrip)
-                    Expanded(
-                      child: RoutineDayCarousel(trip: state.trip!),
-                    )
-                  else
-                    Expanded(
-                      child: Center(
+        child: BlocBuilder<RoutineBuilderBloc, RoutineBuilderState>(
+          builder: (context, state) {
+            final hasTrip = state.trip != null;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: _buildHeader(context, onAdd: () => _openTripSheet(context)),
+                ),
+                if (hasTrip)
+                  Expanded(
+                    child: RoutineDayCarousel(trip: state.trip!),
+                  )
+                else
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
                           'Select trip dates to see day-by-day pages',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -51,10 +54,10 @@ class _RoutineBuilderView extends StatelessWidget {
                         ),
                       ),
                     ),
-                ],
-              );
-            },
-          ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

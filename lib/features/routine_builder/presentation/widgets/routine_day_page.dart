@@ -17,7 +17,8 @@ class RoutineDayPage extends StatelessWidget {
 
   static const List<_PlaceholderSpot> _placeholderSpots = [
     _PlaceholderSpot(
-      time: '8:30 AM',
+      startTime: '8:30 AM',
+      endTime: '9:30 AM',
       title: 'Morning Coffee at Ikigai Arabica',
       description: 'Start the day with a specialty pour-over and light pastry.',
       location: '1-1-3 Jinnan, Shibuya-ku, Tokyo',
@@ -25,7 +26,8 @@ class RoutineDayPage extends StatelessWidget {
       color: Color(0xFFE65100),
     ),
     _PlaceholderSpot(
-      time: '10:00 AM',
+      startTime: '10:00 AM',
+      endTime: '11:45 AM',
       title: 'Tokyo Station → Odawara Station',
       description: 'JR Tokaido Line. Reserved seat recommended for Hakone direction.',
       location: '1-9-1 Marunouchi, Chiyoda-ku, Tokyo',
@@ -33,7 +35,8 @@ class RoutineDayPage extends StatelessWidget {
       color: Color(0xFF2E7D32),
     ),
     _PlaceholderSpot(
-      time: '12:00 PM',
+      startTime: '12:00 PM',
+      endTime: '3:00 PM',
       title: 'Hakone Open-Air Museum',
       description: 'Art and nature. Allow 2–3 hours. Café on site.',
       location: '1121 Ninotaira, Hakone-machi',
@@ -41,7 +44,8 @@ class RoutineDayPage extends StatelessWidget {
       color: Color(0xFF0277BD),
     ),
     _PlaceholderSpot(
-      time: '5:00 PM',
+      startTime: '5:00 PM',
+      endTime: '6:30 PM',
       title: 'Odawara Station → Shibuya Station',
       description: 'Return leg. Direct trains available.',
       location: '1-1-1 Odawara, Kanagawa',
@@ -55,7 +59,7 @@ class RoutineDayPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 16),
+      padding: const EdgeInsets.fromLTRB(24, 6, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -137,14 +141,16 @@ class RoutineDayPage extends StatelessWidget {
 
 class _PlaceholderSpot {
   const _PlaceholderSpot({
-    required this.time,
+    required this.startTime,
+    required this.endTime,
     required this.title,
     required this.description,
     required this.location,
     required this.icon,
     required this.color,
   });
-  final String time;
+  final String startTime;
+  final String endTime;
   final String title;
   final String description;
   final String location;
@@ -173,56 +179,53 @@ class _ItineraryTimeline extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < spots.length; i++) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: SizedBox(
-                  width: _circleSize + 8,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: _circleSize,
-                        height: _circleSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.colorScheme.surface,
-                          border: Border.all(
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: SizedBox(
+                    width: _circleSize + 8,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: _circleSize,
+                          height: _circleSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: spots[i].color.withValues(alpha: 0.18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow.withValues(alpha: 0.06),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            spots[i].icon,
+                            size: 16,
                             color: spots[i].color,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.shadow.withValues(alpha: 0.08),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          spots[i].icon,
-                          size: 16,
-                          color: spots[i].color,
-                        ),
-                      ),
-                      if (i < spots.length - 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, bottom: 4),
-                          child: Center(
-                            child: Container(
-                              width: _lineWidth,
-                              height: 48,
-                              color: lineColor,
-                            ),
                           ),
                         ),
-                    ],
+                        if (i < spots.length - 1) ...[
+                          const SizedBox(height: 4),
+                          Expanded(
+                            child: Center(
+                              child: Container(
+                                width: _lineWidth,
+                                color: lineColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Padding(
@@ -237,15 +240,11 @@ class _ItineraryTimeline extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+                          color: theme.colorScheme.shadow.withValues(alpha: 0.06),
                           blurRadius: 12,
                           offset: const Offset(0, 2),
                         ),
                       ],
-                      border: Border.all(
-                        color: AppColors.fogGray.withValues(alpha: 0.8),
-                        width: 1,
-                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,35 +275,31 @@ class _ItineraryTimeline extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              spots[i].time,
+                              '${spots[i].startTime} – ${spots[i].endTime}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: AppColors.mistGray,
                               ),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Text('|', style: TextStyle(color: AppColors.mistGray, fontSize: 12)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: AppColors.mistGray,
                             ),
+                            const SizedBox(width: 4),
                             Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on_outlined,
-                                    size: 14,
-                                    color: AppColors.mistGray,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      spots[i].location,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: AppColors.mistGray,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                spots[i].location,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.mistGray,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -314,7 +309,8 @@ class _ItineraryTimeline extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ],
       ],
