@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
-/// Bottom sheet for editing day metadata (e.g. day name / topic). Triggered by the pencil icon on the day title row.
-/// Same content, behavior, and design as [RoutineDayItemBottomSheet].
-class RoutineDayMetadataBottomSheet extends StatelessWidget {
-  const RoutineDayMetadataBottomSheet({
+/// Bottom sheet for editing day metadata (e.g. day name / topic). Triggered by the "Edit Day Metadata" icon (pencil).
+class RoutineDayEditDayMetadataBottomSheet extends StatelessWidget {
+  const RoutineDayEditDayMetadataBottomSheet({
     super.key,
     this.dayIndex,
     this.date,
@@ -22,7 +21,7 @@ class RoutineDayMetadataBottomSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => RoutineDayMetadataBottomSheet(
+      builder: (context) => RoutineDayEditDayMetadataBottomSheet(
         dayIndex: dayIndex,
         date: date,
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
-/// Bottom sheet for editing a single day item in the routine.
-class RoutineDayItemBottomSheet extends StatelessWidget {
-  const RoutineDayItemBottomSheet({
+/// Bottom sheet for adding a spot to the day (triggered by the "Add Spot" icon).
+class RoutineDayAddSpotBottomSheet extends StatelessWidget {
+  const RoutineDayAddSpotBottomSheet({
     super.key,
     this.dayIndex,
     this.date,
@@ -21,7 +21,7 @@ class RoutineDayItemBottomSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => RoutineDayItemBottomSheet(
+      builder: (context) => RoutineDayAddSpotBottomSheet(
         dayIndex: dayIndex,
         date: date,
       ),

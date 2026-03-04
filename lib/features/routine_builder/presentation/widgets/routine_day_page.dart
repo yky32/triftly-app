@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/theme/app_colors.dart';
-import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_item_bottom_sheet.dart';
-import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_metadata_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
 
 /// One swipeable page per day of the trip (stateless).
 class RoutineDayPage extends StatelessWidget {
@@ -85,9 +85,10 @@ class RoutineDayPage extends StatelessWidget {
                   ),
                 ),
               ),
+              // Edit Day Metadata icon (pencil)
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
-                onPressed: () => RoutineDayMetadataBottomSheet.show(
+                onPressed: () => RoutineDayEditDayMetadataBottomSheet.show(
                   context,
                   dayIndex: dayIndex,
                   date: date,
@@ -113,11 +114,12 @@ class RoutineDayPage extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              // Add Spot icon
               Material(
                 color: AppColors.fogGray,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
-                  onTap: () => RoutineDayItemBottomSheet.show(
+                  onTap: () => RoutineDayAddSpotBottomSheet.show(
                     context,
                     dayIndex: dayIndex,
                     date: date,
