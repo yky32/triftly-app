@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:triftly/widgets/bottom_sheets/routine_builder_bottom_sheet/routine_builder_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 part 'routine_builder_event.dart';
 part 'routine_builder_state.dart';

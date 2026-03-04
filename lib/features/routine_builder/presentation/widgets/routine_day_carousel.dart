@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_page.dart';
-import 'package:triftly/widgets/bottom_sheets/routine_builder_bottom_sheet/routine_builder_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 /// PageView with dot indicator + swipe hint so users know they can swipe.
 class RoutineDayCarousel extends StatefulWidget {

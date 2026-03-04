@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_carousel.dart';
-import 'package:triftly/widgets/bottom_sheets/routine_builder_bottom_sheet/routine_builder_bottom_sheet.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 class RoutineBuilderPage extends StatelessWidget {
   const RoutineBuilderPage({super.key});
@@ -33,7 +33,7 @@ class _RoutineBuilderView extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: _buildHeader(context, onAdd: () => _openTripSheet(context)),
+                  child: _buildHeader(context, onNewRoutine: () => _openTripSheet(context)),
                 ),
                 if (hasTrip)
                   Expanded(
@@ -63,7 +63,7 @@ class _RoutineBuilderView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, {required VoidCallback onAdd}) {
+  Widget _buildHeader(BuildContext context, {required VoidCallback onNewRoutine}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Row(
@@ -75,9 +75,11 @@ class _RoutineBuilderView extends StatelessWidget {
                 ),
           ),
           const Spacer(),
+          // New Routine icon (opens trip date picker)
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: onAdd,
+            tooltip: 'New Routine',
+            onPressed: onNewRoutine,
           ),
         ],
       ),
