@@ -87,7 +87,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
   DateTime? _endDate;
 
   static const List<String> _weekdayLabels = [
-    'M', 'T', 'W', 'T', 'F', 'S', 'S'
+    'S', 'M', 'T', 'W', 'T', 'F', 'S'
   ];
 
   @override
@@ -382,8 +382,8 @@ class _MonthGrid extends StatelessWidget {
   List<DateTime?> _daysForMonth(DateTime month) {
     final first = DateTime(month.year, month.month, 1);
     final lastDay = lastDayOfMonth(month.year, month.month);
-    final weekday = first.weekday; // 1 = Monday, 7 = Sunday
-    final leading = weekday - 1;
+    final weekday = first.weekday; // 1 = Monday, 7 = Sunday; column 0 = Sunday
+    final leading = weekday % 7;
     final days = <DateTime?>[];
     for (var i = 0; i < leading; i++) {
       days.add(null);
@@ -404,6 +404,10 @@ class _MonthGrid extends StatelessWidget {
     if (date == null) {
       return SizedBox(width: cellSize, height: cellSize);
     }
+    final now = DateTime.now();
+    final isToday = date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
     return _DayCell(
       date: date,
       cellSize: cellSize,
@@ -416,6 +420,7 @@ class _MonthGrid extends StatelessWidget {
       isBarEnd: isInRange(date) &&
           !isEnd(date) &&
           !isInRange(date.add(const Duration(days: 1))),
+      isToday: isToday,
       primary: primary,
       primaryContainer: primaryContainer,
       onSurface: onSurface,
@@ -451,7 +456,7 @@ class _MonthGrid extends StatelessWidget {
                         weekdayLabels[i],
                         style: textStyle?.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: AppColors.mistGray,
+                          color: i == 0 ? Colors.red : AppColors.mistGray,
                         ),
                       ),
                     ),
@@ -500,6 +505,7 @@ class _DayCell extends StatelessWidget {
     required this.isInRange,
     required this.isBarStart,
     required this.isBarEnd,
+    required this.isToday,
     required this.primary,
     required this.primaryContainer,
     required this.onSurface,
@@ -513,6 +519,7 @@ class _DayCell extends StatelessWidget {
   final bool isInRange;
   final bool isBarStart;
   final bool isBarEnd;
+  final bool isToday;
   final Color primary;
   final Color primaryContainer;
   final Color onSurface;
@@ -522,6 +529,51 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final showCircle = isStart || isEnd;
     final showBar = isInRange && !showCircle;
+
+    Widget content;
+    if (showCircle) {
+      content = Container(
+        width: cellSize,
+        height: cellSize,
+        decoration: BoxDecoration(
+          color: primary,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${date.day}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else {
+      content = Text(
+        '${date.day}',
+        style: TextStyle(
+          fontSize: 12,
+          color: date.weekday == 7
+              ? Colors.red
+              : (isInRange ? primary : onSurface),
+          fontWeight: isInRange ? FontWeight.w500 : FontWeight.normal,
+        ),
+      );
+    }
+
+    if (isToday) {
+      content = Container(
+        width: cellSize,
+        height: cellSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.blue, width: 2),
+        ),
+        alignment: Alignment.center,
+        child: content,
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -548,33 +600,7 @@ class _DayCell extends StatelessWidget {
                   ),
                 ),
               ),
-            if (showCircle)
-              Container(
-                width: cellSize,
-                height: cellSize,
-                decoration: BoxDecoration(
-                  color: primary,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${date.day}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-            else
-              Text(
-                '${date.day}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isInRange ? primary : onSurface,
-                  fontWeight: isInRange ? FontWeight.w500 : FontWeight.normal,
-                ),
-              ),
+            content,
           ],
         ),
       ),
