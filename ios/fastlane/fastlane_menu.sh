@@ -13,6 +13,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
+# CocoaPods and scripts need UTF-8 (avoids Encoding errors when run from Fastlane/CI)
+export LANG="${LANG:-en_US.UTF-8}"
+export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 FASTLANE_DIR="$SCRIPT_DIR"
@@ -255,15 +259,30 @@ exit_code=$?
 # Note: env parameter is already included in selected_lane if option 5 was chosen
 if [ $exit_code -ne 0 ] && [ "$choice" -eq 5 ]; then
     echo ""
-    echo -e "${YELLOW}⚠️  Build failed. Attempting to fix CocoaPods issue...${NC}"
+    echo -e "${YELLOW}⚠️  Build failed. Running install_gems_and_pods.sh (Ruby 2.6 + pod install)...${NC}"
     echo ""
     
-    # Run pod install to fix CocoaPods
-    echo -e "${CYAN}Running pod install...${NC}"
-    cd "$IOS_DIR" || exit 1
-    pod install --repo-update
-    
-    pod_exit_code=$?
+    PROJECT_ROOT="$(cd "$IOS_DIR/.." && pwd)"
+    INSTALL_SCRIPT="$IOS_DIR/install_gems_and_pods.sh"
+    if [ -x "$INSTALL_SCRIPT" ]; then
+      (cd "$PROJECT_ROOT" && "$INSTALL_SCRIPT")
+      pod_exit_code=$?
+    else
+      cd "$IOS_DIR" || exit 1
+      if command -v rbenv &>/dev/null && [ -f "$IOS_DIR/.ruby-version" ]; then
+        eval "$(rbenv init -)" 2>/dev/null || true
+        RBENV_RUBY="$(rbenv version-name)"
+        RBENV_ROOT="$(rbenv root)"
+        RUBY26_BIN="$RBENV_ROOT/versions/${RBENV_RUBY}/bin"
+        export PATH="$RUBY26_BIN:${RBENV_ROOT}/shims:$HOME/.gem/ruby/2.6.0/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        "$RUBY26_BIN/bundle" install --quiet 2>/dev/null || true
+        "$RUBY26_BIN/bundle" exec pod install --repo-update
+        pod_exit_code=$?
+      else
+        bundle install && bundle exec pod install --repo-update
+        pod_exit_code=$?
+      fi
+    fi
     
     if [ $pod_exit_code -eq 0 ]; then
         echo ""
@@ -271,14 +290,14 @@ if [ $exit_code -ne 0 ] && [ "$choice" -eq 5 ]; then
         echo -e "${YELLOW}🔄 Retrying fastlane command...${NC}"
         echo -e "${CYAN}────────────────────────────────────────────────────────────${NC}"
         echo ""
-        
-        # Retry the fastlane command
+        cd "$IOS_DIR" || exit 1
         bundle exec fastlane $selected_lane
         exit_code=$?
     else
         echo ""
         echo -e "${RED}❌ Failed to fix CocoaPods. Please fix manually.${NC}"
-        echo -e "${YELLOW}Try running: cd ios && pod install --repo-update${NC}"
+        echo -e "${YELLOW}Run from project root: ./ios/install_gems_and_pods.sh${NC}"
+        echo -e "${YELLOW}Then run this menu again → option 5 → option 3${NC}"
     fi
 fi
 

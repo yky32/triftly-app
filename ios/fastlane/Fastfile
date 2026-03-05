@@ -71,9 +71,28 @@ def run_pod_install
       return false
     rescue => sys_ex
       UI.important("⚠️  system pod also failed: #{sys_ex.message}")
+      # Third fallback: run install_gems_and_pods.sh (Ruby 2.6 + clean PATH)
+      install_script = File.join(IOS_DIR, "install_gems_and_pods.sh")
+      if File.executable?(install_script)
+        UI.important("Trying #{install_script} (Ruby 2.6 + pod install)...")
+        begin
+          home = ENV["HOME"] || ENV["USERPROFILE"] || Dir.home
+          # Pass HOME and UTF-8; let script inherit PATH (from menu so rbenv is available)
+          sh("cd #{PROJECT_ROOT} && env HOME=\"#{home}\" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 #{install_script}", log: true)
+          UI.success("✅ pod install completed (via install_gems_and_pods.sh)")
+          return true
+        rescue => script_ex
+          UI.important("⚠️  install script failed: #{script_ex.message}")
+        end
+      end
+      # Continue anyway if Pods may already be installed (e.g. user ran install_gems_and_pods.sh once)
+      pods_lock = File.join(IOS_DIR, "Pods", "Manifest.lock")
+      if File.exist?(pods_lock)
+        UI.important("Continuing (Pods/Manifest.lock exists). If build fails, run: ./ios/install_gems_and_pods.sh")
+        return true
+      end
       UI.user_error!(
-        "Pod install failed (bundle exec and system pod). " \
-        "Run from Ruby 2.6 (e.g. rbenv use 2.6), or from project root: cd ios && bundle install && bundle exec pod install --repo-update"
+        "Pod install failed. Run from project root: ./ios/install_gems_and_pods.sh then retry."
       )
     end
   end
