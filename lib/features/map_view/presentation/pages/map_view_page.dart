@@ -267,15 +267,27 @@ class _MapBodyState extends State<_MapBody> {
     );
   }
 
+  /// Use address or locality as title when Place Details is missing (e.g. on device with API restrictions).
+  static String _titleFromGeocode(ReverseGeocodeResult? geocode, PlaceDetailsResult? placeDetails) {
+    final name = placeDetails?.name;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
+    final locality = geocode?.locality;
+    if (locality != null && locality.trim().isNotEmpty) return locality.trim();
+    final address = geocode?.formattedAddress ?? placeDetails?.formattedAddress;
+    if (address != null && address.trim().isNotEmpty) {
+      final firstLine = address.trim().split(RegExp(r'[\n,]+')).first.trim();
+      return firstLine.length > 60 ? '${firstLine.substring(0, 57)}...' : firstLine;
+    }
+    return 'Dropped pin';
+  }
+
   MapLocation _buildMapLocationFromTap({
     required String id,
     required LatLng position,
     ReverseGeocodeResult? geocode,
     PlaceDetailsResult? placeDetails,
   }) {
-    final title = placeDetails?.name ??
-        geocode?.locality ??
-        'Dropped pin';
+    final title = _titleFromGeocode(geocode, placeDetails);
     final address = placeDetails?.formattedAddress ?? geocode?.formattedAddress;
     final placeId = geocode?.placeId;
     final locality = geocode?.locality;
