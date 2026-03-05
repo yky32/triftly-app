@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
@@ -79,7 +80,7 @@ class RoutineDayPage extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${_formatWeekday(date)}, ${_formatDate(date)}',
+                  DateHelpers.formatWeekdayAndDate(date),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -144,28 +145,6 @@ class RoutineDayPage extends StatelessWidget {
     );
   }
 
-  String _formatWeekday(DateTime d) {
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return weekdays[d.weekday - 1];
-  }
-
-  String _formatDate(DateTime d) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
-  }
 }
 
 class _PlaceholderSpot {

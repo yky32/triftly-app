@@ -1,26 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
-
-// ---------------------------------------------------------------------------
-// Date helpers: month length and calendar-day math (Feb 28/29, 365/366 days).
-// ---------------------------------------------------------------------------
-
-/// Last calendar day of the month (28, 29, 30, or 31).
-/// Handles February and leap years (e.g. Feb 2024 → 29, Feb 2023 → 28).
-int lastDayOfMonth(int year, int month) {
-  // Day 0 of next month = last day of current month; Dart normalizes month 13 → Jan next year
-  return DateTime(year, month + 1, 0).day;
-}
-
-/// Number of calendar days between [start] and [end] inclusive.
-/// Uses date-only (no time), so correct across month boundaries and leap years.
-int calendarDaysBetween(DateTime start, DateTime end) {
-  final s = DateTime(start.year, start.month, start.day);
-  final e = DateTime(end.year, end.month, end.day);
-  return e.difference(s).inDays + 1;
-}
 
 /// Result of selecting a trip date range in the routine builder bottom sheet.
 /// All values are derived from the calendar range selection.
@@ -38,7 +19,7 @@ class RoutineTripResult {
   final String name;
 
   /// Days of trip (inclusive). Uses calendar-day count; correct for any year (365/366) and month lengths (e.g. Feb 28/29).
-  int get daysOfTrip => calendarDaysBetween(startDate, endDate);
+  int get daysOfTrip => DateHelpers.calendarDaysBetween(startDate, endDate);
 }
 
 /// Bottom sheet for trip planning: select a date range on a calendar.
@@ -142,27 +123,21 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
 
   bool _isInRange(DateTime date) {
     if (_startDate == null) return false;
-    final start =
-        DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
-    final end = _endDate != null
-        ? DateTime(_endDate!.year, _endDate!.month, _endDate!.day)
-        : start;
-    final d = DateTime(date.year, date.month, date.day);
+    final start = DateHelpers.dateOnly(_startDate!);
+    final end =
+        _endDate != null ? DateHelpers.dateOnly(_endDate!) : start;
+    final d = DateHelpers.dateOnly(date);
     return !d.isBefore(start) && !d.isAfter(end);
   }
 
   bool _isStart(DateTime date) {
     if (_startDate == null) return false;
-    return date.year == _startDate!.year &&
-        date.month == _startDate!.month &&
-        date.day == _startDate!.day;
+    return DateHelpers.isSameDay(date, _startDate!);
   }
 
   bool _isEnd(DateTime date) {
     if (_endDate == null) return _isStart(date);
-    return date.year == _endDate!.year &&
-        date.month == _endDate!.month &&
-        date.day == _endDate!.day;
+    return DateHelpers.isSameDay(date, _endDate!);
   }
 
   void _onConfirm() {
@@ -171,8 +146,8 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
     final start = _startDate!;
     if (end.isBefore(start)) return;
     Navigator.of(context).pop(RoutineTripResult(
-      startDate: DateTime(start.year, start.month, start.day),
-      endDate: DateTime(end.year, end.month, end.day),
+      startDate: DateHelpers.dateOnly(start),
+      endDate: DateHelpers.dateOnly(end),
       name: _nameController.text.trim(),
     ));
   }
@@ -182,7 +157,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
     final end = _endDate ?? _startDate!;
     final start = _startDate!;
     if (end.isBefore(start)) return 0;
-    return calendarDaysBetween(start, end);
+    return DateHelpers.calendarDaysBetween(start, end);
   }
 
   /// True when both start and end are selected (button is active).
@@ -370,7 +345,6 @@ class _MonthNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rightMonth = DateTime(leftMonth.year, leftMonth.month + 1);
-    final formatter = DateFormat('MMMM yyyy');
 
     return Row(
       children: [
@@ -383,14 +357,14 @@ class _MonthNavigation extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            formatter.format(leftMonth),
+            DateHelpers.formatMonthYear(leftMonth),
             style: textStyle,
             textAlign: TextAlign.center,
           ),
         ),
         Expanded(
           child: Text(
-            formatter.format(rightMonth),
+            DateHelpers.formatMonthYear(rightMonth),
             style: textStyle,
             textAlign: TextAlign.center,
           ),
@@ -439,10 +413,10 @@ class _MonthGrid extends StatelessWidget {
   final ThemeData theme;
 
   /// Builds the grid of day slots for the month (leading empties + 1..lastDay).
-  /// Handles Feb 28/29 (leap year) and all month lengths via [lastDayOfMonth].
+  /// Handles Feb 28/29 (leap year) and all month lengths via [DateHelpers.lastDayOfMonth].
   List<DateTime?> _daysForMonth(DateTime month) {
     final first = DateTime(month.year, month.month, 1);
-    final lastDay = lastDayOfMonth(month.year, month.month);
+    final lastDay = DateHelpers.lastDayOfMonth(month.year, month.month);
     final weekday = first.weekday; // 1 = Monday, 7 = Sunday; column 0 = Sunday
     final leading = weekday % 7;
     final days = <DateTime?>[];
@@ -465,9 +439,7 @@ class _MonthGrid extends StatelessWidget {
     if (date == null) {
       return SizedBox(width: cellSize, height: cellSize);
     }
-    final now = DateTime.now();
-    final isToday =
-        date.year == now.year && date.month == now.month && date.day == now.day;
+    final isToday = DateHelpers.isToday(date);
     return _DayCell(
       date: date,
       cellSize: cellSize,

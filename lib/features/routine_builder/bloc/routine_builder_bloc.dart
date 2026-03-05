@@ -9,13 +9,21 @@ class RoutineBuilderBloc
   RoutineBuilderBloc() : super(const RoutineBuilderState()) {
     on<TripSelected>(_onTripSelected);
     on<TripCleared>(_onTripCleared);
+    on<CarouselPageChanged>(_onCarouselPageChanged);
   }
 
   void _onTripSelected(TripSelected event, Emitter<RoutineBuilderState> emit) {
-    emit(RoutineBuilderState(trip: event.trip));
+    emit(state.copyWith(trip: event.trip, currentDayPageIndex: 0));
   }
 
   void _onTripCleared(TripCleared event, Emitter<RoutineBuilderState> emit) {
     emit(const RoutineBuilderState());
+  }
+
+  void _onCarouselPageChanged(
+    CarouselPageChanged event,
+    Emitter<RoutineBuilderState> emit,
+  ) {
+    emit(state.copyWith(currentDayPageIndex: event.index));
   }
 }

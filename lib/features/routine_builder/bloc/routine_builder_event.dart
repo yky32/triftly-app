@@ -9,3 +9,9 @@ class TripSelected extends RoutineBuilderEvent {
 }
 
 class TripCleared extends RoutineBuilderEvent {}
+
+class CarouselPageChanged extends RoutineBuilderEvent {
+  final int index;
+
+  CarouselPageChanged(this.index);
+}
