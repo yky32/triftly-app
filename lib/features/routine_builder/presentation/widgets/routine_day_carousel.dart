@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_page.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
@@ -11,11 +12,15 @@ class RoutineDayCarousel extends StatefulWidget {
     required this.trip,
     required this.currentPageIndex,
     required this.onPageChanged,
+    required this.spotsForDay,
   });
 
   final RoutineTripResult trip;
   final int currentPageIndex;
   final ValueChanged<int> onPageChanged;
+
+  /// Returns spots added by the user for the given day index.
+  final List<RoutineSpot> Function(int dayIndex) spotsForDay;
 
   @override
   State<RoutineDayCarousel> createState() => _RoutineDayCarouselState();
@@ -59,6 +64,7 @@ class _RoutineDayCarouselState extends State<RoutineDayCarousel> {
                 dayIndex: index,
                 date: date,
                 totalDays: count,
+                addedSpots: widget.spotsForDay(index),
               );
             },
           ),

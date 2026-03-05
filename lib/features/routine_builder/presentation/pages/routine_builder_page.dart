@@ -53,6 +53,7 @@ class _RoutineBuilderView extends StatelessWidget {
                       onPageChanged: (index) => context
                           .read<RoutineBuilderBloc>()
                           .add(CarouselPageChanged(index)),
+                      spotsForDay: state.spotsForDay,
                     ),
                   )
                 else

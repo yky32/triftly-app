@@ -15,3 +15,10 @@ class CarouselPageChanged extends RoutineBuilderEvent {
 
   CarouselPageChanged(this.index);
 }
+
+class SpotAdded extends RoutineBuilderEvent {
+  final int dayIndex;
+  final RoutineSpot spot;
+
+  SpotAdded({required this.dayIndex, required this.spot});
+}

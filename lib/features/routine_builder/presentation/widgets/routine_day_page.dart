@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
+import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
 
@@ -11,14 +14,16 @@ class RoutineDayPage extends StatelessWidget {
     required this.dayIndex,
     required this.date,
     required this.totalDays,
+    this.addedSpots = const [],
   });
 
   final int dayIndex;
   final DateTime date;
   final int totalDays;
+  final List<RoutineSpot> addedSpots;
 
-  static const List<_PlaceholderSpot> _placeholderSpots = [
-    _PlaceholderSpot(
+  static const List<RoutineSpot> _defaultSpots = [
+    RoutineSpot(
       startTime: '8:30 AM',
       endTime: '9:30 AM',
       title: 'Morning Coffee at Ikigai Arabica',
@@ -27,7 +32,7 @@ class RoutineDayPage extends StatelessWidget {
       icon: Icons.coffee,
       color: Color(0xFFE65100),
     ),
-    _PlaceholderSpot(
+    RoutineSpot(
       startTime: '10:00 AM',
       endTime: '11:45 AM',
       title: 'Tokyo Station → Odawara Station',
@@ -37,7 +42,7 @@ class RoutineDayPage extends StatelessWidget {
       icon: Icons.train,
       color: Color(0xFF2E7D32),
     ),
-    _PlaceholderSpot(
+    RoutineSpot(
       startTime: '12:00 PM',
       endTime: '3:00 PM',
       title: 'Hakone Open-Air Museum',
@@ -46,7 +51,7 @@ class RoutineDayPage extends StatelessWidget {
       icon: Icons.museum_outlined,
       color: Color(0xFF0277BD),
     ),
-    _PlaceholderSpot(
+    RoutineSpot(
       startTime: '5:00 PM',
       endTime: '6:30 PM',
       title: 'Odawara Station → Shibuya Station',
@@ -120,11 +125,18 @@ class RoutineDayPage extends StatelessWidget {
                 color: AppColors.fogGray,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
-                  onTap: () => RoutineDayAddSpotBottomSheet.show(
-                    context,
-                    dayIndex: dayIndex,
-                    date: date,
-                  ),
+                  onTap: () async {
+                    final spot = await RoutineDayAddSpotBottomSheet.show(
+                      context,
+                      dayIndex: dayIndex,
+                      date: date,
+                    );
+                    if (spot != null && context.mounted) {
+                      context.read<RoutineBuilderBloc>().add(
+                            SpotAdded(dayIndex: dayIndex, spot: spot),
+                          );
+                    }
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.all(8),
@@ -137,7 +149,7 @@ class RoutineDayPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _ItineraryTimeline(
-            spots: _placeholderSpots,
+            spots: [..._defaultSpots, ...addedSpots],
             theme: theme,
           ),
         ],
@@ -147,25 +159,6 @@ class RoutineDayPage extends StatelessWidget {
 
 }
 
-class _PlaceholderSpot {
-  const _PlaceholderSpot({
-    required this.startTime,
-    required this.endTime,
-    required this.title,
-    required this.description,
-    required this.location,
-    required this.icon,
-    required this.color,
-  });
-  final String startTime;
-  final String endTime;
-  final String title;
-  final String description;
-  final String location;
-  final IconData icon;
-  final Color color;
-}
-
 /// Vertical itinerary timeline: icon-in-circle on light gray line, white cards with title + time | location.
 class _ItineraryTimeline extends StatelessWidget {
   const _ItineraryTimeline({
@@ -173,7 +166,7 @@ class _ItineraryTimeline extends StatelessWidget {
     required this.theme,
   });
 
-  final List<_PlaceholderSpot> spots;
+  final List<RoutineSpot> spots;
   final ThemeData theme;
 
   static const double _lineWidth = 2;
