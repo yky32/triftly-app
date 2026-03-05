@@ -55,3 +55,15 @@ To create a new locale, create a new file inside the `l10n` folder and run the a
 ## State Management
 
 Use **Bloc only** (no Cubit). All state is managed via [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) with events and states. Define blocs as specific as possible—e.g. `LoginBloc`, `ThemeBloc`, `ForgotPasswordBloc`—and avoid a single catch‑all bloc (e.g. no `UserBloc` for all auth logic).
+
+## Bottom Sheets
+
+Bottom sheets in this app follow a consistent set of behaviors and design rules:
+
+- **Drag handle** – Every bottom sheet shows a drag handle (pill) at the top to signal that it can be dragged to dismiss. Use `BottomSheetDragHandle` from `app_bottom_sheet.dart`.
+- **Tap-to-unfocus** – Tapping outside any focused text field must unfocus it and dismiss the keyboard so the sheet content is not blocked. Wrap sheet content in `TapToUnfocus` from `app_bottom_sheet.dart`.
+- **Borderless inputs** – Text fields inside bottom sheets use borderless styling (no visible border; optional subtle underline). Do not use outlined or filled bordered fields in sheets.
+- **Keyboard insets** – Sheet layout must account for the keyboard (e.g. `MediaQuery.viewInsetsOf(context).bottom`) so content remains visible and scrollable when the keyboard is open.
+- **Present via `showAppModalBottomSheet`** – Use the shared helper in `app_bottom_sheet.dart` so sheets use the root navigator and consistent styling.
+
+Do not use `SnackBar` / `showSnackBar` in this app; use other patterns for feedback (e.g. inline validation, dialogs, or in-sheet messaging).

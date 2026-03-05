@@ -39,11 +39,7 @@ class LoginPage extends StatelessWidget {
                   context.go(AppPage.today.path);
                 }
                 if (state is LoginFailure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Email or password is incorrect.'),
-                    ),
-                  );
+                  // Feedback via other patterns (e.g. inline error); no SnackBar per app principles.
                 }
               },
               builder: (BuildContext context, LoginState loginState) {

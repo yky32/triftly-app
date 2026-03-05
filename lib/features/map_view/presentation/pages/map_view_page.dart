@@ -1,30 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/features/map_view/models/map_location.dart';
+import 'package:triftly/features/map_view/presentation/widgets/bottom_sheets/location_detail_bottom_sheet.dart';
 
 /// Approximate height of the floating bottom nav bar so the map content (e.g. my-location dot)
 /// stays fully visible above it.
 const double _kBottomNavBarHeight = 88;
 
-/// Map tab: full-screen Google Map. Requires a valid API key in Android/iOS config.
-/// Map has bottom padding so the current-location marker is not blocked by the nav bar.
-/// Map is interactive: pan, zoom, and tap on the map are enabled.
-class MapViewPage extends StatelessWidget {
+/// Fallback center when location is unavailable (e.g. permission denied). Hong Kong.
+const LatLng _fallbackCenter = LatLng(22.3193, 114.1694);
+
+/// Sample map locations (POIs) for the simple map. Tap a marker to open its detail bottom sheet.
+final List<MapLocation> _sampleLocations = [
+  const MapLocation(
+    id: 'sensoji',
+    title: 'Sensō-ji',
+    description:
+        'Ancient Buddhist temple in Asakusa, Tokyo. The oldest temple in Tokyo.',
+    address: '2 Chome-3-1 Asakusa, Taitō City, Tokyo',
+    position: LatLng(35.7148, 139.7967),
+  ),
+  const MapLocation(
+    id: 'shibuya',
+    title: 'Shibuya Crossing',
+    description: 'Famous scramble crossing and commercial district.',
+    address: 'Shibuya City, Tokyo',
+    position: LatLng(35.6595, 139.7004),
+  ),
+  const MapLocation(
+    id: 'skytree',
+    title: 'Tokyo Skytree',
+    description: 'Tall broadcasting and observation tower in Sumida.',
+    address: '1 Chome-1-2 Oshiage, Sumida City, Tokyo',
+    position: LatLng(35.7101, 139.8107),
+  ),
+];
+
+/// Map tab: full-screen Google Map. Centers on your current location when available.
+/// Tap any marker to see location details in a bottom sheet.
+class MapViewPage extends StatefulWidget {
   const MapViewPage({super.key});
 
-  static const LatLng _defaultCenter = LatLng(35.6762, 139.6503); // Tokyo
+  @override
+  State<MapViewPage> createState() => _MapViewPageState();
+}
+
+class _MapViewPageState extends State<MapViewPage> {
+  GoogleMapController? _mapController;
+  bool _locationRequested = false;
+
+  Future<void> _moveToUserLocation() async {
+    if (_locationRequested || !mounted) return;
+    _locationRequested = true;
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
+      if (!mounted || _mapController == null) return;
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          14,
+        ),
+      );
+    } on MissingPluginException {
+      // Native geolocator plugin not registered (e.g. after hot restart).
+      // Do a full stop and run to get location. Map stays at fallback center.
+    } on PlatformException {
+      // Location service disabled or permission denied. Map stays at fallback.
+    } catch (_) {
+      // Any other error. Map stays at fallback center (Hong Kong).
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
     final mapBottomPadding = bottomSafe + _kBottomNavBarHeight;
 
+    final markers = {
+      for (final loc in _sampleLocations)
+        loc.id: Marker(
+          markerId: MarkerId(loc.id),
+          position: loc.position,
+          infoWindow: InfoWindow(title: loc.title, snippet: loc.address),
+          onTap: () {
+            if (context.mounted) {
+              LocationDetailBottomSheet.show(context, location: loc);
+            }
+          },
+        ),
+    };
+
     return Scaffold(
       body: Stack(
         children: [
           GoogleMap(
             initialCameraPosition: const CameraPosition(
-              target: _defaultCenter,
+              target: _fallbackCenter,
               zoom: 12,
             ),
             myLocationButtonEnabled: true,
@@ -35,19 +126,22 @@ class MapViewPage extends StatelessWidget {
             zoomGesturesEnabled: true,
             tiltGesturesEnabled: true,
             rotateGesturesEnabled: true,
-            padding: EdgeInsets.only(bottom: mapBottomPadding),
+            padding: EdgeInsets.only(bottom: mapBottomPadding, right: 16),
+            markers: Set<Marker>.from(markers.values),
             onTap: (LatLng position) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
+              if (!context.mounted) return;
+              final tappedLocation = MapLocation(
+                id: 'tapped_${position.latitude}_${position.longitude}',
+                title: 'Dropped pin',
+                position: position,
+                description: null,
+                address: null,
+              );
+              LocationDetailBottomSheet.show(context, location: tappedLocation);
+            },
+            onMapCreated: (controller) {
+              _mapController = controller;
+              _moveToUserLocation();
             },
           ),
           SafeArea(
