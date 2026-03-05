@@ -3,15 +3,17 @@ import 'package:triftly/features/map_view/models/map_location.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
 /// Bottom sheet that shows detail information for a [MapLocation].
-/// Supports data from our markers, Geocoding (address), and later Places (rating, hours, photo).
+/// Supports data from our markers, Geocoding (address), and Places (rating, hours, photo).
 /// Opened when the user taps a marker or any point on the map.
 class LocationDetailBottomSheet extends StatelessWidget {
   const LocationDetailBottomSheet({
     super.key,
     required this.location,
+    this.locationFuture,
   });
 
-  final MapLocation location;
+  final MapLocation? location;
+  final Future<MapLocation>? locationFuture;
 
   static Future<void> show(BuildContext context, {required MapLocation location}) {
     return showAppModalBottomSheet<void>(
@@ -22,12 +24,26 @@ class LocationDetailBottomSheet extends StatelessWidget {
     );
   }
 
+  /// Opens the sheet immediately with a minimal loading state, then shows content when [locationFuture] completes.
+  static Future<void> showWithFuture(BuildContext context, {required Future<MapLocation> locationFuture}) {
+    return showAppModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationDetailBottomSheet(location: null, locationFuture: locationFuture),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final loc = location;
+    if (locationFuture != null) {
+      return _LocationDetailSheetWithFuture(locationFuture: locationFuture!);
+    }
+    return _sheetContainer(context, _buildContent(context, location!));
+  }
 
+  static Widget _sheetContainer(BuildContext context, Widget child) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -39,7 +55,15 @@ class LocationDetailBottomSheet extends StatelessWidget {
         24,
         24 + MediaQuery.paddingOf(context).bottom,
       ),
-      child: TapToUnfocus(
+      child: child,
+    );
+  }
+
+  static Widget _buildContent(BuildContext context, MapLocation loc) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return TapToUnfocus(
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -215,11 +239,10 @@ class LocationDetailBottomSheet extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
-  Widget _chip(BuildContext context, String label) {
+  static Widget _chip(BuildContext context, String label) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -232,6 +255,70 @@ class LocationDetailBottomSheet extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
+      ),
+    );
+  }
+}
+
+/// Sheet that opens immediately with a minimal loading state, then shows location content.
+class _LocationDetailSheetWithFuture extends StatefulWidget {
+  const _LocationDetailSheetWithFuture({required this.locationFuture});
+
+  final Future<MapLocation> locationFuture;
+
+  @override
+  State<_LocationDetailSheetWithFuture> createState() => _LocationDetailSheetWithFutureState();
+}
+
+class _LocationDetailSheetWithFutureState extends State<_LocationDetailSheetWithFuture> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return LocationDetailBottomSheet._sheetContainer(
+      context,
+      FutureBuilder<MapLocation>(
+        future: widget.locationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return LocationDetailBottomSheet._buildContent(context, snapshot.data!);
+          }
+          return TapToUnfocus(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const BottomSheetDragHandle(),
+                SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: colorScheme.primary.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Loading place details',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
+                            letterSpacing: 0.15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

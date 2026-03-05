@@ -93,6 +93,26 @@ class _MapViewPageState extends State<MapViewPage> {
     }
   }
 
+  Future<MapLocation> _fetchLocationForTap({
+    required String id,
+    required LatLng position,
+  }) async {
+    final geocode = await GeocodingService.reverseGeocode(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+    PlaceDetailsResult? placeDetails;
+    if (geocode?.placeId != null) {
+      placeDetails = await PlacesService.getPlaceDetails(geocode!.placeId!);
+    }
+    return _buildMapLocationFromTap(
+      id: id,
+      position: position,
+      geocode: geocode,
+      placeDetails: placeDetails,
+    );
+  }
+
   MapLocation _buildMapLocationFromTap({
     required String id,
     required LatLng position,
@@ -167,50 +187,11 @@ class _MapViewPageState extends State<MapViewPage> {
             rotateGesturesEnabled: true,
             padding: EdgeInsets.only(bottom: mapBottomPadding, right: 16),
             markers: Set<Marker>.from(markers.values),
-            onTap: (LatLng position) async {
+            onTap: (LatLng position) {
               if (!context.mounted) return;
               final id = 'tapped_${position.latitude}_${position.longitude}';
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => const Center(
-                  child: Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Loading place details…'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-              final geocode = await GeocodingService.reverseGeocode(
-                latitude: position.latitude,
-                longitude: position.longitude,
-              );
-              if (!context.mounted) return;
-
-              PlaceDetailsResult? placeDetails;
-              if (geocode?.placeId != null) {
-                placeDetails = await PlacesService.getPlaceDetails(geocode!.placeId!);
-              }
-              if (!context.mounted) return;
-
-              Navigator.of(context, rootNavigator: true).pop();
-              if (!context.mounted) return;
-
-              final location = _buildMapLocationFromTap(
-                id: id,
-                position: position,
-                geocode: geocode,
-                placeDetails: placeDetails,
-              );
-              LocationDetailBottomSheet.show(context, location: location);
+              final locationFuture = _fetchLocationForTap(id: id, position: position);
+              LocationDetailBottomSheet.showWithFuture(context, locationFuture: locationFuture);
             },
             onMapCreated: (controller) {
               _mapController = controller;
