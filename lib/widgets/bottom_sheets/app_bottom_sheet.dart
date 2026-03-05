@@ -1,5 +1,27 @@
 import 'package:flutter/material.dart';
 
+/// Wraps [child] so that tapping outside focusable areas unfocuses and dismisses the keyboard.
+/// Use as the outer wrapper of bottom sheet content when the sheet has text fields.
+class TapToUnfocus extends StatelessWidget {
+  const TapToUnfocus({super.key, required this.child});
+
+  final Widget child;
+
+  /// Unfocuses the current focus and dismisses the keyboard. Call from onTap or elsewhere.
+  static void unfocus(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => unfocus(context),
+      behavior: HitTestBehavior.translucent,
+      child: child,
+    );
+  }
+}
+
 /// Drag-handle pill at the top of a bottom sheet (indicates draggable / dismissible).
 /// Use theme color; no need for red — aligns with common mobile bottom sheet UX.
 class BottomSheetDragHandle extends StatelessWidget {

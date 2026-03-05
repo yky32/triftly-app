@@ -154,18 +154,21 @@ class _RoutineDayAddSpotBottomSheetState
     final colorScheme = theme.colorScheme;
     final isEditing = widget.initialSpot != null;
 
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPadding + keyboardHeight),
       child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const BottomSheetDragHandle(),
+        child: TapToUnfocus(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const BottomSheetDragHandle(),
             Text(
               isEditing ? 'Edit spot' : 'Add spot',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -289,6 +292,7 @@ class _RoutineDayAddSpotBottomSheetState
               child: Text(isEditing ? 'Save changes' : 'Add spot'),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -503,12 +507,13 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + MediaQuery.paddingOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const BottomSheetDragHandle(),
-          Text(
-            'Time',
+      child: TapToUnfocus(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const BottomSheetDragHandle(),
+            Text(
+              'Time',
             style: theme.textTheme.titleLarge?.copyWith(
               color: onSurface,
               fontWeight: FontWeight.w600,
@@ -670,6 +675,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

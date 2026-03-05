@@ -166,10 +166,6 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
       _endDate != null &&
       !_endDate!.isBefore(_startDate!);
 
-  void _unfocusNameField() {
-    FocusScope.of(context).unfocus();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -195,9 +191,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
         bottom: 24 + padding.bottom + viewInsets.bottom,
       ),
       child: SingleChildScrollView(
-        child: GestureDetector(
-          onTap: _unfocusNameField,
-          behavior: HitTestBehavior.translucent,
+        child: TapToUnfocus(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
