@@ -138,6 +138,20 @@ class LocationDetailBottomSheet extends StatelessWidget {
                 ],
               ),
             ],
+            if (loc.types != null && loc.types!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: loc.types!
+                    .map((t) => _typeChip(
+                          label: t.replaceAll('_', ' '),
+                          colorScheme: colorScheme,
+                          theme: theme,
+                        ))
+                    .toList(),
+              ),
+            ],
             const SizedBox(height: 16),
             _ActionRow(location: loc),
             const SizedBox(height: 20),
@@ -201,6 +215,26 @@ class LocationDetailBottomSheet extends StatelessWidget {
     } catch (_) {
       return url;
     }
+  }
+
+  static Widget _typeChip({
+    required String label,
+    required ColorScheme colorScheme,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
   }
 
   static Future<void> _openUrl(String url) async {
