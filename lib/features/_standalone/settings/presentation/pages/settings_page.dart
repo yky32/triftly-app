@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/core/theme/theme_bloc.dart';
+import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/router/app_page.dart';
 
@@ -122,6 +123,7 @@ class SettingsPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const BottomSheetDragHandle(),
               ListTile(
                 leading: Icon(Icons.light_mode, color: colorScheme.primary),
                 title: Text(context.l10n.settings_theme_light),

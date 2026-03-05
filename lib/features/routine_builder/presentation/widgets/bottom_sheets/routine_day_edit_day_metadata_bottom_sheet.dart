@@ -41,6 +41,7 @@ class RoutineDayEditDayMetadataBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const BottomSheetDragHandle(),
           Text(
             'Edit day',
             style: theme.textTheme.titleMedium?.copyWith(

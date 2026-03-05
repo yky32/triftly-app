@@ -202,6 +202,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const BottomSheetDragHandle(),
               Text(
                 widget.title,
                 style: theme.textTheme.titleLarge?.copyWith(

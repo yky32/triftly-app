@@ -165,6 +165,7 @@ class _RoutineDayAddSpotBottomSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const BottomSheetDragHandle(),
             Text(
               isEditing ? 'Edit spot' : 'Add spot',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -505,6 +506,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const BottomSheetDragHandle(),
           Text(
             'Time',
             style: theme.textTheme.titleLarge?.copyWith(
