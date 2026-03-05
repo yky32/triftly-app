@@ -10,8 +10,8 @@ class BottomSheetDragHandle extends StatelessWidget {
     final color = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
     return Center(
       child: Container(
-        width: 48,
-        height: 4,
+        width: 64,
+        height: 3,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: color,
