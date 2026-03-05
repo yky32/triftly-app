@@ -3,6 +3,10 @@
         android:label="Triftly"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Maps API key: replace with your key from Google Cloud Console (Maps SDK for Android). -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDN6sSxZP-Xf47aRGGPuABsjyM_f6cC_MU"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
