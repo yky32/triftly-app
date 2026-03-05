@@ -67,3 +67,11 @@ Bottom sheets in this app follow a consistent set of behaviors and design rules:
 - **Present via `showAppModalBottomSheet`** – Use the shared helper in `app_bottom_sheet.dart` so sheets use the root navigator and consistent styling.
 
 Do not use `SnackBar` / `showSnackBar` in this app; use other patterns for feedback (e.g. inline validation, dialogs, or in-sheet messaging).
+
+## Map & location data
+
+The map tab uses **Geocoding** (and is prepared for **Places**) so users see useful info when tapping the map and can later add spots to the routine builder.
+
+- **Geocoding**: Set `GOOGLE_MAPS_API_KEY` in `env/.env.dev` (same key as Maps). Enable **Geocoding API** in [Google Cloud Console](https://console.cloud.google.com/apis/library/geocoding-backend.googleapis.com) for the same project. Reverse geocode turns a tap (LatLng) into address and place ID.
+- **MapLocation** in `lib/features/map_view/models/map_location.dart` holds: title, address, description, position, plus optional `placeId`, `rating`, `types`, `openingHoursText`, `photoUrl`, `website`, `phoneNumber`, `locality` for when you add Places API later.
+- **Places API**: Place Details is integrated. After reverse geocode, the app fetches place details by `place_id` (rating, opening hours, photo, website, phone). Enable **Places API** in Cloud Console. The bottom sheet shows photo, rating, types, opening hours, website, and phone when returned.

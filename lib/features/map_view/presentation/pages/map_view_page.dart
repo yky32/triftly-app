@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/features/map_view/data/geocoding_service.dart';
+import 'package:triftly/features/map_view/data/places_service.dart';
 import 'package:triftly/features/map_view/models/map_location.dart';
 import 'package:triftly/features/map_view/presentation/widgets/bottom_sheets/location_detail_bottom_sheet.dart';
 
@@ -91,6 +93,43 @@ class _MapViewPageState extends State<MapViewPage> {
     }
   }
 
+  MapLocation _buildMapLocationFromTap({
+    required String id,
+    required LatLng position,
+    ReverseGeocodeResult? geocode,
+    PlaceDetailsResult? placeDetails,
+  }) {
+    final title = placeDetails?.name ??
+        geocode?.locality ??
+        'Dropped pin';
+    final address = placeDetails?.formattedAddress ?? geocode?.formattedAddress;
+    final placeId = geocode?.placeId;
+    final locality = geocode?.locality;
+    final types = placeDetails?.types ?? geocode?.types;
+    final rating = placeDetails?.rating;
+    final openingHoursText = placeDetails?.openingHoursSummary;
+    final photoUrl = placeDetails?.photoReference != null
+        ? PlacesService.photoUrl(placeDetails!.photoReference!)
+        : null;
+    final website = placeDetails?.website;
+    final phoneNumber = placeDetails?.formattedPhoneNumber;
+
+    return MapLocation(
+      id: id,
+      title: title,
+      address: address,
+      position: position,
+      placeId: placeId,
+      locality: locality,
+      types: types,
+      rating: rating,
+      openingHoursText: openingHoursText,
+      photoUrl: photoUrl,
+      website: website,
+      phoneNumber: phoneNumber,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
@@ -128,16 +167,50 @@ class _MapViewPageState extends State<MapViewPage> {
             rotateGesturesEnabled: true,
             padding: EdgeInsets.only(bottom: mapBottomPadding, right: 16),
             markers: Set<Marker>.from(markers.values),
-            onTap: (LatLng position) {
+            onTap: (LatLng position) async {
               if (!context.mounted) return;
-              final tappedLocation = MapLocation(
-                id: 'tapped_${position.latitude}_${position.longitude}',
-                title: 'Dropped pin',
-                position: position,
-                description: null,
-                address: null,
+              final id = 'tapped_${position.latitude}_${position.longitude}';
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => const Center(
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Loading place details…'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               );
-              LocationDetailBottomSheet.show(context, location: tappedLocation);
+              final geocode = await GeocodingService.reverseGeocode(
+                latitude: position.latitude,
+                longitude: position.longitude,
+              );
+              if (!context.mounted) return;
+
+              PlaceDetailsResult? placeDetails;
+              if (geocode?.placeId != null) {
+                placeDetails = await PlacesService.getPlaceDetails(geocode!.placeId!);
+              }
+              if (!context.mounted) return;
+
+              Navigator.of(context, rootNavigator: true).pop();
+              if (!context.mounted) return;
+
+              final location = _buildMapLocationFromTap(
+                id: id,
+                position: position,
+                geocode: geocode,
+                placeDetails: placeDetails,
+              );
+              LocationDetailBottomSheet.show(context, location: location);
             },
             onMapCreated: (controller) {
               _mapController = controller;
