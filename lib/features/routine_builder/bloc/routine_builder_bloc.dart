@@ -7,11 +7,22 @@ part 'routine_builder_state.dart';
 
 class RoutineBuilderBloc
     extends Bloc<RoutineBuilderEvent, RoutineBuilderState> {
-  RoutineBuilderBloc() : super(const RoutineBuilderState()) {
+  RoutineBuilderBloc({RoutineSpot? pendingSpotFromMap})
+      : super(RoutineBuilderState(
+          pendingSpotToAddFromMap: pendingSpotFromMap,
+        )) {
     on<TripSelected>(_onTripSelected);
     on<TripCleared>(_onTripCleared);
     on<CarouselPageChanged>(_onCarouselPageChanged);
     on<SpotAdded>(_onSpotAdded);
+    on<PendingSpotFromMapConsumed>(_onPendingSpotFromMapConsumed);
+  }
+
+  void _onPendingSpotFromMapConsumed(
+    PendingSpotFromMapConsumed event,
+    Emitter<RoutineBuilderState> emit,
+  ) {
+    emit(state.copyWith(clearPendingSpotToAddFromMap: true));
   }
 
   void _onTripSelected(TripSelected event, Emitter<RoutineBuilderState> emit) {

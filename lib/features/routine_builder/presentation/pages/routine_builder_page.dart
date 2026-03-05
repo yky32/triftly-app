@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
+import 'package:triftly/features/routine_builder/models/routine_spot.dart';
+import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_carousel.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 class RoutineBuilderPage extends StatelessWidget {
-  const RoutineBuilderPage({super.key});
+  const RoutineBuilderPage({super.key, this.pendingSpotFromMap});
+
+  /// When non-null, opened from map "Add to routine"; add-spot sheet is shown with this as initial.
+  final RoutineSpot? pendingSpotFromMap;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => RoutineBuilderBloc(),
+      create: (_) => RoutineBuilderBloc(pendingSpotFromMap: pendingSpotFromMap),
       child: const _RoutineBuilderView(),
     );
   }
@@ -25,7 +30,32 @@ class _RoutineBuilderView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: BlocBuilder<RoutineBuilderBloc, RoutineBuilderState>(
+        child: BlocConsumer<RoutineBuilderBloc, RoutineBuilderState>(
+          listenWhen: (prev, curr) =>
+              curr.pendingSpotToAddFromMap != null &&
+              prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap,
+          listener: (context, state) {
+            final spot = state.pendingSpotToAddFromMap;
+            if (spot == null) return;
+            context.read<RoutineBuilderBloc>().add(PendingSpotFromMapConsumed());
+            final date = state.trip?.startDate ?? DateTime.now();
+            RoutineDayAddSpotBottomSheet.show(
+              context,
+              dayIndex: 0,
+              date: date,
+              initialSpot: spot,
+            ).then((saved) {
+              if (saved != null && context.mounted) {
+                context
+                    .read<RoutineBuilderBloc>()
+                    .add(SpotAdded(dayIndex: 0, spot: saved));
+              }
+            });
+          },
+          buildWhen: (prev, curr) =>
+              prev.trip != curr.trip ||
+              prev.currentDayPageIndex != curr.currentDayPageIndex ||
+              prev.spotsByDay != curr.spotsByDay,
           builder: (context, state) {
             final hasTrip = state.trip != null;
             return Column(
@@ -74,8 +104,9 @@ class _RoutineBuilderView extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildEmptyStateNotice(BuildContext context) {
+Widget _buildEmptyStateNotice(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
@@ -119,7 +150,7 @@ class _RoutineBuilderView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(
+Widget _buildHeader(
     BuildContext context, {
     required RoutineTripResult? trip,
     required VoidCallback onNewRoutine,
@@ -164,14 +195,14 @@ class _RoutineBuilderView extends StatelessWidget {
     );
   }
 
-  Future<void> _openTripSheet(BuildContext context) async {
+Future<void> _openTripSheet(BuildContext context) async {
     final result = await RoutineBuilderBottomSheet.show(context);
     if (result != null && context.mounted) {
       context.read<RoutineBuilderBloc>().add(TripSelected(result));
     }
   }
 
-  Future<void> _openTripSheetForEdit(
+Future<void> _openTripSheetForEdit(
       BuildContext context, RoutineTripResult currentTrip) async {
     final result = await RoutineBuilderBottomSheet.show(
       context,
@@ -184,7 +215,7 @@ class _RoutineBuilderView extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmAndDeleteRoutine(BuildContext context) async {
+Future<void> _confirmAndDeleteRoutine(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -208,7 +239,6 @@ class _RoutineBuilderView extends StatelessWidget {
       context.read<RoutineBuilderBloc>().add(TripCleared());
     }
   }
-}
 
 class _EmptyStateStep extends StatelessWidget {
   const _EmptyStateStep({

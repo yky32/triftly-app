@@ -22,3 +22,6 @@ class SpotAdded extends RoutineBuilderEvent {
 
   SpotAdded({required this.dayIndex, required this.spot});
 }
+
+/// After the add-spot sheet (opened for [pendingSpotToAddFromMap]) is closed.
+class PendingSpotFromMapConsumed extends RoutineBuilderEvent {}

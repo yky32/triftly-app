@@ -64,7 +64,8 @@ class _MapViewContent extends StatelessWidget {
                     builder: (context, state) {
                       if (state.isSearching) {
                         return Padding(
-                          padding: const EdgeInsets.only(top: 10, left: 4, right: 4),
+                          padding:
+                              const EdgeInsets.only(top: 10, left: 4, right: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -95,7 +96,8 @@ class _MapViewContent extends StatelessWidget {
                                 ? '1 result'
                                 : '$count results';
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8, left: 4, right: 4),
+                          padding:
+                              const EdgeInsets.only(top: 8, left: 4, right: 4),
                           child: Text(
                             label,
                             style: textTheme.bodySmall?.copyWith(
@@ -144,11 +146,13 @@ class _SearchBarState extends State<_SearchBar> {
       listener: (context, state) {
         if (_controller.text != state.searchQuery) {
           _controller.text = state.searchQuery;
-          _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+          _controller.selection =
+              TextSelection.collapsed(offset: _controller.text.length);
         }
       },
       buildWhen: (prev, curr) =>
-          prev.searchQuery != curr.searchQuery || prev.isSearching != curr.isSearching,
+          prev.searchQuery != curr.searchQuery ||
+          prev.isSearching != curr.isSearching,
       builder: (context, state) {
         return TextField(
           controller: _controller,
@@ -267,27 +271,13 @@ class _MapBodyState extends State<_MapBody> {
     );
   }
 
-  /// Use address or locality as title when Place Details is missing (e.g. on device with API restrictions).
-  static String _titleFromGeocode(ReverseGeocodeResult? geocode, PlaceDetailsResult? placeDetails) {
-    final name = placeDetails?.name;
-    if (name != null && name.trim().isNotEmpty) return name.trim();
-    final locality = geocode?.locality;
-    if (locality != null && locality.trim().isNotEmpty) return locality.trim();
-    final address = geocode?.formattedAddress ?? placeDetails?.formattedAddress;
-    if (address != null && address.trim().isNotEmpty) {
-      final firstLine = address.trim().split(RegExp(r'[\n,]+')).first.trim();
-      return firstLine.length > 60 ? '${firstLine.substring(0, 57)}...' : firstLine;
-    }
-    return 'Dropped pin';
-  }
-
   MapLocation _buildMapLocationFromTap({
     required String id,
     required LatLng position,
     ReverseGeocodeResult? geocode,
     PlaceDetailsResult? placeDetails,
   }) {
-    final title = _titleFromGeocode(geocode, placeDetails);
+    final title = placeDetails?.name ?? geocode?.locality ?? 'Dropped pin';
     final address = placeDetails?.formattedAddress ?? geocode?.formattedAddress;
     final placeId = geocode?.placeId;
     final locality = geocode?.locality;
@@ -392,8 +382,7 @@ class _MapBodyState extends State<_MapBody> {
           markers: Set<Marker>.from(markers.values),
           onTap: (LatLng position) {
             if (!context.mounted) return;
-            final id =
-                'tapped_${position.latitude}_${position.longitude}';
+            final id = 'tapped_${position.latitude}_${position.longitude}';
             final locationFuture =
                 _fetchLocationForTap(id: id, position: position);
             LocationDetailBottomSheet.showWithFuture(

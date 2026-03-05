@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:triftly/features/map_view/presentation/pages/map_view_page.dart';
+import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/pages/routine_builder_page.dart';
 import 'package:triftly/features/_standalone/settings/presentation/pages/settings_page.dart';
 import 'package:triftly/features/_standalone/login/presentation/pages/login_page.dart';
@@ -14,12 +15,12 @@ import 'package:triftly/widgets/splash_screen.dart';
 class AppRouter {
   AppRouter._();
 
-  static final Map<AppPage, Widget Function()> _appPages = {
-    AppPage.today: () => const TodayPage(),
-    AppPage.trips: () => const TripsPage(),
-    AppPage.routine: () => const RoutineBuilderPage(),
-    AppPage.map: () => const MapViewPage(),
-    AppPage.spend: () => const SpendTrackerPage(),
+  static final Map<AppPage, Widget Function(Object? extra)> _appPages = {
+    AppPage.today: (_) => const TodayPage(),
+    AppPage.trips: (_) => const TripsPage(),
+    AppPage.routine: (extra) => RoutineBuilderPage(pendingSpotFromMap: extra as RoutineSpot?),
+    AppPage.map: (_) => const MapViewPage(),
+    AppPage.spend: (_) => const SpendTrackerPage(),
   };
 
   static final Map<AppPage, Widget Function()> _standaloneAppPages = {
@@ -39,7 +40,7 @@ class AppRouter {
               GoRoute(
                 name: page.name,
                 path: page.path,
-                builder: (_, __) => _appPages[page]!(),
+                builder: (_, state) => _appPages[page]!(state.extra),
               ),
             ],
           ),

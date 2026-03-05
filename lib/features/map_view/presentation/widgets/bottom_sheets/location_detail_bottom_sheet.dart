@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:triftly/features/map_view/models/map_location.dart';
+import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
 /// Bottom sheet that shows detail information for a [MapLocation].
@@ -243,6 +245,26 @@ class LocationDetailBottomSheet extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
+
+  /// Converts [MapLocation] to [RoutineSpot] with default times and place icon.
+  static RoutineSpot _routineSpotFromMapLocation(MapLocation loc) {
+    return RoutineSpot(
+      startTime: '9:00 AM',
+      endTime: '10:00 AM',
+      title: loc.title,
+      description: loc.description ?? loc.address ?? '',
+      location: loc.address ?? '',
+      icon: Icons.place_outlined,
+      color: const Color(0xFF0277BD),
+    );
+  }
+
+  /// Close sheet and navigate to Routine tab with spot as route extra; routine page opens add-spot sheet.
+  static void _onAddToRoutine(BuildContext context, MapLocation location) {
+    final spot = _routineSpotFromMapLocation(location);
+    Navigator.of(context).pop();
+    if (context.mounted) context.go('/routine', extra: spot);
+  }
 }
 
 class _ActionRow extends StatelessWidget {
@@ -282,9 +304,9 @@ class _ActionRow extends StatelessWidget {
             ),
           if (location.phoneNumber != null && location.phoneNumber!.isNotEmpty) const SizedBox(width: 10),
           OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.bookmark_outline_rounded, size: 20),
-            label: const Text('Save'),
+            onPressed: () => LocationDetailBottomSheet._onAddToRoutine(context, location),
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: const Text('Add to routine'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
