@@ -338,7 +338,7 @@ platform :ios do
       teamID: "3G34999H3A"  # Your team ID from Appfile
     }
     
-    # For app-store, ensure provisioning profiles are installed so export finds them
+    # For app-store, ensure provisioning profiles are installed so export finds them (app + Share Extension)
     if export_method == "app-store"
       UI.message("📦 Building for App Store - ensuring provisioning profiles are available...")
       begin
@@ -348,7 +348,13 @@ platform :ios do
           username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
           team_id: "3G34999H3A"
         )
-        UI.success("✅ Provisioning profiles ready")
+        get_provisioning_profile(
+          app_identifier: "com.triftly.TriftlyShare",
+          adhoc: false,
+          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+          team_id: "3G34999H3A"
+        )
+        UI.success("✅ Provisioning profiles ready (Runner + TriftlyShare)")
       rescue => ex
         UI.important("⚠️  Could not fetch profiles (you may need to run setup_appstore_signing with 2FA): #{ex.message}")
       end
@@ -484,7 +490,7 @@ platform :ios do
       # Using localized_build_info to set TestFlight app test content
       upload_to_testflight(
         ipa: ipa_path,
-        skip_waiting_for_build_processing: false,  # Wait for processing to complete
+        skip_waiting_for_build_processing: true,  # Don't wait; check App Store Connect / email when build is ready
         skip_submission: true,  # Don't automatically submit for review
         distribute_external: false,  # Internal testing only (set to true for external)
         notify_external_testers: false,  # Don't notify testers automatically
@@ -517,7 +523,7 @@ platform :ios do
           # Retry the upload with release notes
           upload_to_testflight(
             ipa: ipa_path,
-            skip_waiting_for_build_processing: false,
+            skip_waiting_for_build_processing: true,
             skip_submission: true,
             distribute_external: false,
             notify_external_testers: false,
@@ -626,6 +632,19 @@ platform :ios do
         team_id: "3G34999H3A"
       )
 
+      # Get or create App Store provisioning profile for Share Extension (required for export/packaging)
+      UI.message("📋 Getting App Store provisioning profile for TriftlyShare extension...")
+      begin
+        get_provisioning_profile(
+          app_identifier: "com.triftly.TriftlyShare",
+          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+          team_id: "3G34999H3A"
+        )
+      rescue => ext_ex
+        UI.important("⚠️  TriftlyShare profile failed (extension may need its App ID): #{ext_ex.message}")
+        UI.important("   Create it in Apple Developer → Identifiers → + → App IDs → App → com.triftly.TriftlyShare")
+      end
+
       UI.success("✅ App Store distribution certificates and profiles are ready!")
       UI.message("📝 You can now build for App Store using: bundle exec fastlane ios build_ipa export_method:app-store")
     rescue => ex
@@ -635,7 +654,7 @@ platform :ios do
       UI.important("   1. open ios/Runner.xcworkspace")
       UI.important("   2. Select Runner target → Signing & Capabilities")
       UI.important("   3. Enable 'Automatically manage signing'")
-      UI.important("   4. Select your team")
+      UI.important("   4. Select your team (and ensure TriftlyShare target has the same team)")
       UI.important("")
       raise
     end
