@@ -23,10 +23,13 @@ const LatLng _fallbackCenter = LatLng(22.3193, 114.1694);
 /// When [onLocationPicked] is non-null, the page is in "pick mode" (e.g. pushed from add-spot sheet):
 /// search bar is hidden, tap on map fetches location and shows a confirm card; "Use this location" calls the callback (caller typically pops with the location).
 class MapViewPage extends StatelessWidget {
-  const MapViewPage({super.key, this.onLocationPicked});
+  const MapViewPage({super.key, this.onLocationPicked, this.sharedLocation});
 
   /// If set, page is used for picking a location (tap map → confirm → callback with [MapLocation]).
   final void Function(MapLocation)? onLocationPicked;
+
+  /// When set (e.g. from Share → Triftly from Google Maps), map centers here and shows location detail.
+  final LatLng? sharedLocation;
 
   /// Pushes this page in pick mode and returns the selected [MapLocation] or null if dismissed.
   static Future<MapLocation?> pickLocation(BuildContext context) {
@@ -44,15 +47,19 @@ class MapViewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => MapViewBloc(),
-      child: _MapViewContent(onLocationPicked: onLocationPicked),
+      child: _MapViewContent(
+        onLocationPicked: onLocationPicked,
+        sharedLocation: sharedLocation,
+      ),
     );
   }
 }
 
 class _MapViewContent extends StatelessWidget {
-  const _MapViewContent({this.onLocationPicked});
+  const _MapViewContent({this.onLocationPicked, this.sharedLocation});
 
   final void Function(MapLocation)? onLocationPicked;
+  final LatLng? sharedLocation;
 
   bool get _isPickMode => onLocationPicked != null;
 
@@ -73,7 +80,10 @@ class _MapViewContent extends StatelessWidget {
           : null,
       body: Stack(
         children: [
-          _MapBody(onLocationPicked: onLocationPicked),
+          _MapBody(
+            onLocationPicked: onLocationPicked,
+            sharedLocation: sharedLocation,
+          ),
           if (!_isPickMode)
             SafeArea(
               child: Padding(
@@ -239,9 +249,10 @@ class _SearchBarState extends State<_SearchBar> {
 /// Holds [GoogleMapController] and reacts to bloc state (camera fit, move to user location).
 /// When [onLocationPicked] is non-null, tap fetches location and shows confirm card; "Use this location" calls the callback.
 class _MapBody extends StatefulWidget {
-  const _MapBody({this.onLocationPicked});
+  const _MapBody({this.onLocationPicked, this.sharedLocation});
 
   final void Function(MapLocation)? onLocationPicked;
+  final LatLng? sharedLocation;
 
   @override
   State<_MapBody> createState() => _MapBodyState();
@@ -255,6 +266,23 @@ class _MapBodyState extends State<_MapBody> {
   /// In pick mode: location fetched after tap, shown in confirm card.
   MapLocation? _pickedLocation;
   bool _loading = false;
+  bool _hasHandledSharedLocation = false;
+
+  Future<void> _handleSharedLocation(LatLng position) async {
+    if (_hasHandledSharedLocation || widget.onLocationPicked != null) return;
+    _hasHandledSharedLocation = true;
+    if (!mounted) return;
+    setState(() => _tappedPosition = position);
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 17));
+    if (!mounted) return;
+    final id = 'shared_${position.latitude}_${position.longitude}';
+    final locationFuture = _fetchLocationForTap(id: id, position: position);
+    // ignore: use_build_context_synchronously -- mounted checked above
+    LocationDetailBottomSheet.showWithFuture(
+      context,
+      locationFuture: locationFuture,
+    );
+  }
 
   Future<void> _moveToUserLocation() async {
     if (_locationRequested || !mounted) return;
@@ -431,10 +459,12 @@ class _MapBodyState extends State<_MapBody> {
           );
         }
 
+        final initialTarget =
+            widget.sharedLocation ?? _fallbackCenter;
         final mapWidget = GoogleMap(
-          initialCameraPosition: const CameraPosition(
-            target: _fallbackCenter,
-            zoom: 15,
+          initialCameraPosition: CameraPosition(
+            target: initialTarget,
+            zoom: widget.sharedLocation != null ? 17 : 15,
           ),
           myLocationButtonEnabled: true,
           myLocationEnabled: true,
@@ -453,7 +483,12 @@ class _MapBodyState extends State<_MapBody> {
           onTap: _onMapTap,
           onMapCreated: (controller) {
             _mapController = controller;
-            _moveToUserLocation();
+            final shared = widget.sharedLocation;
+            if (shared != null) {
+              _handleSharedLocation(shared);
+            } else {
+              _moveToUserLocation();
+            }
           },
         );
 

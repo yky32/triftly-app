@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:triftly/features/map_view/presentation/pages/map_view_page.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/pages/routine_builder_page.dart';
@@ -19,7 +20,7 @@ class AppRouter {
     AppPage.today: (_) => const TodayPage(),
     AppPage.trips: (_) => const TripsPage(),
     AppPage.routine: (extra) => RoutineBuilderPage(pendingSpotFromMap: extra as RoutineSpot?),
-    AppPage.map: (_) => const MapViewPage(),
+    AppPage.map: (extra) => MapViewPage(sharedLocation: extra as LatLng?),
     AppPage.spend: (_) => const SpendTrackerPage(),
   };
 

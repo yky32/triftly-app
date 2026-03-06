@@ -49,5 +49,19 @@
 	<string>Triftly uses your location to show your position on the map.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- URL scheme so app can be opened with triftly://map?url=... (e.g. from Share Extension or shortcuts). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.yky.triftly</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>triftly</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

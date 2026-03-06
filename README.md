@@ -113,3 +113,33 @@ The **Map** tab and **Routine Builder** are wired both ways so users can add spo
 - The add/edit spot sheet then fills **Location** (address), **Title** (if empty), and **Description** (if returned) from the picked location.
 
 Shared pieces: `buildMapLocationFromTap` in `lib/features/map_view/utils/location_from_tap.dart`, GeocodingService, PlacesService. The map picker reuses this logic so behaviour matches the Map tab.
+
+## Share from Google Maps (native app → Triftly)
+
+Users can search a location in the **native Google Maps app** and use **Share → Triftly** to open that location in the app’s map tab.
+
+**Flow**
+
+1. User opens Google Maps, searches or selects a place, taps **Share**.
+2. System share sheet appears; user chooses **Triftly**.
+3. Triftly opens (or comes to foreground), shows splash briefly, then navigates to the **Map** tab with the shared location: map centers on it, shows the pin, and opens the location detail bottom sheet (reverse geocode + place details). User can then “Add to routine” as usual.
+
+**Android**
+
+- The app is a **share target** for `text/plain`. When the user picks Triftly from the share sheet, the main activity receives the shared URL (or text) via `Intent.ACTION_SEND` and `EXTRA_TEXT`. `MainActivity` stores it and exposes it to Flutter via the `app/share` method channel (`getPendingSharedUrl`). Splash screen calls `ShareReceiverService.getPendingSharedLocation()`, parses the URL with `GoogleMapsShareParser`, and navigates to `/map` with the parsed `LatLng` as route extra.
+
+**iOS**
+
+- The app registers the **URL scheme** `triftly://`. Opening `triftly://map?url=<encoded_google_maps_url>` stores the URL and passes it to Flutter via the same `app/share` channel so the map can show the location.
+- To have **Triftly appear in the system Share sheet** when the user taps Share in Google Maps, add a **Share Extension** in Xcode:
+  1. File → New → Target → Share Extension.
+  2. Name it e.g. “Triftly Share”, use the same bundle ID with a suffix (e.g. `com.yky.triftly.share`).
+  3. In the extension’s `Info.plist`, set `NSExtensionActivationSupportsWebURLWithMaxCount` / support `public.url` and `public.plain-text`.
+  4. In the extension’s view controller, get the shared URL from `NSExtensionContext.inputItems`, then open the main app:  
+     `UIApplication.shared.open(URL(string: "triftly://map?url=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")!)`  
+     and call `extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)`.
+  5. Ensure the main app’s **App Groups** (if used) or URL scheme is configured so the extension can open the app.
+
+**Parsing**
+
+- `lib/features/map_view/utils/google_maps_share_parser.dart` parses common Google Maps share URLs (`?q=lat,lng`, `?query=...`, `/@lat,lng,zoom`, and plain `lat,lng` text) and returns a `LatLng` so the map can center and show the detail sheet.
