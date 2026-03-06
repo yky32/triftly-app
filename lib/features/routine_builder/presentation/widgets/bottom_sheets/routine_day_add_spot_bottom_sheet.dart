@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/map_view/presentation/pages/map_view_page.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
@@ -219,10 +220,40 @@ class _RoutineDayAddSpotBottomSheetState
             const SizedBox(height: 12),
             _buildLabel(context, 'Location', icon: Icons.location_on_outlined),
             const SizedBox(height: 4),
-            TextField(
-              controller: _locationController,
-              decoration: _inputDecoration(context, 'Address or place name'),
-              textCapitalization: TextCapitalization.words,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _locationController,
+                    decoration: _inputDecoration(context, 'Address or place name'),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final location = await MapViewPage.pickLocation(context);
+                    if (location != null && mounted) {
+                      _locationController.text =
+                          location.address ?? location.title;
+                      if (_titleController.text.trim().isEmpty) {
+                        _titleController.text = location.title;
+                      }
+                      if (location.description != null &&
+                          location.description!.isNotEmpty) {
+                        _descriptionController.text = location.description!;
+                      }
+                      setState(() {});
+                    }
+                  },
+                  icon: const Icon(Icons.map_outlined, size: 20),
+                  label: const Text('Pick on map'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             _buildLabel(context, 'Icon', icon: Icons.category_outlined),

@@ -10,6 +10,7 @@ import 'package:triftly/services/geocoding_service.dart';
 import 'package:triftly/services/places_service.dart';
 import 'package:triftly/features/map_view/models/map_location.dart';
 import 'package:triftly/features/map_view/presentation/widgets/bottom_sheets/location_detail_bottom_sheet.dart';
+import 'package:triftly/features/map_view/utils/location_from_tap.dart';
 
 /// Approximate height of the floating bottom nav bar so the map content (e.g. my-location dot)
 /// stays fully visible above it.
@@ -19,20 +20,41 @@ const double _kBottomNavBarHeight = 88;
 const LatLng _fallbackCenter = LatLng(22.3193, 114.1694);
 
 /// Map tab: full-screen Google Map with search bar. State is in [MapViewBloc]; UI is stateless.
+/// When [onLocationPicked] is non-null, the page is in "pick mode" (e.g. pushed from add-spot sheet):
+/// search bar is hidden, tap on map fetches location and shows a confirm card; "Use this location" calls the callback (caller typically pops with the location).
 class MapViewPage extends StatelessWidget {
-  const MapViewPage({super.key});
+  const MapViewPage({super.key, this.onLocationPicked});
+
+  /// If set, page is used for picking a location (tap map → confirm → callback with [MapLocation]).
+  final void Function(MapLocation)? onLocationPicked;
+
+  /// Pushes this page in pick mode and returns the selected [MapLocation] or null if dismissed.
+  static Future<MapLocation?> pickLocation(BuildContext context) {
+    return Navigator.of(context).push<MapLocation>(
+      MaterialPageRoute(
+        builder: (ctx) => MapViewPage(
+          onLocationPicked: (loc) => Navigator.of(ctx).pop(loc),
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => MapViewBloc(),
-      child: const _MapViewContent(),
+      child: _MapViewContent(onLocationPicked: onLocationPicked),
     );
   }
 }
 
 class _MapViewContent extends StatelessWidget {
-  const _MapViewContent();
+  const _MapViewContent({this.onLocationPicked});
+
+  final void Function(MapLocation)? onLocationPicked;
+
+  bool get _isPickMode => onLocationPicked != null;
 
   @override
   Widget build(BuildContext context) {
@@ -40,23 +62,33 @@ class _MapViewContent extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      appBar: _isPickMode
+          ? AppBar(
+              title: const Text('Pick location'),
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
-          const _MapBody(),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Material(
-                    elevation: 2,
-                    borderRadius: BorderRadius.circular(12),
-                    color: colorScheme.surface,
-                    child: const _SearchBar(),
-                  ),
-                  BlocBuilder<MapViewBloc, MapViewState>(
+          _MapBody(onLocationPicked: onLocationPicked),
+          if (!_isPickMode)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Material(
+                      elevation: 2,
+                      borderRadius: BorderRadius.circular(12),
+                      color: colorScheme.surface,
+                      child: const _SearchBar(),
+                    ),
+                    BlocBuilder<MapViewBloc, MapViewState>(
                     buildWhen: (prev, curr) =>
                         prev.isSearching != curr.isSearching ||
                         prev.locations != curr.locations ||
@@ -118,6 +150,7 @@ class _MapViewContent extends StatelessWidget {
     );
   }
 }
+
 
 /// Search bar driven by [MapViewBloc]. Uses a [TextEditingController] synced with
 /// [MapViewState.searchQuery] so that clearing the bloc clears the field.
@@ -204,8 +237,11 @@ class _SearchBarState extends State<_SearchBar> {
 }
 
 /// Holds [GoogleMapController] and reacts to bloc state (camera fit, move to user location).
+/// When [onLocationPicked] is non-null, tap fetches location and shows confirm card; "Use this location" calls the callback.
 class _MapBody extends StatefulWidget {
-  const _MapBody();
+  const _MapBody({this.onLocationPicked});
+
+  final void Function(MapLocation)? onLocationPicked;
 
   @override
   State<_MapBody> createState() => _MapBodyState();
@@ -216,6 +252,9 @@ class _MapBodyState extends State<_MapBody> {
   bool _locationRequested = false;
   /// Exact position the user tapped; a pin is shown here so they see what they clicked.
   LatLng? _tappedPosition;
+  /// In pick mode: location fetched after tap, shown in confirm card.
+  MapLocation? _pickedLocation;
+  bool _loading = false;
 
   Future<void> _moveToUserLocation() async {
     if (_locationRequested || !mounted) return;
@@ -265,49 +304,11 @@ class _MapBodyState extends State<_MapBody> {
     if (geocode?.placeId != null) {
       placeDetails = await PlacesService.getPlaceDetails(geocode!.placeId!);
     }
-    return _buildMapLocationFromTap(
+    return buildMapLocationFromTap(
       id: id,
       position: position,
       geocode: geocode,
       placeDetails: placeDetails,
-    );
-  }
-
-  MapLocation _buildMapLocationFromTap({
-    required String id,
-    required LatLng position,
-    ReverseGeocodeResult? geocode,
-    PlaceDetailsResult? placeDetails,
-  }) {
-    final title = placeDetails?.name ??
-        geocode?.locality ??
-        geocode?.formattedAddress ??
-        'Dropped pin';
-    final address = placeDetails?.formattedAddress ?? geocode?.formattedAddress;
-    final placeId = geocode?.placeId;
-    final locality = geocode?.locality;
-    final types = placeDetails?.types ?? geocode?.types;
-    final rating = placeDetails?.rating;
-    final openingHoursText = placeDetails?.openingHoursSummary;
-    final photoUrl = placeDetails?.photoReference != null
-        ? PlacesService.photoUrl(placeDetails!.photoReference!)
-        : null;
-    final website = placeDetails?.website;
-    final phoneNumber = placeDetails?.formattedPhoneNumber;
-
-    return MapLocation(
-      id: id,
-      title: title,
-      address: address,
-      position: position,
-      placeId: placeId,
-      locality: locality,
-      types: types,
-      rating: rating,
-      openingHoursText: openingHoursText,
-      photoUrl: photoUrl,
-      website: website,
-      phoneNumber: phoneNumber,
     );
   }
 
@@ -328,10 +329,47 @@ class _MapBodyState extends State<_MapBody> {
     );
   }
 
+  void _onMapTap(LatLng position) async {
+    final onPicked = widget.onLocationPicked;
+    if (onPicked != null) {
+      if (!mounted) return;
+      setState(() {
+        _tappedPosition = position;
+        _pickedLocation = null;
+        _loading = true;
+      });
+      final id = 'pick_${position.latitude}_${position.longitude}';
+      final location = await _fetchLocationForTap(id: id, position: position);
+      if (!mounted) return;
+      setState(() {
+        _pickedLocation = location;
+        _loading = false;
+      });
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 17));
+      return;
+    }
+    // Normal mode: show location detail sheet.
+    if (!context.mounted) return;
+    setState(() => _tappedPosition = position);
+    final controller = _mapController;
+    if (controller != null) {
+      await controller.animateCamera(CameraUpdate.newLatLngZoom(position, 17));
+    }
+    if (!mounted) return;
+    final id = 'tapped_${position.latitude}_${position.longitude}';
+    final locationFuture = _fetchLocationForTap(id: id, position: position);
+    // ignore: use_build_context_synchronously -- mounted checked above
+    LocationDetailBottomSheet.showWithFuture(
+      context,
+      locationFuture: locationFuture,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
     final mapBottomPadding = bottomSafe + _kBottomNavBarHeight;
+    final isPickMode = widget.onLocationPicked != null;
 
     return BlocConsumer<MapViewBloc, MapViewState>(
       listenWhen: (prev, curr) =>
@@ -355,26 +393,32 @@ class _MapBodyState extends State<_MapBody> {
         context.read<MapViewBloc>().add(MapCameraFitted());
       },
       buildWhen: (prev, curr) =>
-          prev.locations != curr.locations || prev.searchQuery != curr.searchQuery,
+          prev.locations != curr.locations ||
+          prev.searchQuery != curr.searchQuery,
       builder: (context, state) {
-        // Clear dropped pin when user searches so the map shows only search results.
-        if (state.searchQuery.isNotEmpty && _tappedPosition != null) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        // Clear dropped pin when user searches so the map shows only search results (normal mode only).
+        if (!isPickMode &&
+            state.searchQuery.isNotEmpty &&
+            _tappedPosition != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => _tappedPosition = null);
           });
         }
         final markers = <String, Marker>{
-          for (final loc in state.locations)
-            loc.id: Marker(
-              markerId: MarkerId(loc.id),
-              position: loc.position,
-              infoWindow: InfoWindow(title: loc.title, snippet: loc.address),
-              onTap: () {
-                if (context.mounted) {
-                  LocationDetailBottomSheet.show(context, location: loc);
-                }
-              },
-            ),
+          if (!isPickMode)
+            for (final loc in state.locations)
+              loc.id: Marker(
+                markerId: MarkerId(loc.id),
+                position: loc.position,
+                infoWindow: InfoWindow(title: loc.title, snippet: loc.address),
+                onTap: () {
+                  if (context.mounted) {
+                    LocationDetailBottomSheet.show(context, location: loc);
+                  }
+                },
+              ),
         };
         // Pin at exact tap position so the user sees what they clicked.
         if (_tappedPosition != null) {
@@ -387,7 +431,7 @@ class _MapBodyState extends State<_MapBody> {
           );
         }
 
-        return GoogleMap(
+        final mapWidget = GoogleMap(
           initialCameraPosition: const CameraPosition(
             target: _fallbackCenter,
             zoom: 15,
@@ -400,31 +444,94 @@ class _MapBodyState extends State<_MapBody> {
           zoomGesturesEnabled: true,
           tiltGesturesEnabled: true,
           rotateGesturesEnabled: true,
-          padding: EdgeInsets.only(bottom: mapBottomPadding, right: 16),
+          padding: EdgeInsets.only(
+            bottom: mapBottomPadding +
+                (isPickMode && _pickedLocation != null ? 200 : 0),
+            right: 16,
+          ),
           markers: Set<Marker>.from(markers.values),
-          onTap: (LatLng position) async {
-            if (!context.mounted) return;
-            setState(() => _tappedPosition = position);
-            // Center map on tap so the user clearly sees the pin they just placed.
-            final controller = _mapController;
-            if (controller != null) {
-              await controller.animateCamera(
-                CameraUpdate.newLatLngZoom(position, 17),
-              );
-            }
-            if (!context.mounted) return;
-            final id = 'tapped_${position.latitude}_${position.longitude}';
-            final locationFuture =
-                _fetchLocationForTap(id: id, position: position);
-            LocationDetailBottomSheet.showWithFuture(
-              context,
-              locationFuture: locationFuture,
-            );
-          },
+          onTap: _onMapTap,
           onMapCreated: (controller) {
             _mapController = controller;
             _moveToUserLocation();
           },
+        );
+
+        if (!isPickMode) return mapWidget;
+
+        return Stack(
+          children: [
+            mapWidget,
+            if (_loading)
+              const Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Getting address…'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (_pickedLocation != null && !_loading)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: bottomSafe + 16,
+                child: Card(
+                  elevation: 8,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _pickedLocation!.title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        if (_pickedLocation!.address != null &&
+                            _pickedLocation!.address!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _pickedLocation!.address!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () => setState(() {
+                                _pickedLocation = null;
+                                _tappedPosition = null;
+                              }),
+                              child: const Text('Choose another'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: () =>
+                                  widget.onLocationPicked!(_pickedLocation!),
+                              child: const Text('Use this location'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

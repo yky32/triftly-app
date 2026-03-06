@@ -94,3 +94,22 @@ If the location detail sheet shows only "Dropped pin" and coordinates when tappi
 2. **API key restrictions** – In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → your API key → Application restrictions: if set to "iOS apps", add your **iOS bundle ID** (e.g. `com.yourcompany.triftly`). If set to "Android apps", add your **package name** and SHA-1. A key restricted to a debug certificate or simulator may work in dev but not on a real device or TestFlight.
 3. **APIs enabled** – Enable **Geocoding API** and **Places API** (and **Maps SDK for iOS** / **Maps SDK for Android**) for the same Google Cloud project.
 4. **Debug logs** – Run the app from Xcode (iOS) or Android Studio and watch the console. On failure you’ll see `[GeocodingService]` or `[PlacesService]` messages (e.g. key missing, `status=REQUEST_DENIED`, or an exception). Fix the reported cause (key, restrictions, or network).
+
+## Map ↔ Routine Builder integration
+
+The **Map** tab and **Routine Builder** are wired both ways so users can add spots from the map and fill spot location from the map.
+
+**Map → Routine (add spot from map)**
+
+- On the Map tab, search or tap a point → location detail bottom sheet opens.
+- **"Add to routine"** converts the MapLocation to a RoutineSpot (title, address, description, default times), closes the sheet, and navigates to the **Routine** tab with that spot as route `extra`.
+- The Routine page opens the add-spot bottom sheet pre-filled with the spot; the user can adjust times/icon and save.
+
+**Routine → Map (pick location for a spot)**
+
+- In **Add spot** or **Edit spot** (routine day), the **Location** field has a **"Pick on map"** button.
+- Tapping it opens **Map** in pick mode (`MapViewPage.pickLocation`): same map UI with app bar “Pick location”, user taps on the map → we reverse geocode and fetch place details → “Use this location” returns the result to the sheet.
+- A preview card shows title and address with **"Use this location"** / **"Choose another"**. On **Use this location**, the picker pops and returns the MapLocation to the sheet.
+- The add/edit spot sheet then fills **Location** (address), **Title** (if empty), and **Description** (if returned) from the picked location.
+
+Shared pieces: `buildMapLocationFromTap` in `lib/features/map_view/utils/location_from_tap.dart`, GeocodingService, PlacesService. The map picker reuses this logic so behaviour matches the Map tab.
