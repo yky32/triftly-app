@@ -232,6 +232,16 @@ class _ItineraryTimeline extends StatelessWidget {
                             color: spots[i].color,
                           ),
                         ),
+                        if (i == spots.length - 1) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'End',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: AppColors.mistGray,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                         if (i < spots.length - 1) ...[
                           const SizedBox(height: 4),
                           Expanded(
