@@ -10,6 +10,7 @@ class RoutineTripResult {
     required this.startDate,
     required this.endDate,
     this.name = '',
+    this.countries = const [],
   });
 
   final DateTime startDate;
@@ -17,6 +18,9 @@ class RoutineTripResult {
 
   /// Name of the trip (user-editable in the bottom sheet).
   final String name;
+
+  /// Countries for the trip (user adds via search in the bottom sheet).
+  final List<String> countries;
 
   /// Days of trip (inclusive). Uses calendar-day count; correct for any year (365/366) and month lengths (e.g. Feb 28/29).
   int get daysOfTrip => DateHelpers.calendarDaysBetween(startDate, endDate);
@@ -32,6 +36,7 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
     this.initialStartDate,
     this.initialEndDate,
     this.initialName,
+    this.initialCountries,
     this.title = 'Select trip dates',
     this.confirmLabel = 'Confirm',
   });
@@ -39,15 +44,17 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
   final String? initialName;
+  final List<String>? initialCountries;
   final String title;
   final String confirmLabel;
 
-  /// Shows the bottom sheet and returns the selected range (and trip name), or `null` if dismissed.
+  /// Shows the bottom sheet and returns the selected range (trip name, countries), or `null` if dismissed.
   static Future<RoutineTripResult?> show(
     BuildContext context, {
     DateTime? initialStartDate,
     DateTime? initialEndDate,
     String? initialName,
+    List<String>? initialCountries,
     String? title,
     String? confirmLabel,
   }) {
@@ -59,6 +66,7 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
         initialStartDate: initialStartDate,
         initialEndDate: initialEndDate,
         initialName: initialName,
+        initialCountries: initialCountries,
         title: title ?? 'Select trip dates',
         confirmLabel: confirmLabel ?? 'Confirm',
       ),
@@ -70,11 +78,23 @@ class RoutineBuilderBottomSheet extends StatefulWidget {
       _RoutineBuilderBottomSheetState();
 }
 
+/// Common country names for search suggestions (subset; user can add any from list).
+const List<String> _kCountrySuggestions = [
+  'Japan', 'Hong Kong', 'Thailand', 'South Korea', 'Singapore', 'Vietnam',
+  'Taiwan', 'Malaysia', 'Indonesia', 'Philippines', 'Australia', 'New Zealand',
+  'United States', 'United Kingdom', 'France', 'Germany', 'Italy', 'Spain',
+  'Switzerland', 'Netherlands', 'Belgium', 'Austria', 'Portugal', 'Greece',
+  'Canada', 'Mexico', 'Brazil', 'Argentina', 'Chile', 'India', 'China',
+];
+
 class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
   late DateTime _viewMonth;
   DateTime? _startDate;
   DateTime? _endDate;
   late TextEditingController _nameController;
+  late TextEditingController _countrySearchController;
+  final List<String> _selectedCountries = [];
+  final FocusNode _countrySearchFocus = FocusNode();
 
   static const List<String> _weekdayLabels = [
     'S',
@@ -94,12 +114,42 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
     _startDate = widget.initialStartDate;
     _endDate = widget.initialEndDate;
     _nameController = TextEditingController(text: widget.initialName ?? '');
+    _countrySearchController = TextEditingController();
+    if (widget.initialCountries != null) {
+      _selectedCountries.addAll(widget.initialCountries!);
+    }
+    _countrySearchFocus.addListener(_onCountrySearchFocusChange);
   }
+
+  void _onCountrySearchFocusChange() => setState(() {});
 
   @override
   void dispose() {
+    _countrySearchFocus.removeListener(_onCountrySearchFocusChange);
     _nameController.dispose();
+    _countrySearchController.dispose();
+    _countrySearchFocus.dispose();
     super.dispose();
+  }
+
+  List<String> _filteredCountrySuggestions() {
+    final query = _countrySearchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _kCountrySuggestions;
+    return _kCountrySuggestions
+        .where((c) => c.toLowerCase().contains(query))
+        .toList();
+  }
+
+  void _addCountry(String country) {
+    if (_selectedCountries.contains(country)) return;
+    setState(() {
+      _selectedCountries.add(country);
+      _countrySearchController.clear();
+    });
+  }
+
+  void _removeCountry(String country) {
+    setState(() => _selectedCountries.remove(country));
   }
 
   void _onDateTap(DateTime date) {
@@ -149,6 +199,7 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
       startDate: DateHelpers.dateOnly(start),
       endDate: DateHelpers.dateOnly(end),
       name: _nameController.text.trim(),
+      countries: List<String>.from(_selectedCountries),
     ));
   }
 
@@ -225,6 +276,118 @@ class _RoutineBuilderBottomSheetState extends State<RoutineBuilderBottomSheet> {
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
+              const SizedBox(height: 20),
+              Text(
+                'Countries',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ..._selectedCountries.map((country) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: InputChip(
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.place_rounded,
+                                  size: 18,
+                                  color: onSurface.withValues(alpha: 0.7),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(country),
+                              ],
+                            ),
+                            onDeleted: () => _removeCountry(country),
+                            deleteIcon: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: onSurface.withValues(alpha: 0.7),
+                            ),
+                            side: BorderSide.none,
+                            backgroundColor: primaryContainer.withValues(alpha: 0.5),
+                          ),
+                        )),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 180,
+                      child: TextField(
+                        controller: _countrySearchController,
+                        focusNode: _countrySearchFocus,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'Search and add...',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 12,
+                          ),
+                          isDense: true,
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_countrySearchFocus.hasFocus ||
+                  _countrySearchController.text.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filteredCountrySuggestions().length,
+                    itemBuilder: (context, index) {
+                      final country = _filteredCountrySuggestions()[index];
+                      final selected = _selectedCountries.contains(country);
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: selected
+                              ? null
+                              : () => _addCountry(country),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 0,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    country,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: selected
+                                          ? onSurface.withValues(alpha: 0.5)
+                                          : onSurface,
+                                    ),
+                                  ),
+                                ),
+                                if (selected)
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 18,
+                                    color: primary,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               _MonthNavigation(
                 leftMonth: _viewMonth,

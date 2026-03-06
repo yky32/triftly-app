@@ -22,8 +22,28 @@ class RoutineBuilderPage extends StatelessWidget {
   }
 }
 
-class _RoutineBuilderView extends StatelessWidget {
+class _RoutineBuilderView extends StatefulWidget {
   const _RoutineBuilderView();
+
+  @override
+  State<_RoutineBuilderView> createState() => _RoutineBuilderViewState();
+}
+
+class _RoutineBuilderViewState extends State<_RoutineBuilderView> {
+  static const double _scrollThresholdHide = 80;
+  static const double _scrollThresholdShow = 30;
+  bool _headerVisible = true;
+
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n is! ScrollUpdateNotification) return false;
+    final p = n.metrics.pixels;
+    if (p > _scrollThresholdHide && _headerVisible) {
+      setState(() => _headerVisible = false);
+    } else if (p < _scrollThresholdShow && !_headerVisible) {
+      setState(() => _headerVisible = true);
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,25 +52,30 @@ class _RoutineBuilderView extends StatelessWidget {
       body: SafeArea(
         child: BlocConsumer<RoutineBuilderBloc, RoutineBuilderState>(
           listenWhen: (prev, curr) =>
-              curr.pendingSpotToAddFromMap != null &&
-              prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap,
+              (curr.pendingSpotToAddFromMap != null &&
+                  prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap) ||
+              prev.trip != curr.trip ||
+              prev.currentDayPageIndex != curr.currentDayPageIndex,
           listener: (context, state) {
             final spot = state.pendingSpotToAddFromMap;
-            if (spot == null) return;
-            context.read<RoutineBuilderBloc>().add(PendingSpotFromMapConsumed());
-            final date = state.trip?.startDate ?? DateTime.now();
-            RoutineDayAddSpotBottomSheet.show(
-              context,
-              dayIndex: 0,
-              date: date,
-              initialSpot: spot,
-            ).then((saved) {
-              if (saved != null && context.mounted) {
-                context
-                    .read<RoutineBuilderBloc>()
-                    .add(SpotAdded(dayIndex: 0, spot: saved));
-              }
-            });
+            if (spot != null) {
+              context.read<RoutineBuilderBloc>().add(PendingSpotFromMapConsumed());
+              final date = state.trip?.startDate ?? DateTime.now();
+              RoutineDayAddSpotBottomSheet.show(
+                context,
+                dayIndex: 0,
+                date: date,
+                initialSpot: spot,
+              ).then((saved) {
+                if (saved != null && context.mounted) {
+                  context
+                      .read<RoutineBuilderBloc>()
+                      .add(SpotAdded(dayIndex: 0, spot: saved));
+                }
+              });
+            } else {
+              setState(() => _headerVisible = true);
+            }
           },
           buildWhen: (prev, curr) =>
               prev.trip != curr.trip ||
@@ -61,29 +86,39 @@ class _RoutineBuilderView extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: _buildHeader(
-                    context,
-                    trip: state.trip,
-                    onNewRoutine: () => _openTripSheet(context),
-                    onEdit: state.trip != null
-                        ? () => _openTripSheetForEdit(context, state.trip!)
-                        : null,
-                    onDelete: state.trip != null
-                        ? () => _confirmAndDeleteRoutine(context)
-                        : null,
-                  ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _headerVisible
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                          child: _buildHeader(
+                            context,
+                            trip: state.trip,
+                            onNewRoutine: () => _openTripSheet(context),
+                            onEdit: state.trip != null
+                                ? () => _openTripSheetForEdit(context, state.trip!)
+                                : null,
+                            onDelete: state.trip != null
+                                ? () => _confirmAndDeleteRoutine(context)
+                                : null,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
                 if (hasTrip)
                   Expanded(
-                    child: RoutineDayCarousel(
-                      trip: state.trip!,
-                      currentPageIndex: state.currentDayPageIndex,
-                      onPageChanged: (index) => context
-                          .read<RoutineBuilderBloc>()
-                          .add(CarouselPageChanged(index)),
-                      spotsForDay: state.spotsForDay,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _onScrollNotification,
+                      child: RoutineDayCarousel(
+                        trip: state.trip!,
+                        currentPageIndex: state.currentDayPageIndex,
+                        onPageChanged: (index) => context
+                            .read<RoutineBuilderBloc>()
+                            .add(CarouselPageChanged(index)),
+                        spotsForDay: state.spotsForDay,
+                      ),
                     ),
                   )
                 else
@@ -157,20 +192,53 @@ Widget _buildHeader(
     VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
+    final theme = Theme.of(context);
     final title = trip != null && trip.name.isNotEmpty
         ? trip.name
         : context.l10n.page_routine_builder;
+    final hasCountries = trip != null && trip.countries.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
                   ),
-              overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (hasCountries) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.place_rounded,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          trip.countries.join(', '),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           if (trip != null) ...[
@@ -209,6 +277,7 @@ Future<void> _openTripSheetForEdit(
       initialStartDate: currentTrip.startDate,
       initialEndDate: currentTrip.endDate,
       initialName: currentTrip.name,
+      initialCountries: currentTrip.countries,
     );
     if (result != null && context.mounted) {
       context.read<RoutineBuilderBloc>().add(TripSelected(result));

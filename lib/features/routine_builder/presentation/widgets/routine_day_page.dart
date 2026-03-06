@@ -66,10 +66,11 @@ class RoutineDayPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 6, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -156,7 +157,6 @@ class RoutineDayPage extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Vertical itinerary timeline: icon-in-circle on light gray line, white cards with title + time | location.
