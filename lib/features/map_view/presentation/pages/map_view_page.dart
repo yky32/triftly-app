@@ -6,8 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:triftly/features/map_view/bloc/map_view_bloc.dart';
-import 'package:triftly/features/map_view/data/geocoding_service.dart';
-import 'package:triftly/features/map_view/data/places_service.dart';
+import 'package:triftly/services/geocoding_service.dart';
+import 'package:triftly/services/places_service.dart';
 import 'package:triftly/features/map_view/models/map_location.dart';
 import 'package:triftly/features/map_view/presentation/widgets/bottom_sheets/location_detail_bottom_sheet.dart';
 
@@ -214,6 +214,8 @@ class _MapBody extends StatefulWidget {
 class _MapBodyState extends State<_MapBody> {
   GoogleMapController? _mapController;
   bool _locationRequested = false;
+  /// Exact position the user tapped; a pin is shown here so they see what they clicked.
+  LatLng? _tappedPosition;
 
   Future<void> _moveToUserLocation() async {
     if (_locationRequested || !mounted) return;
@@ -352,9 +354,16 @@ class _MapBodyState extends State<_MapBody> {
         }
         context.read<MapViewBloc>().add(MapCameraFitted());
       },
-      buildWhen: (prev, curr) => prev.locations != curr.locations,
+      buildWhen: (prev, curr) =>
+          prev.locations != curr.locations || prev.searchQuery != curr.searchQuery,
       builder: (context, state) {
-        final markers = {
+        // Clear dropped pin when user searches so the map shows only search results.
+        if (state.searchQuery.isNotEmpty && _tappedPosition != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _tappedPosition = null);
+          });
+        }
+        final markers = <String, Marker>{
           for (final loc in state.locations)
             loc.id: Marker(
               markerId: MarkerId(loc.id),
@@ -367,6 +376,16 @@ class _MapBodyState extends State<_MapBody> {
               },
             ),
         };
+        // Pin at exact tap position so the user sees what they clicked.
+        if (_tappedPosition != null) {
+          markers['_dropped_pin'] = Marker(
+            markerId: const MarkerId('_dropped_pin'),
+            position: _tappedPosition!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+            infoWindow: const InfoWindow(title: 'Selected location', snippet: 'Tap elsewhere to move'),
+            zIndexInt: 1,
+          );
+        }
 
         return GoogleMap(
           initialCameraPosition: const CameraPosition(
@@ -383,7 +402,16 @@ class _MapBodyState extends State<_MapBody> {
           rotateGesturesEnabled: true,
           padding: EdgeInsets.only(bottom: mapBottomPadding, right: 16),
           markers: Set<Marker>.from(markers.values),
-          onTap: (LatLng position) {
+          onTap: (LatLng position) async {
+            if (!context.mounted) return;
+            setState(() => _tappedPosition = position);
+            // Center map on tap so the user clearly sees the pin they just placed.
+            final controller = _mapController;
+            if (controller != null) {
+              await controller.animateCamera(
+                CameraUpdate.newLatLngZoom(position, 17),
+              );
+            }
             if (!context.mounted) return;
             final id = 'tapped_${position.latitude}_${position.longitude}';
             final locationFuture =

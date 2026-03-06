@@ -66,8 +66,8 @@ Google often returns several types per place (e.g. `["gym", "point_of_interest",
 | Term | Where / meaning |
 |------|------------------|
 | **MapLocation** | Model in `lib/features/map_view/models/map_location.dart`. Holds id, title, address, position, plus optional placeId, rating, types, openingHoursText, photoUrl, website, phoneNumber, locality. |
-| **GeocodingService** | `lib/features/map_view/data/geocoding_service.dart`. Reverse geocode (LatLng → address, place_id, locality, types). |
-| **PlacesService** | `lib/features/map_view/data/places_service.dart`. Place Details by place_id → rating, hours, photo, website, phone, types. |
+| **GeocodingService** | `lib/services/geocoding_service.dart`. Reverse geocode (LatLng → address, place_id, locality, types). |
+| **PlacesService** | `lib/services/places_service.dart`. Place Details by place_id → rating, hours, photo, website, phone, types. |
 | **Location detail bottom sheet** | `location_detail_bottom_sheet.dart`. Shows one MapLocation: photo, title, rating, **all types** (chips), actions (Directions, Call, Save), address, hours, website, phone, coordinates. |
 
 ---

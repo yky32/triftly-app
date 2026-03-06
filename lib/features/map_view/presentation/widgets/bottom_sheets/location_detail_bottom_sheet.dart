@@ -92,6 +92,21 @@ class LocationDetailBottomSheet extends StatelessWidget {
                 letterSpacing: -0.2,
               ),
             ),
+            if (loc.title == 'Dropped pin' || (loc.placeId == null && loc.address != null && loc.title == loc.address)) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.place_outlined, size: 14, color: colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Pinned at this location on the map',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (loc.locality != null && loc.locality!.isNotEmpty && loc.locality != loc.title) ...[
               const SizedBox(height: 4),
               Text(

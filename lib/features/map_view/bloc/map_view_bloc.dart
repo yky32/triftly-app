@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:triftly/features/map_view/data/geocoding_service.dart';
+import 'package:triftly/services/geocoding_service.dart';
 import 'package:triftly/features/map_view/models/map_location.dart';
 
 part 'map_view_event.dart';

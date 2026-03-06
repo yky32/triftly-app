@@ -92,23 +92,37 @@ class GeocodingService {
       final results = json['results'] as List<dynamic>?;
       if (results == null || results.isEmpty) return null;
 
-      final first = results.first as Map<String, dynamic>;
-      final formattedAddress = first['formatted_address'] as String? ?? '';
-      final placeId = first['place_id'] as String?;
-      final types = (first['types'] as List<dynamic>?)
+      // Prefer a result that is a POI (establishment / point_of_interest) so the user sees
+      // the place they tapped, not just the street address.
+      Map<String, dynamic>? chosen;
+      for (final r in results) {
+        final map = r as Map<String, dynamic>;
+        final types = map['types'] as List<dynamic>?;
+        if (types != null &&
+            (types.any((t) => t == 'establishment') ||
+                types.any((t) => t == 'point_of_interest'))) {
+          chosen = map;
+          break;
+        }
+      }
+      chosen ??= results.first as Map<String, dynamic>;
+
+      final formattedAddress = chosen['formatted_address'] as String? ?? '';
+      final placeId = chosen['place_id'] as String?;
+      final types = (chosen['types'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList();
 
       String? locality;
-      final components = first['address_components'] as List<dynamic>?;
+      final components = chosen['address_components'] as List<dynamic>?;
       if (components != null) {
         for (final c in components) {
-          final map = c as Map<String, dynamic>;
-          final typesList = map['types'] as List<dynamic>?;
+          final comp = c as Map<String, dynamic>;
+          final typesList = comp['types'] as List<dynamic>?;
           if (typesList != null &&
               (typesList.contains('locality') ||
                   typesList.contains('administrative_area_level_1'))) {
-            locality = map['long_name'] as String?;
+            locality = comp['long_name'] as String?;
             break;
           }
         }
