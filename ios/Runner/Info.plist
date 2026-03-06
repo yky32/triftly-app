@@ -47,6 +47,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Triftly uses your location to show your position on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Triftly uses your location to show your position on the map and to help you plan and view places in your routine.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<!-- URL scheme so app can be opened with triftly://map?url=... (e.g. from Share Extension or shortcuts). -->
