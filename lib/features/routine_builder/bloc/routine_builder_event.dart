@@ -36,5 +36,13 @@ class SpotUpdated extends RoutineBuilderEvent {
   });
 }
 
+/// Remove the spot at [spotIndex] for the day (e.g. after long-press and confirm).
+class SpotRemoved extends RoutineBuilderEvent {
+  final int dayIndex;
+  final int spotIndex;
+
+  SpotRemoved({required this.dayIndex, required this.spotIndex});
+}
+
 /// After the add-spot sheet (opened for [pendingSpotToAddFromMap]) is closed.
 class PendingSpotFromMapConsumed extends RoutineBuilderEvent {}

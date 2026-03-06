@@ -124,8 +124,43 @@ class RoutineDayPage extends StatelessWidget {
   }
 }
 
+Future<void> _confirmRemoveSpot(
+  BuildContext context, {
+  required int dayIndex,
+  required int spotIndex,
+  required String spotTitle,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Remove spot?'),
+      content: Text(
+        'Remove "${spotTitle.length > 40 ? '${spotTitle.substring(0, 40)}...' : spotTitle}" from this day?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(
+            'Remove',
+            style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+          ),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true && context.mounted) {
+    context.read<RoutineBuilderBloc>().add(
+          SpotRemoved(dayIndex: dayIndex, spotIndex: spotIndex),
+        );
+  }
+}
+
 /// Vertical itinerary timeline: icon-in-circle on light gray line, white cards with title + time | location.
-/// Tapping a card opens the add/edit spot sheet.
+/// Tapping a card opens the add/edit spot sheet; long-press shows remove option.
 class _ItineraryTimeline extends StatelessWidget {
   const _ItineraryTimeline({
     required this.spots,
@@ -233,6 +268,12 @@ class _ItineraryTimeline extends StatelessWidget {
                                 );
                           }
                         },
+                        onLongPress: () => _confirmRemoveSpot(
+                          context,
+                          dayIndex: dayIndex,
+                          spotIndex: i,
+                          spotTitle: spots[i].title,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
                           padding: const EdgeInsets.symmetric(

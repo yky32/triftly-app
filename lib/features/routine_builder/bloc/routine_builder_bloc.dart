@@ -17,6 +17,7 @@ class RoutineBuilderBloc
     on<CarouselPageChanged>(_onCarouselPageChanged);
     on<SpotAdded>(_onSpotAdded);
     on<SpotUpdated>(_onSpotUpdated);
+    on<SpotRemoved>(_onSpotRemoved);
     on<PendingSpotFromMapConsumed>(_onPendingSpotFromMapConsumed);
   }
 
@@ -66,6 +67,15 @@ class RoutineBuilderBloc
     if (event.spotIndex < 0 || event.spotIndex >= list.length) return;
     final newList = List<RoutineSpot>.from(list)
       ..[event.spotIndex] = event.spot;
+    final updated = Map<int, List<RoutineSpot>>.from(state.spotsByDay)
+      ..[event.dayIndex] = newList;
+    emit(state.copyWith(spotsByDay: updated));
+  }
+
+  void _onSpotRemoved(SpotRemoved event, Emitter<RoutineBuilderState> emit) {
+    final list = state.spotsForDay(event.dayIndex);
+    if (event.spotIndex < 0 || event.spotIndex >= list.length) return;
+    final newList = List<RoutineSpot>.from(list)..removeAt(event.spotIndex);
     final updated = Map<int, List<RoutineSpot>>.from(state.spotsByDay)
       ..[event.dayIndex] = newList;
     emit(state.copyWith(spotsByDay: updated));
