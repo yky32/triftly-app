@@ -4,6 +4,7 @@ import 'package:triftly/core/constants/layout_constants.dart';
 import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
+import 'package:triftly/features/routine_builder/data/default_spots.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
@@ -21,65 +22,8 @@ class RoutineDayPage extends StatelessWidget {
   final int dayIndex;
   final DateTime date;
   final int totalDays;
+  /// All spots for this day (from bloc; may be default placeholders + user-added).
   final List<RoutineSpot> addedSpots;
-
-  static const List<RoutineSpot> _defaultSpots = [
-    RoutineSpot(
-      startTime: '8:30 AM',
-      endTime: '9:30 AM',
-      title: 'Morning Coffee at Ikigai Arabica',
-      description: 'Start the day with a specialty pour-over and light pastry.',
-      location: '1-1-3 Jinnan, Shibuya-ku, Tokyo',
-      icon: Icons.coffee,
-      color: Color(0xFFE65100),
-    ),
-    RoutineSpot(
-      startTime: '10:00 AM',
-      endTime: '11:45 AM',
-      title: 'Tokyo Station → Odawara Station',
-      description:
-          'JR Tokaido Line. Reserved seat recommended for Hakone direction.',
-      location: '1-9-1 Marunouchi, Chiyoda-ku, Tokyo',
-      icon: Icons.train,
-      color: Color(0xFF2E7D32),
-    ),
-    RoutineSpot(
-      startTime: '12:00 PM',
-      endTime: '3:00 PM',
-      title: 'Hakone Open-Air Museum',
-      description: 'Art and nature. Allow 2–3 hours. Café on site.',
-      location: '1121 Ninotaira, Hakone-machi',
-      icon: Icons.museum_outlined,
-      color: Color(0xFF0277BD),
-    ),
-    RoutineSpot(
-      startTime: '3:30 PM',
-      endTime: '4:30 PM',
-      title: 'Hakone Kowakien Yunessun',
-      description: 'Hot spring theme park. Various baths and pools.',
-      location: '1297 Ninotaira, Hakone-machi',
-      icon: Icons.spa_outlined,
-      color: Color(0xFF6A1B9A),
-    ),
-    RoutineSpot(
-      startTime: '5:00 PM',
-      endTime: '6:30 PM',
-      title: 'Odawara Station → Shibuya Station',
-      description: 'Return leg. Direct trains available.',
-      location: '1-1-1 Odawara, Kanagawa',
-      icon: Icons.train,
-      color: Color(0xFF2E7D32),
-    ),
-    RoutineSpot(
-      startTime: '7:00 PM',
-      endTime: '8:30 PM',
-      title: 'Dinner at Shibuya Sky',
-      description: 'Rooftop dining with city views. Reserve in advance.',
-      location: '2-24-12 Dogenzaka, Shibuya-ku, Tokyo',
-      icon: Icons.restaurant,
-      color: Color(0xFFC62828),
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +113,9 @@ class RoutineDayPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _ItineraryTimeline(
-            spots: [..._defaultSpots, ...addedSpots],
+            spots: addedSpots.isEmpty ? kDefaultRoutineSpots : addedSpots,
+            dayIndex: dayIndex,
+            date: date,
             theme: theme,
           ),
         ],
@@ -179,13 +125,18 @@ class RoutineDayPage extends StatelessWidget {
 }
 
 /// Vertical itinerary timeline: icon-in-circle on light gray line, white cards with title + time | location.
+/// Tapping a card opens the add/edit spot sheet.
 class _ItineraryTimeline extends StatelessWidget {
   const _ItineraryTimeline({
     required this.spots,
+    required this.dayIndex,
+    required this.date,
     required this.theme,
   });
 
   final List<RoutineSpot> spots;
+  final int dayIndex;
+  final DateTime date;
   final ThemeData theme;
 
   static const double _lineWidth = 2;
@@ -261,82 +212,105 @@ class _ItineraryTimeline extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
+                    child: Material(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        onTap: () async {
+                          final saved = await RoutineDayAddSpotBottomSheet.show(
+                            context,
+                            dayIndex: dayIndex,
+                            date: date,
+                            initialSpot: spots[i],
+                          );
+                          if (saved != null && context.mounted) {
+                            context.read<RoutineBuilderBloc>().add(
+                                  SpotUpdated(
+                                    dayIndex: dayIndex,
+                                    spotIndex: i,
+                                    spot: saved,
+                                  ),
+                                );
+                          }
+                        },
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.shadow
-                                .withValues(alpha: 0.06),
-                            blurRadius: 12,
-                            offset: const Offset(0, 2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            spots[i].title,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            spots[i].description,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.35,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.schedule_outlined,
-                                size: 14,
-                                color: AppColors.mistGray,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${spots[i].startTime} – ${spots[i].endTime}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.mistGray,
-                                ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow
+                                    .withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Row(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 14,
-                                color: AppColors.mistGray,
+                              Text(
+                                spots[i].title,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  spots[i].location,
-                                  style: theme.textTheme.bodySmall?.copyWith(
+                              const SizedBox(height: 6),
+                              Text(
+                                spots[i].description,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule_outlined,
+                                    size: 14,
                                     color: AppColors.mistGray,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${spots[i].startTime} – ${spots[i].endTime}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.mistGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    size: 14,
+                                    color: AppColors.mistGray,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      spots[i].location,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: AppColors.mistGray,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
