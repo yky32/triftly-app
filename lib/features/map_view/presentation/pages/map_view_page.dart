@@ -277,7 +277,10 @@ class _MapBodyState extends State<_MapBody> {
     ReverseGeocodeResult? geocode,
     PlaceDetailsResult? placeDetails,
   }) {
-    final title = placeDetails?.name ?? geocode?.locality ?? 'Dropped pin';
+    final title = placeDetails?.name ??
+        geocode?.locality ??
+        geocode?.formattedAddress ??
+        'Dropped pin';
     final address = placeDetails?.formattedAddress ?? geocode?.formattedAddress;
     final placeId = geocode?.placeId;
     final locality = geocode?.locality;

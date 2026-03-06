@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Result of reverse geocoding: formatted address, place ID, and optional locality.
@@ -51,7 +52,13 @@ class GeocodingService {
     required double longitude,
   }) async {
     final key = _apiKey;
-    if (key == null || key.isEmpty) return null;
+    if (key == null || key.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[GeocodingService] reverseGeocode: GOOGLE_MAPS_API_KEY missing or empty. '
+            'Check env file is loaded (Environment.load) and key is set for this build (ENV=dev/stag/prod).');
+      }
+      return null;
+    }
 
     final uri = Uri.parse(_baseUrl).replace(
       queryParameters: {
@@ -64,11 +71,23 @@ class GeocodingService {
       final response = await Dio().getUri(uri).timeout(
         const Duration(seconds: 5),
       );
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          debugPrint('[GeocodingService] reverseGeocode: HTTP ${response.statusCode}');
+        }
+        return null;
+      }
 
       final json = response.data as Map<String, dynamic>;
       final status = json['status'] as String?;
-      if (status != 'OK') return null;
+      if (status != 'OK') {
+        if (kDebugMode) {
+          final errorMessage = json['error_message'] as String?;
+          debugPrint('[GeocodingService] reverseGeocode: status=$status error_message=$errorMessage. '
+              'On real device: ensure Geocoding API is enabled and API key has no app restriction blocking this app (iOS bundle ID / Android package name).');
+        }
+        return null;
+      }
 
       final results = json['results'] as List<dynamic>?;
       if (results == null || results.isEmpty) return null;
@@ -101,7 +120,11 @@ class GeocodingService {
         locality: locality,
         types: types,
       );
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[GeocodingService] reverseGeocode exception: $e');
+        debugPrint('[GeocodingService] $st');
+      }
       return null;
     }
   }

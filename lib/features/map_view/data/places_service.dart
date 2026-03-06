@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Place details from Google Places API (Place Details). Used to enrich [MapLocation].
@@ -43,7 +44,12 @@ class PlacesService {
   /// Fetch place details by [placeId]. Returns null if key missing or request fails.
   static Future<PlaceDetailsResult?> getPlaceDetails(String placeId) async {
     final key = _apiKey;
-    if (key == null || key.isEmpty) return null;
+    if (key == null || key.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[PlacesService] getPlaceDetails: GOOGLE_MAPS_API_KEY missing or empty.');
+      }
+      return null;
+    }
 
     final uri = Uri.parse(_detailsUrl).replace(
       queryParameters: {
@@ -57,11 +63,21 @@ class PlacesService {
       final response = await Dio().getUri(uri).timeout(
         const Duration(seconds: 5),
       );
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        if (kDebugMode) debugPrint('[PlacesService] getPlaceDetails: HTTP ${response.statusCode}');
+        return null;
+      }
 
       final json = response.data as Map<String, dynamic>;
       final status = json['status'] as String?;
-      if (status != 'OK') return null;
+      if (status != 'OK') {
+        if (kDebugMode) {
+          final errorMessage = json['error_message'] as String?;
+          debugPrint('[PlacesService] getPlaceDetails: status=$status error_message=$errorMessage. '
+              'Ensure Places API is enabled and API key allows this app (iOS bundle ID / Android package).');
+        }
+        return null;
+      }
 
       final result = json['result'] as Map<String, dynamic>?;
       if (result == null) return null;
@@ -99,7 +115,11 @@ class PlacesService {
         website: website,
         formattedPhoneNumber: formattedPhoneNumber,
       );
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[PlacesService] getPlaceDetails exception: $e');
+        debugPrint('[PlacesService] $st');
+      }
       return null;
     }
   }

@@ -75,3 +75,12 @@ The map tab uses **Geocoding** (and is prepared for **Places**) so users see use
 - **Geocoding**: Set `GOOGLE_MAPS_API_KEY` in `env/.env.dev` (same key as Maps). Enable **Geocoding API** in [Google Cloud Console](https://console.cloud.google.com/apis/library/geocoding-backend.googleapis.com) for the same project. Reverse geocode turns a tap (LatLng) into address and place ID.
 - **MapLocation** in `lib/features/map_view/models/map_location.dart` holds: title, address, description, position, plus optional `placeId`, `rating`, `types`, `openingHoursText`, `photoUrl`, `website`, `phoneNumber`, `locality` for when you add Places API later.
 - **Places API**: Place Details is integrated. After reverse geocode, the app fetches place details by `place_id` (rating, opening hours, photo, website, phone). Enable **Places API** in Cloud Console. The bottom sheet shows photo, rating, types, opening hours, website, and phone when returned.
+
+**Troubleshooting: Map shows "Dropped pin" (no POI/address) on real device**
+
+If the location detail sheet shows only "Dropped pin" and coordinates when tapping the map on a **real device** (while it works in simulator), check:
+
+1. **API key on device** – The app loads `GOOGLE_MAPS_API_KEY` from `env/.env.dev` (or `.env.stag` / `.env.prod` when built with `ENV=stag` or `ENV=prod`). For TestFlight/release builds, ensure the env file used for that build contains the key (e.g. `env/.env.prod` if you build with `--dart-define=ENV=prod`).
+2. **API key restrictions** – In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → your API key → Application restrictions: if set to "iOS apps", add your **iOS bundle ID** (e.g. `com.yourcompany.triftly`). If set to "Android apps", add your **package name** and SHA-1. A key restricted to a debug certificate or simulator may work in dev but not on a real device or TestFlight.
+3. **APIs enabled** – Enable **Geocoding API** and **Places API** (and **Maps SDK for iOS** / **Maps SDK for Android**) for the same Google Cloud project.
+4. **Debug logs** – Run the app from Xcode (iOS) or Android Studio and watch the console. On failure you’ll see `[GeocodingService]` or `[PlacesService]` messages (e.g. key missing, `status=REQUEST_DENIED`, or an exception). Fix the reported cause (key, restrictions, or network).
