@@ -22,28 +22,8 @@ class RoutineBuilderPage extends StatelessWidget {
   }
 }
 
-class _RoutineBuilderView extends StatefulWidget {
+class _RoutineBuilderView extends StatelessWidget {
   const _RoutineBuilderView();
-
-  @override
-  State<_RoutineBuilderView> createState() => _RoutineBuilderViewState();
-}
-
-class _RoutineBuilderViewState extends State<_RoutineBuilderView> {
-  static const double _scrollThresholdHide = 80;
-  static const double _scrollThresholdShow = 30;
-  bool _headerVisible = true;
-
-  bool _onScrollNotification(ScrollNotification n) {
-    if (n is! ScrollUpdateNotification) return false;
-    final p = n.metrics.pixels;
-    if (p > _scrollThresholdHide && _headerVisible) {
-      setState(() => _headerVisible = false);
-    } else if (p < _scrollThresholdShow && !_headerVisible) {
-      setState(() => _headerVisible = true);
-    }
-    return false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,30 +32,25 @@ class _RoutineBuilderViewState extends State<_RoutineBuilderView> {
       body: SafeArea(
         child: BlocConsumer<RoutineBuilderBloc, RoutineBuilderState>(
           listenWhen: (prev, curr) =>
-              (curr.pendingSpotToAddFromMap != null &&
-                  prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap) ||
-              prev.trip != curr.trip ||
-              prev.currentDayPageIndex != curr.currentDayPageIndex,
+              curr.pendingSpotToAddFromMap != null &&
+              prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap,
           listener: (context, state) {
             final spot = state.pendingSpotToAddFromMap;
-            if (spot != null) {
-              context.read<RoutineBuilderBloc>().add(PendingSpotFromMapConsumed());
-              final date = state.trip?.startDate ?? DateTime.now();
-              RoutineDayAddSpotBottomSheet.show(
-                context,
-                dayIndex: 0,
-                date: date,
-                initialSpot: spot,
-              ).then((saved) {
-                if (saved != null && context.mounted) {
-                  context
-                      .read<RoutineBuilderBloc>()
-                      .add(SpotAdded(dayIndex: 0, spot: saved));
-                }
-              });
-            } else {
-              setState(() => _headerVisible = true);
-            }
+            if (spot == null) return;
+            context.read<RoutineBuilderBloc>().add(PendingSpotFromMapConsumed());
+            final date = state.trip?.startDate ?? DateTime.now();
+            RoutineDayAddSpotBottomSheet.show(
+              context,
+              dayIndex: 0,
+              date: date,
+              initialSpot: spot,
+            ).then((saved) {
+              if (saved != null && context.mounted) {
+                context
+                    .read<RoutineBuilderBloc>()
+                    .add(SpotAdded(dayIndex: 0, spot: saved));
+              }
+            });
           },
           buildWhen: (prev, curr) =>
               prev.trip != curr.trip ||
@@ -86,39 +61,29 @@ class _RoutineBuilderViewState extends State<_RoutineBuilderView> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.topCenter,
-                  child: _headerVisible
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                          child: _buildHeader(
-                            context,
-                            trip: state.trip,
-                            onNewRoutine: () => _openTripSheet(context),
-                            onEdit: state.trip != null
-                                ? () => _openTripSheetForEdit(context, state.trip!)
-                                : null,
-                            onDelete: state.trip != null
-                                ? () => _confirmAndDeleteRoutine(context)
-                                : null,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: _buildHeader(
+                    context,
+                    trip: state.trip,
+                    onNewRoutine: () => _openTripSheet(context),
+                    onEdit: state.trip != null
+                        ? () => _openTripSheetForEdit(context, state.trip!)
+                        : null,
+                    onDelete: state.trip != null
+                        ? () => _confirmAndDeleteRoutine(context)
+                        : null,
+                  ),
                 ),
                 if (hasTrip)
                   Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: _onScrollNotification,
-                      child: RoutineDayCarousel(
-                        trip: state.trip!,
-                        currentPageIndex: state.currentDayPageIndex,
-                        onPageChanged: (index) => context
-                            .read<RoutineBuilderBloc>()
-                            .add(CarouselPageChanged(index)),
-                        spotsForDay: state.spotsForDay,
-                      ),
+                    child: RoutineDayCarousel(
+                      trip: state.trip!,
+                      currentPageIndex: state.currentDayPageIndex,
+                      onPageChanged: (index) => context
+                          .read<RoutineBuilderBloc>()
+                          .add(CarouselPageChanged(index)),
+                      spotsForDay: state.spotsForDay,
                     ),
                   )
                 else
