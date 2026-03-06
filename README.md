@@ -68,6 +68,16 @@ Bottom sheets in this app follow a consistent set of behaviors and design rules:
 
 Do not use `SnackBar` / `showSnackBar` in this app; use other patterns for feedback (e.g. inline validation, dialogs, or in-sheet messaging).
 
+## Layout & nav bar
+
+To avoid content being blocked by the bottom nav bar, use the global layout constants in `lib/core/constants/layout_constants.dart`:
+
+- **`LayoutConstants.scrollPaddingBelowNavBar(BuildContext context)`** – Returns the bottom padding (safe area + nav bar height) to use for scroll views and lists so the last items are visible above the nav bar.
+- **`LayoutConstants.bottomNavBarHeight`** – The nominal nav bar height (72); adjust here if the nav bar design changes.
+- **`LayoutConstants.scrollPaddingBelowNavBarInsets(BuildContext context)`** – Same as above but returns `EdgeInsets.only(bottom: ...)` for padding widgets.
+
+Use for any scrollable content that could extend behind the bottom nav (e.g. `SingleChildScrollView`, `ListView`, day itinerary).
+
 ## Map & location data
 
 The map tab uses **Geocoding** (and is prepared for **Places**) so users see useful info when tapping the map and can later add spots to the routine builder.

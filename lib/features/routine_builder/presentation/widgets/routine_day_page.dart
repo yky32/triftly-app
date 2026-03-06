@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:triftly/core/constants/layout_constants.dart';
 import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
@@ -52,6 +53,15 @@ class RoutineDayPage extends StatelessWidget {
       color: Color(0xFF0277BD),
     ),
     RoutineSpot(
+      startTime: '3:30 PM',
+      endTime: '4:30 PM',
+      title: 'Hakone Kowakien Yunessun',
+      description: 'Hot spring theme park. Various baths and pools.',
+      location: '1297 Ninotaira, Hakone-machi',
+      icon: Icons.spa_outlined,
+      color: Color(0xFF6A1B9A),
+    ),
+    RoutineSpot(
       startTime: '5:00 PM',
       endTime: '6:30 PM',
       title: 'Odawara Station → Shibuya Station',
@@ -60,16 +70,26 @@ class RoutineDayPage extends StatelessWidget {
       icon: Icons.train,
       color: Color(0xFF2E7D32),
     ),
+    RoutineSpot(
+      startTime: '7:00 PM',
+      endTime: '8:30 PM',
+      title: 'Dinner at Shibuya Sky',
+      description: 'Rooftop dining with city views. Reserve in advance.',
+      location: '2-24-12 Dogenzaka, Shibuya-ku, Tokyo',
+      icon: Icons.restaurant,
+      color: Color(0xFFC62828),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 6, 24, 16),
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(24, 6, 24, LayoutConstants.scrollPaddingBelowNavBar(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -156,7 +176,6 @@ class RoutineDayPage extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Vertical itinerary timeline: icon-in-circle on light gray line, white cards with title + time | location.
