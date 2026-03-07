@@ -46,6 +46,42 @@ class GeocodingService {
 
   static String? get _apiKey => dotenv.env['GOOGLE_MAPS_API_KEY'];
 
+  /// Place types that represent "famous" or notable destinations (prioritized first).
+  static const _famousTypes = {
+    'tourist_attraction',
+    'museum',
+    'art_gallery',
+    'restaurant',
+    'cafe',
+    'bar',
+    'store',
+    'shopping_mall',
+    'lodging',
+    'park',
+    'stadium',
+    'aquarium',
+    'zoo',
+  };
+
+  /// Score for ordering: 2 = famous POI, 1 = other POI, 0 = address-only.
+  static int _scoreResult(Map<String, dynamic> result) {
+    final types = result['types'] as List<dynamic>?;
+    if (types == null || types.isEmpty) return 0;
+    final typeSet = types.map((e) => e.toString()).toSet();
+    final hasFamous = typeSet.any((t) => _famousTypes.contains(t));
+    final hasPoi = typeSet.contains('establishment') || typeSet.contains('point_of_interest');
+    if (hasFamous) return 2;
+    if (hasPoi) return 1;
+    return 0;
+  }
+
+  /// Sort geocode results so POIs come first, famous places first among POIs.
+  static List<Map<String, dynamic>> _sortResultsPoiFirst(List<dynamic> results) {
+    final list = results.map((e) => e as Map<String, dynamic>).toList();
+    list.sort((a, b) => _scoreResult(b).compareTo(_scoreResult(a)));
+    return list;
+  }
+
   /// Reverse geocode [latitude], [longitude]. Returns null if key missing or request fails.
   static Future<ReverseGeocodeResult?> reverseGeocode({
     required double latitude,
@@ -92,20 +128,9 @@ class GeocodingService {
       final results = json['results'] as List<dynamic>?;
       if (results == null || results.isEmpty) return null;
 
-      // Prefer a result that is a POI (establishment / point_of_interest) so the user sees
-      // the place they tapped, not just the street address.
-      Map<String, dynamic>? chosen;
-      for (final r in results) {
-        final map = r as Map<String, dynamic>;
-        final types = map['types'] as List<dynamic>?;
-        if (types != null &&
-            (types.any((t) => t == 'establishment') ||
-                types.any((t) => t == 'point_of_interest'))) {
-          chosen = map;
-          break;
-        }
-      }
-      chosen ??= results.first as Map<String, dynamic>;
+      // POI first, famous places first (tourist_attraction, museum, restaurant, etc.).
+      final sorted = _sortResultsPoiFirst(results);
+      final chosen = sorted.first;
 
       final formattedAddress = chosen['formatted_address'] as String? ?? '';
       final placeId = chosen['place_id'] as String?;
@@ -172,9 +197,11 @@ class GeocodingService {
       final results = json['results'] as List<dynamic>?;
       if (results == null || results.isEmpty) return [];
 
+      // POI first, famous places first so map shows notable places before generic addresses.
+      final sorted = _sortResultsPoiFirst(results);
+
       final list = <ForwardGeocodeResult>[];
-      for (final r in results) {
-        final map = r as Map<String, dynamic>;
+      for (final map in sorted) {
         final geometry = map['geometry'] as Map<String, dynamic>?;
         final location = geometry?['location'] as Map<String, dynamic>?;
         if (location == null) continue;

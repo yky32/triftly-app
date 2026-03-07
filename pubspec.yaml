@@ -51,6 +51,7 @@ dependencies:
   geolocator: ^13.0.2
   google_maps_flutter: ^2.10.0
   url_launcher: ^6.2.5
+  lottie: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +80,7 @@ flutter:
   assets:
     - env/
     - assets/fonts/
+    - assets/lottie/splash-logo.json
 
   # Typography: Satoshi (Display = Bold for headings, Text = Regular for body).
   fonts:

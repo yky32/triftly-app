@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:triftly/services/share_receiver_service.dart';
 
 /// Simple splash screen. If app was opened via Share → Triftly (e.g. from Google Maps), goes to map with that location; otherwise /today after a short delay.
@@ -32,7 +33,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
@@ -40,17 +40,19 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.star_rounded,
-              size: 80,
-              color: colorScheme.primary,
+            Lottie.asset(
+              'assets/lottie/splash-logo.json',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+              repeat: true,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
             Text(
               'Triftly',
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ],
