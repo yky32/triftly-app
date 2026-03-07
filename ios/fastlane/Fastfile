@@ -478,9 +478,21 @@ platform :ios do
     end
     
     UI.message("🚀 Uploading to TestFlight...")
-    # Skip all waiting: do not pass changelog/localized_build_info so pilot exits right after upload.
-    # Add "What to Test" later in App Store Connect → TestFlight → build → What to Test.
     ENV["PILOT_SKIP_WAITING_FOR_BUILD_PROCESSING"] = "0"
+    
+    # Troubleshooting: log what we're uploading so you can match in App Store Connect
+    pubspec_path = File.join(PROJECT_ROOT, "pubspec.yaml")
+    if File.exist?(pubspec_path)
+      version_match = File.read(pubspec_path).match(/^version:\s*(\d+\.\d+\.\d+)\+(\d+)/)
+      if version_match
+        UI.message("📋 [troubleshoot] App version: #{version_match[1]}, build: #{version_match[2]} (from pubspec.yaml)")
+      end
+    end
+    UI.message("📋 [troubleshoot] IPA: #{ipa_path}")
+    UI.message("📋 [troubleshoot] App identifier: com.triftly")
+    UI.message("📋 [troubleshoot] If build takes >15 min: check email for 'Invalid build' / export compliance; open https://appstoreconnect.apple.com → My Apps → Triftly → TestFlight")
+    UI.message("📋 [troubleshoot] For full pilot/transporter logs run: bundle exec fastlane ios upload_testflight env:prod --verbose")
+    UI.message("")
     
     release_notes = generate_release_notes
     UI.message("📝 Suggested release notes (add manually in App Store Connect after build appears):")
