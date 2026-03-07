@@ -9,6 +9,9 @@ import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
 
+/// Horizontal padding for day content; match routine builder for right-edge alignment.
+const double _kDayHorizontalPadding = 24;
+
 /// One swipeable page per day of the trip (stateless).
 class RoutineDayPage extends StatelessWidget {
   const RoutineDayPage({
@@ -30,7 +33,12 @@ class RoutineDayPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(24, 6, 24, LayoutConstants.scrollPaddingBelowNavBar(context)),
+      padding: EdgeInsets.fromLTRB(
+        _kDayHorizontalPadding,
+        6,
+        _kDayHorizontalPadding,
+        LayoutConstants.scrollPaddingBelowNavBar(context),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -55,7 +63,7 @@ class RoutineDayPage extends StatelessWidget {
                   ),
                 ),
               ),
-              // Edit Day Metadata icon (pencil)
+              // Edit Day Metadata icon (pencil) — align right edge with header actions
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => RoutineDayEditDayMetadataBottomSheet.show(
@@ -63,12 +71,12 @@ class RoutineDayPage extends StatelessWidget {
                   dayIndex: dayIndex,
                   date: date,
                 ),
+                tooltip: 'Edit day',
                 style: IconButton.styleFrom(
                   minimumSize: const Size(40, 40),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.only(left: 8, right: 0),
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
             ],
           ),
@@ -84,7 +92,7 @@ class RoutineDayPage extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              // Add Spot icon
+              // Add Spot icon — same 40×40 size as header actions for alignment
               Material(
                 color: AppColors.fogGray,
                 borderRadius: BorderRadius.circular(8),
@@ -102,10 +110,13 @@ class RoutineDayPage extends StatelessWidget {
                     }
                   },
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.add,
-                        size: 20, color: theme.colorScheme.onSurface),
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Center(
+                      child: Icon(Icons.add,
+                          size: 20, color: theme.colorScheme.onSurface),
+                    ),
                   ),
                 ),
               ),
