@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
@@ -7,6 +5,7 @@ import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart'
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_carousel.dart';
+import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
@@ -259,7 +258,7 @@ void _saveRoutine(BuildContext context) {
   // TODO: Persist current trip and spots (e.g. dispatch SaveRoutine to bloc or call repo).
 }
 
-/// More (⋮) button that opens an iOS-style liquid glass menu with Edit and Delete.
+/// More (⋮) button that opens a menu with Edit and Delete.
 class _RoutineMoreButton extends StatelessWidget {
   const _RoutineMoreButton({
     required this.onEdit,
@@ -269,40 +268,67 @@ class _RoutineMoreButton extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  static const double _menuRadius = 20;
-  static const double _menuWidth = 160;
-  static const double _menuGap = 6;
+  static const double _menuGap = 10;
+  static const double _menuRadius = 16;
+  static const double _menuElevation = 12;
 
-  void _openGlassMenu(BuildContext context) {
+  Future<void> _showMenu(BuildContext context) async {
+    final theme = Theme.of(context);
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final position = box.localToGlobal(Offset.zero);
     final size = box.size;
-    final top = position.dy + size.height + _menuGap;
-    final right = position.dx + size.width;
-    final left = right - _menuWidth;
-
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (ctx, _, __) => _LiquidGlassMenu(
-        left: left,
-        top: top,
-        width: _menuWidth,
-        borderRadius: _menuRadius,
-        onEdit: () {
-          Navigator.of(ctx).pop();
-          onEdit();
-        },
-        onDelete: () {
-          Navigator.of(ctx).pop();
-          onDelete();
-        },
-        onDismiss: () => Navigator.of(ctx).pop(),
-      ),
+    // Anchor rect just below the More button with gap so menu sits lower
+    final anchorTop = position.dy + size.height + _menuGap;
+    final buttonRect = RelativeRect.fromLTRB(
+      position.dx,
+      anchorTop,
+      position.dx + size.width,
+      anchorTop + 1,
     );
+
+    final result = await showMenu<String>(
+      context: context,
+      position: buttonRect,
+      elevation: _menuElevation,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_menuRadius),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.12),
+          width: 0.5,
+        ),
+      ),
+      color: theme.brightness == Brightness.dark
+          ? theme.colorScheme.surfaceContainerHigh
+          : AppColors.cloudWhite,
+      items: [
+        PopupMenuItem<String>(
+          value: 'edit',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 22, color: theme.colorScheme.onSurface),
+              const SizedBox(width: 14),
+              Text('Edit', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 22, color: theme.colorScheme.error),
+              const SizedBox(width: 14),
+              Text('Delete', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (!context.mounted) return;
+    if (result == 'edit') onEdit();
+    if (result == 'delete') onDelete();
   }
 
   @override
@@ -310,151 +336,11 @@ class _RoutineMoreButton extends StatelessWidget {
     return IconButton(
       tooltip: 'More',
       icon: const Icon(Icons.more_vert),
-      onPressed: () => _openGlassMenu(context),
+      onPressed: () => _showMenu(context),
       style: IconButton.styleFrom(
         minimumSize: const Size(40, 40),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: EdgeInsets.zero,
-      ),
-    );
-  }
-}
-
-/// iOS-style liquid glass popup: blur + light transparent tint, rounded corners.
-class _LiquidGlassMenu extends StatelessWidget {
-  const _LiquidGlassMenu({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.borderRadius,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onDismiss,
-  });
-
-  final double left;
-  final double top;
-  final double width;
-  final double borderRadius;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final VoidCallback onDismiss;
-
-  static const double _blurSigma = 24;
-  static const double _glassTintOpacity = 0.18;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final tintColor = isDark ? Colors.white : Colors.white;
-    final tint = tintColor.withValues(alpha: _glassTintOpacity);
-
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: onDismiss,
-          behavior: HitTestBehavior.opaque,
-          child: const SizedBox.expand(),
-        ),
-        Positioned(
-          left: left,
-          top: top,
-          child: Material(
-            color: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: BackdropFilter(
-                filter:
-                    ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-                child: Container(
-                  width: width,
-                  decoration: BoxDecoration(
-                    color: tint,
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    border: Border.all(
-                      color: (isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.08),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _GlassMenuItem(
-                        icon: Icons.edit_outlined,
-                        label: 'Edit',
-                        iconColor: theme.colorScheme.onSurface,
-                        textStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        onTap: onEdit,
-                      ),
-                      Divider(
-                        height: 1,
-                        thickness: 0.5,
-                        color: (isDark ? Colors.white : Colors.black)
-                            .withValues(alpha: 0.08),
-                      ),
-                      _GlassMenuItem(
-                        icon: Icons.delete_outline,
-                        label: 'Delete',
-                        iconColor: theme.colorScheme.error,
-                        textStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                        onTap: onDelete,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlassMenuItem extends StatelessWidget {
-  const _GlassMenuItem({
-    required this.icon,
-    required this.label,
-    required this.iconColor,
-    required this.textStyle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-  final TextStyle? textStyle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: iconColor),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  label,
-                  style: textStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
