@@ -480,7 +480,7 @@ platform :ios do
     UI.message("🚀 Uploading to TestFlight...")
     # Skip all waiting: do not pass changelog/localized_build_info so pilot exits right after upload.
     # Add "What to Test" later in App Store Connect → TestFlight → build → What to Test.
-    ENV["PILOT_SKIP_WAITING_FOR_BUILD_PROCESSING"] = "1"
+    ENV["PILOT_SKIP_WAITING_FOR_BUILD_PROCESSING"] = "0"
     
     release_notes = generate_release_notes
     UI.message("📝 Suggested release notes (add manually in App Store Connect after build appears):")
@@ -490,7 +490,7 @@ platform :ios do
     begin
       upload_to_testflight(
         ipa: ipa_path,
-        skip_waiting_for_build_processing: true,
+        skip_waiting_for_build_processing: false,
         skip_submission: true,
         distribute_external: false,
         notify_external_testers: false
@@ -517,7 +517,7 @@ platform :ios do
           # Retry the upload with release notes
           upload_to_testflight(
             ipa: ipa_path,
-            skip_waiting_for_build_processing: true,
+            skip_waiting_for_build_processing: false,
             skip_submission: true,
             distribute_external: false,
             notify_external_testers: false
