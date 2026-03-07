@@ -79,7 +79,8 @@ class _RoutineBuilderView extends StatelessWidget {
                     context,
                     trip: state.trip,
                     onNewRoutine: () => _openTripSheet(context),
-                    onSave: state.trip != null ? () => _saveRoutine(context) : null,
+                    onSave:
+                        state.trip != null ? () => _saveRoutine(context) : null,
                     onEdit: state.trip != null
                         ? () => _openTripSheetForEdit(context, state.trip!)
                         : null,
@@ -246,7 +247,7 @@ Widget _buildHeader(
             style: IconButton.styleFrom(
               minimumSize: const Size(40, 40),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: const EdgeInsets.only(left: 8, right: 0),
+              padding: EdgeInsets.zero,
             ),
           ),
       ],
@@ -313,7 +314,7 @@ class _RoutineMoreButton extends StatelessWidget {
       style: IconButton.styleFrom(
         minimumSize: const Size(40, 40),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: const EdgeInsets.only(left: 8, right: 0),
+        padding: EdgeInsets.zero,
       ),
     );
   }
@@ -364,7 +365,8 @@ class _LiquidGlassMenu extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(borderRadius),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+                filter:
+                    ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
                 child: Container(
                   width: width,
                   decoration: BoxDecoration(

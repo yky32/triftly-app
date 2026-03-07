@@ -46,3 +46,10 @@ class SpotRemoved extends RoutineBuilderEvent {
 
 /// After the add-spot sheet (opened for [pendingSpotToAddFromMap]) is closed.
 class PendingSpotFromMapConsumed extends RoutineBuilderEvent {}
+
+/// Remove all spots for the given day (e.g. from day "More" → Delete All).
+class SpotsClearedForDay extends RoutineBuilderEvent {
+  final int dayIndex;
+
+  SpotsClearedForDay(this.dayIndex);
+}

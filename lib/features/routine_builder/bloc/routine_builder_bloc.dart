@@ -19,6 +19,7 @@ class RoutineBuilderBloc
     on<SpotUpdated>(_onSpotUpdated);
     on<SpotRemoved>(_onSpotRemoved);
     on<PendingSpotFromMapConsumed>(_onPendingSpotFromMapConsumed);
+    on<SpotsClearedForDay>(_onSpotsClearedForDay);
   }
 
   void _onPendingSpotFromMapConsumed(
@@ -78,6 +79,15 @@ class RoutineBuilderBloc
     final newList = List<RoutineSpot>.from(list)..removeAt(event.spotIndex);
     final updated = Map<int, List<RoutineSpot>>.from(state.spotsByDay)
       ..[event.dayIndex] = newList;
+    emit(state.copyWith(spotsByDay: updated));
+  }
+
+  void _onSpotsClearedForDay(
+    SpotsClearedForDay event,
+    Emitter<RoutineBuilderState> emit,
+  ) {
+    final updated = Map<int, List<RoutineSpot>>.from(state.spotsByDay)
+      ..[event.dayIndex] = <RoutineSpot>[];
     emit(state.copyWith(spotsByDay: updated));
   }
 }
