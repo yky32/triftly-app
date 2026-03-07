@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/constants/layout_constants.dart';
@@ -132,6 +130,7 @@ class RoutineDayPage extends StatelessWidget {
                   // More — Select / Delete All (liquid glass menu)
                   _DaySpotsMoreButton(
                     dayIndex: dayIndex,
+                    date: date,
                     spotCount: addedSpots.length,
                   ),
                 ],
@@ -151,44 +150,82 @@ class RoutineDayPage extends StatelessWidget {
   }
 }
 
-/// More (⋮) button next to Add; opens liquid glass menu with Select and Delete All.
+/// More (⋮) button next to Add; same menu behavior as routine builder (Edit, Delete).
 class _DaySpotsMoreButton extends StatelessWidget {
   const _DaySpotsMoreButton({
     required this.dayIndex,
+    required this.date,
     required this.spotCount,
   });
 
   final int dayIndex;
+  final DateTime date;
   final int spotCount;
 
-  static const double _menuRadius = 20;
-  static const double _menuWidth = 160;
-  static const double _menuGap = 6;
+  static const double _menuGap = 10;
+  static const double _menuRadius = 16;
+  static const double _menuElevation = 12;
 
-  void _openMenu(BuildContext context) {
+  Future<void> _showMenu(BuildContext context) async {
+    final theme = Theme.of(context);
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final position = box.localToGlobal(Offset.zero);
     final size = box.size;
-    final top = position.dy + size.height + _menuGap;
-    final right = position.dx + size.width;
-    final left = right - _menuWidth;
-
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (ctx, _, __) => _DaySpotsMoreMenu(
-        left: left,
-        top: top,
-        width: _menuWidth,
-        borderRadius: _menuRadius,
-        dayIndex: dayIndex,
-        spotCount: spotCount,
-        onDismiss: () => Navigator.of(ctx).pop(),
-      ),
+    final anchorTop = position.dy + size.height + _menuGap;
+    final buttonRect = RelativeRect.fromLTRB(
+      position.dx,
+      anchorTop,
+      position.dx + size.width,
+      anchorTop + 1,
     );
+
+    final result = await showMenu<String>(
+      context: context,
+      position: buttonRect,
+      elevation: _menuElevation,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_menuRadius),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.12),
+          width: 0.5,
+        ),
+      ),
+      color: theme.brightness == Brightness.dark
+          ? theme.colorScheme.surfaceContainerHigh
+          : AppColors.cloudWhite,
+      items: [
+        PopupMenuItem<String>(
+          value: 'edit',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 22, color: theme.colorScheme.onSurface),
+              const SizedBox(width: 14),
+              Text('Edit', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 22, color: theme.colorScheme.error),
+              const SizedBox(width: 14),
+              Text('Delete', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (!context.mounted) return;
+    if (result == 'edit') {
+      RoutineDayEditDayMetadataBottomSheet.show(context, dayIndex: dayIndex, date: date);
+    }
+    if (result == 'delete') {
+      await _confirmDeleteAllSpots(context, dayIndex: dayIndex, spotCount: spotCount);
+    }
   }
 
   @override
@@ -196,107 +233,12 @@ class _DaySpotsMoreButton extends StatelessWidget {
     return IconButton(
       tooltip: 'More',
       icon: const Icon(Icons.more_vert),
-      onPressed: () => _openMenu(context),
+      onPressed: () => _showMenu(context),
       style: IconButton.styleFrom(
         minimumSize: const Size(40, 40),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: EdgeInsets.zero,
       ),
-    );
-  }
-}
-
-/// iOS-style liquid glass menu for day spots: Select, Delete All.
-class _DaySpotsMoreMenu extends StatelessWidget {
-  const _DaySpotsMoreMenu({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.borderRadius,
-    required this.dayIndex,
-    required this.spotCount,
-    required this.onDismiss,
-  });
-
-  final double left;
-  final double top;
-  final double width;
-  final double borderRadius;
-  final int dayIndex;
-  final int spotCount;
-  final VoidCallback onDismiss;
-
-  static const double _blurSigma = 24;
-  static const double _glassTintOpacity = 0.18;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final tint = (isDark ? Colors.white : Colors.white).withValues(alpha: _glassTintOpacity);
-
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: onDismiss,
-          behavior: HitTestBehavior.opaque,
-          child: const SizedBox.expand(),
-        ),
-        Positioned(
-          left: left,
-          top: top,
-          child: Material(
-            color: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-                child: Container(
-                  width: width,
-                  decoration: BoxDecoration(
-                    color: tint,
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    border: Border.all(
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _DayMoreMenuItem(
-                        icon: Icons.checklist_rounded,
-                        label: 'Select',
-                        theme: theme,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          // TODO: Enter selection mode for spots
-                        },
-                      ),
-                      Divider(
-                        height: 1,
-                        thickness: 0.5,
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                      ),
-                      _DayMoreMenuItem(
-                        icon: Icons.delete_outline,
-                        label: 'Delete All',
-                        theme: theme,
-                        iconColor: theme.colorScheme.error,
-                        textColor: theme.colorScheme.error,
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await _confirmDeleteAllSpots(context, dayIndex: dayIndex, spotCount: spotCount);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -331,54 +273,6 @@ Future<void> _confirmDeleteAllSpots(
   );
   if (confirmed == true && context.mounted) {
     context.read<RoutineBuilderBloc>().add(SpotsClearedForDay(dayIndex));
-  }
-}
-
-class _DayMoreMenuItem extends StatelessWidget {
-  const _DayMoreMenuItem({
-    required this.icon,
-    required this.label,
-    required this.theme,
-    required this.onTap,
-    this.iconColor,
-    this.textColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final ThemeData theme;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final Color? textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = textColor ?? iconColor ?? theme.colorScheme.onSurface;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        highlightColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-        splashColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  label,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: color),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
