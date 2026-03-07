@@ -478,32 +478,26 @@ platform :ios do
     end
     
     UI.message("🚀 Uploading to TestFlight...")
+    # Skip all waiting: do not pass changelog/localized_build_info so pilot exits right after upload.
+    # Add "What to Test" later in App Store Connect → TestFlight → build → What to Test.
+    ENV["PILOT_SKIP_WAITING_FOR_BUILD_PROCESSING"] = "1"
     
-    # Generate release notes from git commit for TestFlight "What to Test" content
     release_notes = generate_release_notes
-    UI.message("📝 TestFlight release notes:")
+    UI.message("📝 Suggested release notes (add manually in App Store Connect after build appears):")
     UI.message(release_notes)
     UI.message("")
     
     begin
-      # Upload to TestFlight with "What to Test" notes
-      # Using localized_build_info to set TestFlight app test content
       upload_to_testflight(
         ipa: ipa_path,
-        skip_waiting_for_build_processing: true,  # Don't wait; check App Store Connect / email when build is ready
-        skip_submission: true,  # Don't automatically submit for review
-        distribute_external: false,  # Internal testing only (set to true for external)
-        notify_external_testers: false,  # Don't notify testers automatically
-        changelog: release_notes,  # Release notes for App Store Connect
-        localized_build_info: {
-          'en-US' => {
-            whats_new: release_notes  # "What to Test" content shown in TestFlight app
-          }
-        }
+        skip_waiting_for_build_processing: true,
+        skip_submission: true,
+        distribute_external: false,
+        notify_external_testers: false
       )
       
       UI.success("✅ Successfully uploaded to TestFlight!")
-      UI.message("📱 Check App Store Connect for build processing status")
+      UI.message("📱 Build will appear in App Store Connect in 5–15 min. Add 'What to Test' there if needed.")
     rescue => ex
       error_msg = ex.message
       
@@ -526,13 +520,7 @@ platform :ios do
             skip_waiting_for_build_processing: true,
             skip_submission: true,
             distribute_external: false,
-            notify_external_testers: false,
-            changelog: release_notes,  # Release notes for App Store Connect
-            localized_build_info: {
-              'en-US' => {
-                whats_new: release_notes  # "What to Test" content shown in TestFlight app
-              }
-            }
+            notify_external_testers: false
           )
           
           UI.success("✅ Successfully uploaded to TestFlight!")
