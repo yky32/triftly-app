@@ -4,7 +4,6 @@ import 'package:triftly/core/constants/layout_constants.dart';
 import 'package:triftly/core/helpers/helpers.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
-import 'package:triftly/features/routine_builder/data/default_spots.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_edit_day_metadata_bottom_sheet.dart';
@@ -20,6 +19,7 @@ class RoutineDayPage extends StatelessWidget {
     required this.date,
     required this.totalDays,
     this.addedSpots = const [],
+    this.dayLabel,
   });
 
   final int dayIndex;
@@ -27,6 +27,8 @@ class RoutineDayPage extends StatelessWidget {
   final int totalDays;
   /// All spots for this day (from bloc; may be default placeholders + user-added).
   final List<RoutineSpot> addedSpots;
+  /// Optional custom label (e.g. "Arrival"). When null, header shows "Day N".
+  final String? dayLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +72,9 @@ class RoutineDayPage extends StatelessWidget {
                   context,
                   dayIndex: dayIndex,
                   date: date,
+                  initialLabel: dayLabel,
                 ),
-                tooltip: 'Edit day',
+                tooltip: 'Edit day name',
                 style: IconButton.styleFrom(
                   minimumSize: const Size(40, 40),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -80,6 +83,16 @@ class RoutineDayPage extends StatelessWidget {
               ),
             ],
           ),
+          if (dayLabel != null && dayLabel!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              dayLabel!,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,6 +144,7 @@ class RoutineDayPage extends StatelessWidget {
                   _DaySpotsMoreButton(
                     dayIndex: dayIndex,
                     date: date,
+                    dayLabel: dayLabel,
                     spotCount: addedSpots.length,
                   ),
                 ],
@@ -139,7 +153,7 @@ class RoutineDayPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _ItineraryTimeline(
-            spots: addedSpots.isEmpty ? kDefaultRoutineSpots : addedSpots,
+            spots: addedSpots,
             dayIndex: dayIndex,
             date: date,
             theme: theme,
@@ -155,11 +169,13 @@ class _DaySpotsMoreButton extends StatelessWidget {
   const _DaySpotsMoreButton({
     required this.dayIndex,
     required this.date,
+    this.dayLabel,
     required this.spotCount,
   });
 
   final int dayIndex;
   final DateTime date;
+  final String? dayLabel;
   final int spotCount;
 
   static const double _menuGap = 10;
@@ -221,7 +237,12 @@ class _DaySpotsMoreButton extends StatelessWidget {
     );
     if (!context.mounted) return;
     if (result == 'edit') {
-      RoutineDayEditDayMetadataBottomSheet.show(context, dayIndex: dayIndex, date: date);
+      RoutineDayEditDayMetadataBottomSheet.show(
+        context,
+        dayIndex: dayIndex,
+        date: date,
+        initialLabel: dayLabel,
+      );
     }
     if (result == 'delete') {
       await _confirmDeleteAllSpots(context, dayIndex: dayIndex, spotCount: spotCount);

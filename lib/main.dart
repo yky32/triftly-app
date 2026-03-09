@@ -8,6 +8,7 @@ import 'package:triftly/core/theme/theme.dart';
 import 'package:triftly/core/theme/theme_bloc.dart';
 import 'package:triftly/core/theme/theme_preference.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
+import 'package:triftly/features/routine_builder/data/routine_repository.dart';
 import 'package:triftly/router/app_router.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
@@ -28,20 +29,31 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     final themePreference = ThemePreference(prefs);
-    runApp(MyApp(themePreference: themePreference));
+    final routineRepository = RoutineRepository(prefs);
+    runApp(MyApp(
+      themePreference: themePreference,
+      routineRepository: routineRepository,
+    ));
   }, (error, stack) {
     debugPrint('Zone error: $error\n$stack');
   });
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.themePreference});
+  const MyApp({
+    super.key,
+    required this.themePreference,
+    required this.routineRepository,
+  });
 
   final ThemePreference themePreference;
+  final RoutineRepository routineRepository;
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    return RepositoryProvider<RoutineRepository>.value(
+      value: routineRepository,
+      child: MultiBlocProvider(
       providers: [
         BlocProvider<LoginBloc>(
           create: (BuildContext context) => LoginBloc(),
@@ -67,6 +79,7 @@ class MyApp extends StatelessWidget {
           );
         },
       ),
+    ),
     );
   }
 }

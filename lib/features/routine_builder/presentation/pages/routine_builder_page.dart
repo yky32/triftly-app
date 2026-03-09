@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
+import 'package:triftly/features/routine_builder/data/routine_repository.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_carousel.dart';
@@ -19,8 +20,12 @@ class RoutineBuilderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final repository = context.read<RoutineRepository>();
     return BlocProvider(
-      create: (_) => RoutineBuilderBloc(pendingSpotFromMap: pendingSpotFromMap),
+      create: (_) => RoutineBuilderBloc(
+        repository: repository,
+        pendingSpotFromMap: pendingSpotFromMap,
+      ),
       child: const _RoutineBuilderView(),
     );
   }
@@ -36,32 +41,42 @@ class _RoutineBuilderView extends StatelessWidget {
       body: SafeArea(
         child: BlocConsumer<RoutineBuilderBloc, RoutineBuilderState>(
           listenWhen: (prev, curr) =>
-              curr.pendingSpotToAddFromMap != null &&
-              prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap,
+              (curr.pendingSpotToAddFromMap != null &&
+                  prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap) ||
+              (curr.lastSavedAt != null && prev.lastSavedAt != curr.lastSavedAt),
           listener: (context, state) {
             final spot = state.pendingSpotToAddFromMap;
-            if (spot == null) return;
-            context
-                .read<RoutineBuilderBloc>()
-                .add(PendingSpotFromMapConsumed());
-            final date = state.trip?.startDate ?? DateTime.now();
-            RoutineDayAddSpotBottomSheet.show(
-              context,
-              dayIndex: 0,
-              date: date,
-              initialSpot: spot,
-            ).then((saved) {
-              if (saved != null && context.mounted) {
-                context
-                    .read<RoutineBuilderBloc>()
-                    .add(SpotAdded(dayIndex: 0, spot: saved));
-              }
-            });
+            if (spot != null) {
+              context
+                  .read<RoutineBuilderBloc>()
+                  .add(PendingSpotFromMapConsumed());
+              final date = state.trip?.startDate ?? DateTime.now();
+              RoutineDayAddSpotBottomSheet.show(
+                context,
+                dayIndex: 0,
+                date: date,
+                initialSpot: spot,
+              ).then((saved) {
+                if (saved != null && context.mounted) {
+                  context
+                      .read<RoutineBuilderBloc>()
+                      .add(SpotAdded(dayIndex: 0, spot: saved));
+                }
+              });
+              return;
+            }
+            if (state.lastSavedAt != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Routine saved')),
+              );
+              context.read<RoutineBuilderBloc>().add(ClearSaveStatus());
+            }
           },
           buildWhen: (prev, curr) =>
               prev.trip != curr.trip ||
               prev.currentDayPageIndex != curr.currentDayPageIndex ||
-              prev.spotsByDay != curr.spotsByDay,
+              prev.spotsByDay != curr.spotsByDay ||
+              prev.dayLabels != curr.dayLabels,
           builder: (context, state) {
             final hasTrip = state.trip != null;
             return Column(
@@ -97,6 +112,7 @@ class _RoutineBuilderView extends StatelessWidget {
                           .read<RoutineBuilderBloc>()
                           .add(CarouselPageChanged(index)),
                       spotsForDay: state.spotsForDay,
+                      labelForDay: (i) => state.labelForDay(i),
                     ),
                   )
                 else
@@ -255,7 +271,7 @@ Widget _buildHeader(
 }
 
 void _saveRoutine(BuildContext context) {
-  // TODO: Persist current trip and spots (e.g. dispatch SaveRoutine to bloc or call repo).
+  context.read<RoutineBuilderBloc>().add(SaveRoutine());
 }
 
 /// More (⋮) button that opens a menu with Edit and Delete.

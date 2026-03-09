@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:triftly/features/routine_builder/data/default_spots.dart';
+import 'package:triftly/features/routine_builder/data/routine_repository.dart';
 import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
@@ -8,8 +8,11 @@ part 'routine_builder_state.dart';
 
 class RoutineBuilderBloc
     extends Bloc<RoutineBuilderEvent, RoutineBuilderState> {
-  RoutineBuilderBloc({RoutineSpot? pendingSpotFromMap})
-      : super(RoutineBuilderState(
+  RoutineBuilderBloc({
+    required RoutineRepository repository,
+    RoutineSpot? pendingSpotFromMap,
+  })  : _repository = repository,
+        super(RoutineBuilderState(
           pendingSpotToAddFromMap: pendingSpotFromMap,
         )) {
     on<TripSelected>(_onTripSelected);
@@ -20,7 +23,12 @@ class RoutineBuilderBloc
     on<SpotRemoved>(_onSpotRemoved);
     on<PendingSpotFromMapConsumed>(_onPendingSpotFromMapConsumed);
     on<SpotsClearedForDay>(_onSpotsClearedForDay);
+    on<DayLabelUpdated>(_onDayLabelUpdated);
+    on<SaveRoutine>(_onSaveRoutine);
+    on<ClearSaveStatus>(_onClearSaveStatus);
   }
+
+  final RoutineRepository _repository;
 
   void _onPendingSpotFromMapConsumed(
     PendingSpotFromMapConsumed event,
@@ -32,12 +40,13 @@ class RoutineBuilderBloc
   void _onTripSelected(TripSelected event, Emitter<RoutineBuilderState> emit) {
     final days = event.trip.daysOfTrip;
     final spotsByDay = <int, List<RoutineSpot>>{
-      for (var d = 0; d < days; d++) d: List<RoutineSpot>.from(kDefaultRoutineSpots),
+      for (var d = 0; d < days; d++) d: <RoutineSpot>[],
     };
     emit(state.copyWith(
       trip: event.trip,
       currentDayPageIndex: 0,
       spotsByDay: spotsByDay,
+      dayLabels: const {},
     ));
   }
 
@@ -61,10 +70,7 @@ class RoutineBuilderBloc
   }
 
   void _onSpotUpdated(SpotUpdated event, Emitter<RoutineBuilderState> emit) {
-    var list = state.spotsForDay(event.dayIndex);
-    if (list.isEmpty && state.trip != null) {
-      list = List<RoutineSpot>.from(kDefaultRoutineSpots);
-    }
+    final list = state.spotsForDay(event.dayIndex);
     if (event.spotIndex < 0 || event.spotIndex >= list.length) return;
     final newList = List<RoutineSpot>.from(list)
       ..[event.spotIndex] = event.spot;
@@ -89,5 +95,37 @@ class RoutineBuilderBloc
     final updated = Map<int, List<RoutineSpot>>.from(state.spotsByDay)
       ..[event.dayIndex] = <RoutineSpot>[];
     emit(state.copyWith(spotsByDay: updated));
+  }
+
+  void _onDayLabelUpdated(
+    DayLabelUpdated event,
+    Emitter<RoutineBuilderState> emit,
+  ) {
+    final updated = Map<int, String>.from(state.dayLabels);
+    if (event.label == null || event.label!.trim().isEmpty) {
+      updated.remove(event.dayIndex);
+    } else {
+      updated[event.dayIndex] = event.label!.trim();
+    }
+    emit(state.copyWith(dayLabels: updated));
+  }
+
+  Future<void> _onSaveRoutine(
+    SaveRoutine event,
+    Emitter<RoutineBuilderState> emit,
+  ) async {
+    await _repository.save(
+      trip: state.trip,
+      spotsByDay: state.spotsByDay,
+      dayLabels: state.dayLabels,
+    );
+    emit(state.copyWith(lastSavedAt: DateTime.now()));
+  }
+
+  void _onClearSaveStatus(
+    ClearSaveStatus event,
+    Emitter<RoutineBuilderState> emit,
+  ) {
+    emit(state.copyWith(clearLastSavedAt: true));
   }
 }

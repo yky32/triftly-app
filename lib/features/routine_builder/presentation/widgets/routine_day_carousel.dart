@@ -13,6 +13,7 @@ class RoutineDayCarousel extends StatefulWidget {
     required this.currentPageIndex,
     required this.onPageChanged,
     required this.spotsForDay,
+    this.labelForDay,
   });
 
   final RoutineTripResult trip;
@@ -21,6 +22,9 @@ class RoutineDayCarousel extends StatefulWidget {
 
   /// Returns spots added by the user for the given day index.
   final List<RoutineSpot> Function(int dayIndex) spotsForDay;
+
+  /// Optional custom label for each day (e.g. "Arrival"). When null, header shows "Day N".
+  final String? Function(int dayIndex)? labelForDay;
 
   @override
   State<RoutineDayCarousel> createState() => _RoutineDayCarouselState();
@@ -65,6 +69,7 @@ class _RoutineDayCarouselState extends State<RoutineDayCarousel> {
                 date: date,
                 totalDays: count,
                 addedSpots: widget.spotsForDay(index),
+                dayLabel: widget.labelForDay?.call(index),
               );
             },
           ),

@@ -53,3 +53,18 @@ class SpotsClearedForDay extends RoutineBuilderEvent {
 
   SpotsClearedForDay(this.dayIndex);
 }
+
+/// Set or clear the custom label for a day (e.g. "Arrival", "Beach day").
+class DayLabelUpdated extends RoutineBuilderEvent {
+  final int dayIndex;
+  /// Null or empty to clear the label and show "Day N" again.
+  final String? label;
+
+  DayLabelUpdated({required this.dayIndex, this.label});
+}
+
+/// Persist current trip, spots, and day labels to local storage. Emits [lastSavedAt] on success.
+class SaveRoutine extends RoutineBuilderEvent {}
+
+/// Clear [lastSavedAt] after showing save confirmation (e.g. SnackBar).
+class ClearSaveStatus extends RoutineBuilderEvent {}
