@@ -53,10 +53,10 @@ def run_pod_install
   UI.message("Running pod install (trying bundle exec first)...")
   ruby_bin = RbConfig.ruby
   begin
-    # Run pod under Rosetta (x86_64) so system ffi_c extension loads on Apple Silicon
+    # Run pod with native arch so gem native extensions (e.g. nkf) match Ruby arch (arm64 on Apple Silicon)
     gem_home = gem_home_for_bundle
     gem_path = gem_path_for_bundle
-    sh("cd #{IOS_DIR} && env PATH=\"#{path_for_system_ruby}\" GEM_HOME=\"#{gem_home}\" GEM_PATH=\"#{gem_path}\" arch -x86_64 #{ruby_bin} -S bundle exec pod install --repo-update", log: true)
+    sh("cd #{IOS_DIR} && env PATH=\"#{path_for_system_ruby}\" GEM_HOME=\"#{gem_home}\" GEM_PATH=\"#{gem_path}\" #{ruby_bin} -S bundle exec pod install --repo-update", log: true)
     UI.success("✅ pod install completed (bundle exec)")
     return true
   rescue => ex
@@ -110,7 +110,7 @@ def ensure_pod_wrapper_for_flutter
     export PATH="/usr/bin:/usr/local/bin:$PATH"
     export GEM_HOME="#{gem_home}"
     export GEM_PATH="#{gem_path}"
-    cd #{IOS_DIR.inspect} && arch -x86_64 bundle exec pod "$@"
+    cd #{IOS_DIR.inspect} && bundle exec pod "$@"
   BASH
   need_write = !File.exist?(wrapper_script) || File.read(wrapper_script) != script_content
   if need_write
@@ -155,7 +155,7 @@ def increment_build_number_in_pubspec
   
   UI.success("✅ Build number updated to #{new_build}")
   
-  return new_build
+  return [version_name, new_build]
 end
 
 # Helper function to generate release notes from git commits
@@ -224,7 +224,7 @@ def generate_release_notes
 end
 
 # Helper function to commit and push build number change
-def commit_and_push_build_number(new_build_number)
+def commit_and_push_build_number(version_name, new_build_number)
   UI.message("📝 Committing build number change...")
   
   begin
@@ -244,9 +244,9 @@ def commit_and_push_build_number(new_build_number)
     # Stage the pubspec.yaml file
     sh("cd #{PROJECT_ROOT} && git add pubspec.yaml")
     
-    # Commit with a descriptive message
+    # Commit with a descriptive message (use actual version from pubspec, e.g. 1.0.1+4)
     # Use multiple -m flags for multi-line commit message
-    sh("cd #{PROJECT_ROOT} && git commit -m 'chore: Auto-increment build number to #{new_build_number}' -m 'Build number automatically incremented by Fastfile' -m 'Updated to 1.0.0+#{new_build_number}'")
+    sh("cd #{PROJECT_ROOT} && git commit -m 'chore: Auto-increment build number to #{new_build_number}' -m 'Build number automatically incremented by Fastfile' -m 'Updated to #{version_name}+#{new_build_number}'")
     
     UI.success("✅ Build number change committed")
     
@@ -382,10 +382,10 @@ platform :ios do
     unless skip_build
       # Automatically increment build number before building
       UI.important("🔢 Auto-incrementing build number...")
-      new_build_number = increment_build_number_in_pubspec
-      
+      version_name, new_build_number = increment_build_number_in_pubspec
+
       # Commit and push the build number change
-      commit_and_push_build_number(new_build_number)
+      commit_and_push_build_number(version_name, new_build_number)
       UI.important("")
       
       UI.important("📦 Building IPA for App Store...")
