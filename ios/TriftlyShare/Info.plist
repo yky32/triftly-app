@@ -21,16 +21,11 @@
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionActivationRule</key>
-		<string>SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $a, ANY $a.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url").@count &gt;= 1).@count &gt;= 1 OR SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $a, ANY $a.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text").@count &gt;= 1).@count &gt;= 1</string>
-		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
 			<integer>1</integer>
-			<key>NSExtensionActivationSupportsAttachmentsWithMatchingTypeIdentifiers</key>
-			<array>
-				<string>public.url</string>
-				<string>public.plain-text</string>
-			</array>
+			<key>NSExtensionActivationSupportsText</key>
+			<true/>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.share-services</string>
