@@ -10,6 +10,8 @@ import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
+/// Horizontal padding for routine builder content; use for header and alignment of actions.
+/// Horizontal padding for routine builder content; use for header and alignment of actions.
 const double _kPageHorizontalPadding = 24;
 
 class RoutineBuilderPage extends StatelessWidget {
