@@ -5,28 +5,7 @@ import 'package:triftly/core/theme/app_colors.dart';
 class TripsPage extends StatelessWidget {
   const TripsPage({super.key});
 
-  static final List<_TripItem> _sampleTrips = [
-    _TripItem(
-      name: 'Alpine Meadow Path',
-      country: 'Switzerland',
-      dateLabel: 'August 2022 (8 days)',
-    ),
-    _TripItem(
-      name: 'Cottage Breeze Loop',
-      country: 'United Kingdom',
-      dateLabel: 'July 2023 (1.5 days)',
-    ),
-    _TripItem(
-      name: 'Waterfall & Sail',
-      country: 'Netherlands',
-      dateLabel: 'June 2023 (5 days)',
-    ),
-    _TripItem(
-      name: 'Windmill Country',
-      country: 'Belgium',
-      dateLabel: 'September 2022 (3 days)',
-    ),
-  ];
+  static const List<_TripItem> _sampleTrips = [];
 
   @override
   Widget build(BuildContext context) {
