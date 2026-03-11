@@ -1,0 +1,2 @@
+// TriftlyShare extension: version only (no Pods/Flutter linkage)
+#include "Generated.xcconfig"
