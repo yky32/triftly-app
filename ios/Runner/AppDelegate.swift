@@ -1,6 +1,5 @@
 import Flutter
 import UIKit
-import GoogleMaps
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -11,7 +10,7 @@ import GoogleMaps
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMSServices.provideAPIKey("AIzaSyDN6sSxZP-Xf47aRGGPuABsjyM_f6cC_MU")
+    "AIzaSyDN6sSxZP-Xf47aRGGPuABsjyM_f6cC_MU".withCString { ProvideGoogleMapsAPIKey($0) }
     GeneratedPluginRegistrant.register(with: self)
     if let controller = window?.rootViewController as? FlutterViewController {
       let channel = FlutterMethodChannel(name: "app/share", binaryMessenger: controller.binaryMessenger)

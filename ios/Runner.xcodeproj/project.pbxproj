@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
-		TS001SHARE1E8E89220040F4C2 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */; };
-		TS005SHARE1E8E89220040F4C2 /* TriftlyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
@@ -18,6 +16,9 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BE9CDB3AB18F52521AACA220 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88D007F46CF5449345C72F8A /* Pods_RunnerTests.framework */; };
 		F8852AF1364CF119DC70C348 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49DB5F0A125241F46C559F13 /* Pods_Runner.framework */; };
+		GMSKPB1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = GMSKPM1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.m */; };
+		TS001SHARE1E8E89220040F4C2 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */; };
+		TS005SHARE1E8E89220040F4C2 /* TriftlyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,19 +78,21 @@
 		94F2135B6B4C921133927EC5 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
-		TS0D1E8E89220040F4C2A1B2 /* TriftlyShare-Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = "TriftlyShare-Debug.xcconfig"; path = "Flutter/TriftlyShare-Debug.xcconfig"; sourceTree = "<group>"; };
-		TS0R1E8E89220040F4C2A1B2 /* TriftlyShare-Release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = "TriftlyShare-Release.xcconfig"; path = "Flutter/TriftlyShare-Release.xcconfig"; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A72F372EDE0A3F6EA6BE66C1 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		D93BD4148598633F26F102F7 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		FE0B92AC736E8DF5CB0F377E /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		GMSKPH1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GoogleMapsKeyProvider.h; sourceTree = "<group>"; };
+		GMSKPM1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GoogleMapsKeyProvider.m; sourceTree = "<group>"; };
 		TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		TS004SHARE1E8E89220040F4C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TriftlyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		D93BD4148598633F26F102F7 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
-		FE0B92AC736E8DF5CB0F377E /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		TS0D1E8E89220040F4C2A1B2 /* TriftlyShare-Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = "TriftlyShare-Debug.xcconfig"; path = "Flutter/TriftlyShare-Debug.xcconfig"; sourceTree = "<group>"; };
+		TS0R1E8E89220040F4C2A1B2 /* TriftlyShare-Release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = "TriftlyShare-Release.xcconfig"; path = "Flutter/TriftlyShare-Release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,18 +104,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		TS0AFRAMES1E8E89220040F4C2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		E02AAE31274622BDC2766F24 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BE9CDB3AB18F52521AACA220 /* Pods_RunnerTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		TS0AFRAMES1E8E89220040F4C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -185,15 +188,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		TS00ASHARE1E8E89220040F4C2 /* TriftlyShare */ = {
-			isa = PBXGroup;
-			children = (
-				TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */,
-				TS004SHARE1E8E89220040F4C2 /* Info.plist */,
-			);
-			path = TriftlyShare;
-			sourceTree = "<group>";
-		};
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
@@ -203,10 +197,21 @@
 				97C147021CF9000F007C117D /* Info.plist */,
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
+				GMSKPH1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.h */,
+				GMSKPM1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		TS00ASHARE1E8E89220040F4C2 /* TriftlyShare */ = {
+			isa = PBXGroup;
+			children = (
+				TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */,
+				TS004SHARE1E8E89220040F4C2 /* Info.plist */,
+			);
+			path = TriftlyShare;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -375,9 +380,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -445,9 +454,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -471,6 +484,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				GMSKPB1E8E89220040F4C2A1 /* GoogleMapsKeyProvider.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -596,8 +610,10 @@
 			baseConfigurationReference = 2FC312CFB79012DE897888F6 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3G34999H3A;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.RunnerTests;
@@ -614,8 +630,10 @@
 			baseConfigurationReference = D93BD4148598633F26F102F7 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3G34999H3A;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.RunnerTests;
@@ -630,8 +648,10 @@
 			baseConfigurationReference = 5AE0D6E43ED8290EC8663396 /* Pods-RunnerTests.profile.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3G34999H3A;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.RunnerTests;
