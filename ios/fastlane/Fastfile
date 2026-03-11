@@ -480,18 +480,28 @@ platform :ios do
     UI.message("🚀 Uploading to TestFlight...")
     ENV["PILOT_SKIP_WAITING_FOR_BUILD_PROCESSING"] = "0"
     
-    # Troubleshooting: log what we're uploading so you can match in App Store Connect
+    # Log exactly what we're uploading so you can match in App Store Connect
     pubspec_path = File.join(PROJECT_ROOT, "pubspec.yaml")
+    uploaded_version = nil
+    uploaded_build = nil
     if File.exist?(pubspec_path)
       version_match = File.read(pubspec_path).match(/^version:\s*(\d+\.\d+\.\d+)\+(\d+)/)
       if version_match
-        UI.message("📋 [troubleshoot] App version: #{version_match[1]}, build: #{version_match[2]} (from pubspec.yaml)")
+        uploaded_version = version_match[1]
+        uploaded_build = version_match[2]
+        UI.message("📋 Uploading: version #{uploaded_version}, build #{uploaded_build} (from pubspec → IPA)")
       end
     end
-    UI.message("📋 [troubleshoot] IPA: #{ipa_path}")
-    UI.message("📋 [troubleshoot] App identifier: com.triftly")
-    UI.message("📋 [troubleshoot] If build takes >15 min: check email for 'Invalid build' / export compliance; open https://appstoreconnect.apple.com → My Apps → Triftly → TestFlight")
-    UI.message("📋 [troubleshoot] For full pilot/transporter logs run: bundle exec fastlane ios upload_testflight env:prod --verbose")
+    UI.message("📋 IPA path: #{ipa_path}")
+    UI.message("📋 App identifier: com.triftly (itc_team_id: 128328295)")
+    if File.exist?(ipa_path)
+      mtime = File.mtime(ipa_path)
+      UI.message("📋 IPA last modified: #{mtime.localtime.strftime('%Y-%m-%d %H:%M:%S')} (should be from this run)")
+    end
+    UI.message("")
+    UI.important("ℹ️  'Successfully uploaded' = Apple's servers received the file. Build may take 5–30 min to appear (or fail processing → check email).")
+    UI.message("📋 If build never appears: App Store Connect → Triftly → TestFlight → 构建版本上传 → 查看更多; or check email for processing errors.")
+    UI.message("📋 Verbose logs: bundle exec fastlane ios upload_testflight env:prod --verbose")
     UI.message("")
     
     release_notes = generate_release_notes
@@ -502,14 +512,19 @@ platform :ios do
     begin
       upload_to_testflight(
         ipa: ipa_path,
+        app_identifier: "com.triftly",
         skip_waiting_for_build_processing: false,
         skip_submission: true,
         distribute_external: false,
         notify_external_testers: false
       )
       
-      UI.success("✅ Successfully uploaded to TestFlight!")
-      UI.message("📱 Build will appear in App Store Connect in 5–15 min. Add 'What to Test' there if needed.")
+      UI.success("✅ Successfully uploaded to App Store Connect!")
+      if uploaded_build
+        UI.message("📱 Look for build #{uploaded_build} (version #{uploaded_version}) in TestFlight → 构建版本上传. Processing usually 5–30 min; if missing after 24h, contact Apple or re-upload with next build number.")
+      else
+        UI.message("📱 Build will appear in App Store Connect in 5–30 min. If it does not, check email for processing errors or re-upload.")
+      end
     rescue => ex
       error_msg = ex.message
       
@@ -529,13 +544,14 @@ platform :ios do
           # Retry the upload with release notes
           upload_to_testflight(
             ipa: ipa_path,
+            app_identifier: "com.triftly",
             skip_waiting_for_build_processing: false,
             skip_submission: true,
             distribute_external: false,
             notify_external_testers: false
           )
           
-          UI.success("✅ Successfully uploaded to TestFlight!")
+          UI.success("✅ Successfully uploaded to App Store Connect!")
           UI.message("📱 Check App Store Connect for build processing status")
         rescue => create_ex
           UI.error("")
