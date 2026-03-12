@@ -47,13 +47,25 @@ def find_pod_command
   return "pod"
 end
 
-# Run pod install. Prefer bundle exec (using same Ruby as Fastfile); fall back to system pod if bundle fails.
-# Returns true if bundle exec pod succeeded (so Flutter can use pod wrapper), false if we used system pod.
+# Run pod install. Prefer install_gems_and_pods.sh (native arm64 Ruby, avoids ffi_c mismatch); then bundle exec; then system pod.
+# Returns true if we have a pod wrapper or script succeeded, false if we used system pod.
 def run_pod_install
-  UI.message("Running pod install (trying bundle exec first)...")
+  install_script = File.join(IOS_DIR, "install_gems_and_pods.sh")
+  if File.executable?(install_script)
+    UI.message("Running pod install via install_gems_and_pods.sh (native Ruby, avoids ffi arch mismatch)...")
+    begin
+      home = ENV["HOME"] || ENV["USERPROFILE"] || Dir.home
+      sh("cd #{PROJECT_ROOT} && env HOME=\"#{home}\" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 #{install_script}", log: true)
+      UI.success("✅ pod install completed (via install_gems_and_pods.sh)")
+      return true
+    rescue => script_ex
+      UI.important("⚠️  install script failed: #{script_ex.message}")
+    end
+  end
+
+  UI.message("Running pod install (trying bundle exec)...")
   ruby_bin = RbConfig.ruby
   begin
-    # Run pod with native arch so gem native extensions (e.g. nkf) match Ruby arch (arm64 on Apple Silicon)
     gem_home = gem_home_for_bundle
     gem_path = gem_path_for_bundle
     sh("cd #{IOS_DIR} && env PATH=\"#{path_for_system_ruby}\" GEM_HOME=\"#{gem_home}\" GEM_PATH=\"#{gem_path}\" #{ruby_bin} -S bundle exec pod install --repo-update", log: true)
@@ -61,31 +73,15 @@ def run_pod_install
     return true
   rescue => ex
     UI.important("⚠️  bundle exec pod failed: #{ex.message}")
-    UI.important("Trying system pod (with PATH so pod uses system Ruby)...")
+    UI.important("Trying system pod...")
     pod_cmd = find_pod_command
     begin
-      # Use /usr/bin first so pod's shebang finds system Ruby, avoiding GemNotFound
       system_path = "/usr/bin:#{ENV['PATH']}"
       sh("cd #{IOS_DIR} && env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u BUNDLE_PATH PATH=\"#{system_path}\" #{pod_cmd} install --repo-update", log: true)
       UI.success("✅ pod install completed (system pod)")
       return false
     rescue => sys_ex
       UI.important("⚠️  system pod also failed: #{sys_ex.message}")
-      # Third fallback: run install_gems_and_pods.sh (Ruby 2.6 + clean PATH)
-      install_script = File.join(IOS_DIR, "install_gems_and_pods.sh")
-      if File.executable?(install_script)
-        UI.important("Trying #{install_script} (Ruby 2.6 + pod install)...")
-        begin
-          home = ENV["HOME"] || ENV["USERPROFILE"] || Dir.home
-          # Pass HOME and UTF-8; let script inherit PATH (from menu so rbenv is available)
-          sh("cd #{PROJECT_ROOT} && env HOME=\"#{home}\" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 #{install_script}", log: true)
-          UI.success("✅ pod install completed (via install_gems_and_pods.sh)")
-          return true
-        rescue => script_ex
-          UI.important("⚠️  install script failed: #{script_ex.message}")
-        end
-      end
-      # Continue anyway if Pods may already be installed (e.g. user ran install_gems_and_pods.sh once)
       pods_lock = File.join(IOS_DIR, "Pods", "Manifest.lock")
       if File.exist?(pods_lock)
         UI.important("Continuing (Pods/Manifest.lock exists). If build fails, run: ./ios/install_gems_and_pods.sh")
@@ -338,9 +334,9 @@ platform :ios do
       teamID: "3G34999H3A"  # Your team ID from Appfile
     }
     
-    # For app-store, ensure provisioning profiles are installed so export finds them (app + Share Extension)
+    # For app-store, ensure provisioning profile is installed so export finds it
     if export_method == "app-store"
-      UI.message("📦 Building for App Store - ensuring provisioning profiles are available...")
+      UI.message("📦 Building for App Store - ensuring provisioning profile is available...")
       begin
         get_provisioning_profile(
           app_identifier: "com.triftly",
@@ -348,15 +344,9 @@ platform :ios do
           username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
           team_id: "3G34999H3A"
         )
-        get_provisioning_profile(
-          app_identifier: "com.triftly.TriftlyShare",
-          adhoc: false,
-          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-          team_id: "3G34999H3A"
-        )
-        UI.success("✅ Provisioning profiles ready (Runner + TriftlyShare)")
+        UI.success("✅ Provisioning profile ready")
       rescue => ex
-        UI.important("⚠️  Could not fetch profiles (you may need to run setup_appstore_signing with 2FA): #{ex.message}")
+        UI.important("⚠️  Could not fetch profile (you may need to run setup_appstore_signing with 2FA): #{ex.message}")
       end
     end
 
@@ -566,8 +556,8 @@ platform :ios do
           UI.error("      - Platform: iOS")
           UI.error("      - Name: Triftly (or your app name)")
           UI.error("      - Primary Language: (select your language)")
-        UI.error("      - Bundle ID: com.triftly")
-        UI.error("      - SKU: (any unique identifier, e.g., 'triftly-001')")
+          UI.error("      - Bundle ID: com.triftly")
+          UI.error("      - SKU: (any unique identifier, e.g., 'triftly-001')")
           UI.error("      - User Access: Full Access (or as needed)")
           UI.error("   5. Click 'Create'")
           UI.error("")
@@ -640,28 +630,15 @@ platform :ios do
         team_id: "3G34999H3A"
       )
       
-      # Get or create App Store provisioning profile for main app
-      UI.message("📋 Getting App Store provisioning profile for main app...")
+      # Get or create App Store provisioning profile
+      UI.message("📋 Getting App Store provisioning profile...")
       get_provisioning_profile(
         app_identifier: "com.triftly",
         username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
         team_id: "3G34999H3A"
       )
 
-      # Get or create App Store provisioning profile for Share Extension (required for export/packaging)
-      UI.message("📋 Getting App Store provisioning profile for TriftlyShare extension...")
-      begin
-        get_provisioning_profile(
-          app_identifier: "com.triftly.TriftlyShare",
-          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-          team_id: "3G34999H3A"
-        )
-      rescue => ext_ex
-        UI.important("⚠️  TriftlyShare profile failed (extension may need its App ID): #{ext_ex.message}")
-        UI.important("   Create it in Apple Developer → Identifiers → + → App IDs → App → com.triftly.TriftlyShare")
-      end
-
-      UI.success("✅ App Store distribution certificates and profiles are ready!")
+      UI.success("✅ App Store distribution certificate and profile are ready!")
       UI.message("📝 You can now build for App Store using: bundle exec fastlane ios build_ipa export_method:app-store")
     rescue => ex
       UI.important("⚠️  Automatic certificate setup failed: #{ex.message}")
@@ -670,7 +647,7 @@ platform :ios do
       UI.important("   1. open ios/Runner.xcworkspace")
       UI.important("   2. Select Runner target → Signing & Capabilities")
       UI.important("   3. Enable 'Automatically manage signing'")
-      UI.important("   4. Select your team (and ensure TriftlyShare target has the same team)")
+      UI.important("   4. Select your team (3G34999H3A)")
       UI.important("")
       raise
     end

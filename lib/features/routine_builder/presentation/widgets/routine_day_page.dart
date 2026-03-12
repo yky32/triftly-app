@@ -350,8 +350,22 @@ class _ItineraryTimeline extends StatelessWidget {
   static const double _lineWidth = 2;
   static const double _circleSize = 28;
 
+  /// Minimum height for empty state so the message appears centered in the day area.
+  static const double _kEmptyStateMinHeight = 160;
+
   @override
   Widget build(BuildContext context) {
+    if (spots.isEmpty) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: _kEmptyStateMinHeight,
+        ),
+        child: Center(
+          child: _DayEmptyState(theme: theme),
+        ),
+      );
+    }
+
     final lineColor = AppColors.mistGray.withValues(alpha: 0.4);
 
     return Column(
@@ -535,6 +549,43 @@ class _ItineraryTimeline extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// Empty state when the day has no spots; style aligned with routine_builder empty notice.
+class _DayEmptyState extends StatelessWidget {
+  const _DayEmptyState({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = theme.colorScheme;
+    final onSurfaceVariant = colorScheme.onSurfaceVariant;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.add_location_alt_outlined,
+          size: 44,
+          color: colorScheme.primary.withValues(alpha: 0.75),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            "Tap 'Add' to start your trip",
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
   }
