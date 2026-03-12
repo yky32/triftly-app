@@ -356,10 +356,8 @@ class _ItineraryTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (spots.isEmpty) {
-      return ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: _kEmptyStateMinHeight,
-        ),
+      return SizedBox(
+        height: _kEmptyStateMinHeight,
         child: Center(
           child: _DayEmptyState(theme: theme),
         ),
