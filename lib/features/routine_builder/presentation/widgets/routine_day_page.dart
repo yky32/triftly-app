@@ -350,14 +350,12 @@ class _ItineraryTimeline extends StatelessWidget {
   static const double _lineWidth = 2;
   static const double _circleSize = 28;
 
-  /// Minimum height for empty state so the message appears centered in the day area.
-  static const double _kEmptyStateMinHeight = 160;
-
   @override
   Widget build(BuildContext context) {
     if (spots.isEmpty) {
+      final height = MediaQuery.sizeOf(context).height * 0.5;
       return SizedBox(
-        height: _kEmptyStateMinHeight,
+        height: height,
         child: Center(
           child: _DayEmptyState(theme: theme),
         ),
@@ -563,18 +561,19 @@ class _DayEmptyState extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.add_location_alt_outlined,
-          size: 44,
-          color: colorScheme.primary.withValues(alpha: 0.75),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.add_location_alt_outlined,
+            size: 44,
+            color: colorScheme.primary.withValues(alpha: 0.75),
+          ),
+          const SizedBox(height: 16),
+          Text(
             "Tap 'Add' to start your trip",
             style: theme.textTheme.bodyLarge?.copyWith(
               color: onSurfaceVariant,
@@ -583,8 +582,8 @@ class _DayEmptyState extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
