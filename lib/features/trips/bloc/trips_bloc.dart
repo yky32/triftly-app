@@ -8,6 +8,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
       : _repository = repository,
         super(const TripsState()) {
     on<_TripsUpdated>(_onTripsUpdated);
+    on<TripsReloadRequested>(_onTripsReloadRequested);
 
     _subscription = _repository.watchSavedTrips().listen((trips) {
       add(_TripsUpdated(trips));
@@ -19,6 +20,16 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
 
   void _onTripsUpdated(_TripsUpdated event, Emitter<TripsState> emit) {
     emit(TripsState(isLoading: false, trips: event.trips));
+  }
+
+  Future<void> _onTripsReloadRequested(
+    TripsReloadRequested event,
+    Emitter<TripsState> emit,
+  ) async {
+    emit(TripsState(isLoading: true, trips: state.trips));
+    // Keep skeleton visible long enough so users can perceive the refresh action.
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    emit(TripsState(isLoading: false, trips: _repository.loadSavedTrips()));
   }
 
   @override
@@ -36,6 +47,10 @@ class _TripsUpdated extends TripsEvent {
   const _TripsUpdated(this.trips);
 
   final List<SavedTripSummary> trips;
+}
+
+class TripsReloadRequested extends TripsEvent {
+  const TripsReloadRequested();
 }
 
 class TripsState {
