@@ -29,7 +29,8 @@ class BottomSheetDragHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    final color =
+        Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
     return Center(
       child: Container(
         width: 64,
@@ -60,4 +61,3 @@ Future<T?> showAppModalBottomSheet<T>({
     builder: builder,
   );
 }
-  

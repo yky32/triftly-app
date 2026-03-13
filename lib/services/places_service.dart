@@ -36,8 +36,10 @@ class PlaceDetailsResult {
 class PlacesService {
   PlacesService._();
 
-  static const _detailsUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
-  static const _photoBaseUrl = 'https://maps.googleapis.com/maps/api/place/photo';
+  static const _detailsUrl =
+      'https://maps.googleapis.com/maps/api/place/details/json';
+  static const _photoBaseUrl =
+      'https://maps.googleapis.com/maps/api/place/photo';
 
   static String? get _apiKey => dotenv.env['GOOGLE_MAPS_API_KEY'];
 
@@ -46,7 +48,8 @@ class PlacesService {
     final key = _apiKey;
     if (key == null || key.isEmpty) {
       if (kDebugMode) {
-        debugPrint('[PlacesService] getPlaceDetails: GOOGLE_MAPS_API_KEY missing or empty.');
+        debugPrint(
+            '[PlacesService] getPlaceDetails: GOOGLE_MAPS_API_KEY missing or empty.');
       }
       return null;
     }
@@ -54,17 +57,21 @@ class PlacesService {
     final uri = Uri.parse(_detailsUrl).replace(
       queryParameters: {
         'place_id': placeId,
-        'fields': 'name,formatted_address,rating,opening_hours,photos,website,formatted_phone_number,types',
+        'fields':
+            'name,formatted_address,rating,opening_hours,photos,website,formatted_phone_number,types',
         'key': key,
       },
     );
 
     try {
       final response = await Dio().getUri(uri).timeout(
-        const Duration(seconds: 5),
-      );
+            const Duration(seconds: 5),
+          );
       if (response.statusCode != 200) {
-        if (kDebugMode) debugPrint('[PlacesService] getPlaceDetails: HTTP ${response.statusCode}');
+        if (kDebugMode) {
+          debugPrint(
+              '[PlacesService] getPlaceDetails: HTTP ${response.statusCode}');
+        }
         return null;
       }
 
@@ -73,7 +80,8 @@ class PlacesService {
       if (status != 'OK') {
         if (kDebugMode) {
           final errorMessage = json['error_message'] as String?;
-          debugPrint('[PlacesService] getPlaceDetails: status=$status error_message=$errorMessage. '
+          debugPrint(
+              '[PlacesService] getPlaceDetails: status=$status error_message=$errorMessage. '
               'Ensure Places API is enabled and API key allows this app (iOS bundle ID / Android package).');
         }
         return null;
@@ -85,7 +93,9 @@ class PlacesService {
       final name = result['name'] as String?;
       final formattedAddress = result['formatted_address'] as String?;
       final rating = (result['rating'] as num?)?.toDouble();
-      final types = (result['types'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+      final types = (result['types'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList();
 
       List<String>? weekdayText;
       final openingHours = result['opening_hours'] as Map<String, dynamic>?;

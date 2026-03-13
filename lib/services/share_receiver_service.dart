@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:triftly/features/map_view/utils/google_maps_share_parser.dart';
+import 'package:triftly/features/4_map_view/utils/google_maps_share_parser.dart';
 
 /// Receives URLs shared from other apps (e.g. Google Maps Share → Triftly).
 /// Call [getPendingSharedLocation] after app start to get a parsed location if the app was opened via share.

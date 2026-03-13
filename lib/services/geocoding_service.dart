@@ -69,14 +69,16 @@ class GeocodingService {
     if (types == null || types.isEmpty) return 0;
     final typeSet = types.map((e) => e.toString()).toSet();
     final hasFamous = typeSet.any((t) => _famousTypes.contains(t));
-    final hasPoi = typeSet.contains('establishment') || typeSet.contains('point_of_interest');
+    final hasPoi = typeSet.contains('establishment') ||
+        typeSet.contains('point_of_interest');
     if (hasFamous) return 2;
     if (hasPoi) return 1;
     return 0;
   }
 
   /// Sort geocode results so POIs come first, famous places first among POIs.
-  static List<Map<String, dynamic>> _sortResultsPoiFirst(List<dynamic> results) {
+  static List<Map<String, dynamic>> _sortResultsPoiFirst(
+      List<dynamic> results) {
     final list = results.map((e) => e as Map<String, dynamic>).toList();
     list.sort((a, b) => _scoreResult(b).compareTo(_scoreResult(a)));
     return list;
@@ -90,7 +92,8 @@ class GeocodingService {
     final key = _apiKey;
     if (key == null || key.isEmpty) {
       if (kDebugMode) {
-        debugPrint('[GeocodingService] reverseGeocode: GOOGLE_MAPS_API_KEY missing or empty. '
+        debugPrint(
+            '[GeocodingService] reverseGeocode: GOOGLE_MAPS_API_KEY missing or empty. '
             'Check env file is loaded (Environment.load) and key is set for this build (ENV=dev/stag/prod).');
       }
       return null;
@@ -105,11 +108,12 @@ class GeocodingService {
 
     try {
       final response = await Dio().getUri(uri).timeout(
-        const Duration(seconds: 5),
-      );
+            const Duration(seconds: 5),
+          );
       if (response.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('[GeocodingService] reverseGeocode: HTTP ${response.statusCode}');
+          debugPrint(
+              '[GeocodingService] reverseGeocode: HTTP ${response.statusCode}');
         }
         return null;
       }
@@ -119,7 +123,8 @@ class GeocodingService {
       if (status != 'OK') {
         if (kDebugMode) {
           final errorMessage = json['error_message'] as String?;
-          debugPrint('[GeocodingService] reverseGeocode: status=$status error_message=$errorMessage. '
+          debugPrint(
+              '[GeocodingService] reverseGeocode: status=$status error_message=$errorMessage. '
               'On real device: ensure Geocoding API is enabled and API key has no app restriction blocking this app (iOS bundle ID / Android package name).');
         }
         return null;
@@ -186,8 +191,8 @@ class GeocodingService {
 
     try {
       final response = await Dio().getUri(uri).timeout(
-        const Duration(seconds: 5),
-      );
+            const Duration(seconds: 5),
+          );
       if (response.statusCode != 200) return [];
 
       final json = response.data as Map<String, dynamic>;
@@ -211,7 +216,8 @@ class GeocodingService {
 
         final formattedAddress = map['formatted_address'] as String? ?? '';
         final placeId = map['place_id'] as String?;
-        final types = (map['types'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+        final types =
+            (map['types'] as List<dynamic>?)?.map((e) => e.toString()).toList();
 
         String? locality;
         final components = map['address_components'] as List<dynamic>?;

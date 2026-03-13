@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:triftly/main.dart';
 import 'package:triftly/core/theme/theme_preference.dart';
-import 'package:triftly/features/routine_builder/data/routine_repository.dart';
+import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
 
 void main() {
   testWidgets('App builds and shows MaterialApp', (WidgetTester tester) async {

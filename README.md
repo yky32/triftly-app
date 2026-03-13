@@ -83,7 +83,7 @@ Use for any scrollable content that could extend behind the bottom nav (e.g. `Si
 The map tab uses **Geocoding** (and is prepared for **Places**) so users see useful info when tapping the map and can later add spots to the routine builder.
 
 - **Geocoding**: Set `GOOGLE_MAPS_API_KEY` in `env/.env.dev` (same key as Maps). Enable **Geocoding API** in [Google Cloud Console](https://console.cloud.google.com/apis/library/geocoding-backend.googleapis.com) for the same project. Reverse geocode turns a tap (LatLng) into address and place ID.
-- **MapLocation** in `lib/features/map_view/models/map_location.dart` holds: title, address, description, position, plus optional `placeId`, `rating`, `types`, `openingHoursText`, `photoUrl`, `website`, `phoneNumber`, `locality` for when you add Places API later.
+- **MapLocation** in `lib/features/4_map_view/models/map_location.dart` holds: title, address, description, position, plus optional `placeId`, `rating`, `types`, `openingHoursText`, `photoUrl`, `website`, `phoneNumber`, `locality` for when you add Places API later.
 - **Places API**: Place Details is integrated. After reverse geocode, the app fetches place details by `place_id` (rating, opening hours, photo, website, phone). Enable **Places API** in Cloud Console. The bottom sheet shows photo, rating, types, opening hours, website, and phone when returned.
 
 **Troubleshooting: Map shows "Dropped pin" (no POI/address) on real device**
@@ -112,7 +112,7 @@ The **Map** tab and **Routine Builder** are wired both ways so users can add spo
 - A preview card shows title and address with **"Use this location"** / **"Choose another"**. On **Use this location**, the picker pops and returns the MapLocation to the sheet.
 - The add/edit spot sheet then fills **Location** (address), **Title** (if empty), and **Description** (if returned) from the picked location.
 
-Shared pieces: `buildMapLocationFromTap` in `lib/features/map_view/utils/location_from_tap.dart`, GeocodingService, PlacesService. The map picker reuses this logic so behaviour matches the Map tab.
+Shared pieces: `buildMapLocationFromTap` in `lib/features/4_map_view/utils/location_from_tap.dart`, GeocodingService, PlacesService. The map picker reuses this logic so behaviour matches the Map tab.
 
 ## Share from Google Maps (native app → Triftly)
 

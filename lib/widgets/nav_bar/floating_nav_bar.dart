@@ -97,7 +97,6 @@ class FloatingNavBar extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // Alternative simpler floating nav bar without labels

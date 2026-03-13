@@ -8,7 +8,7 @@ import 'package:triftly/core/theme/theme.dart';
 import 'package:triftly/core/theme/theme_bloc.dart';
 import 'package:triftly/core/theme/theme_preference.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
-import 'package:triftly/features/routine_builder/data/routine_repository.dart';
+import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
 import 'package:triftly/router/app_router.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
@@ -54,32 +54,32 @@ class MyApp extends StatelessWidget {
     return RepositoryProvider<RoutineRepository>.value(
       value: routineRepository,
       child: MultiBlocProvider(
-      providers: [
-        BlocProvider<LoginBloc>(
-          create: (BuildContext context) => LoginBloc(),
+        providers: [
+          BlocProvider<LoginBloc>(
+            create: (BuildContext context) => LoginBloc(),
+          ),
+          BlocProvider<ThemeBloc>(
+            create: (BuildContext context) => ThemeBloc(themePreference),
+          ),
+        ],
+        child: BlocBuilder<ThemeBloc, ThemeMode>(
+          builder: (context, themeMode) {
+            return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              title: 'Triftly',
+              theme: CustomTheme.lightThemeData(),
+              darkTheme: CustomTheme.darkThemeData(),
+              themeMode: themeMode,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: AppRouter.router,
+              localizationsDelegates: [
+                ...AppLocalizations.localizationsDelegates,
+                FormBuilderLocalizations.delegate,
+              ],
+            );
+          },
         ),
-        BlocProvider<ThemeBloc>(
-          create: (BuildContext context) => ThemeBloc(themePreference),
-        ),
-      ],
-      child: BlocBuilder<ThemeBloc, ThemeMode>(
-        builder: (context, themeMode) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: 'Triftly',
-            theme: CustomTheme.lightThemeData(),
-            darkTheme: CustomTheme.darkThemeData(),
-            themeMode: themeMode,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: AppRouter.router,
-            localizationsDelegates: [
-              ...AppLocalizations.localizationsDelegates,
-              FormBuilderLocalizations.delegate,
-            ],
-          );
-        },
       ),
-    ),
     );
   }
 }
