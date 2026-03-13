@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/features/routine_builder/bloc/routine_builder_bloc.dart';
 import 'package:triftly/features/routine_builder/data/routine_repository.dart';
@@ -8,6 +9,7 @@ import 'package:triftly/features/routine_builder/presentation/widgets/bottom_she
 import 'package:triftly/features/routine_builder/presentation/widgets/routine_day_carousel.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
+import 'package:triftly/router/app_page.dart';
 
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
@@ -44,8 +46,10 @@ class _RoutineBuilderView extends StatelessWidget {
         child: BlocConsumer<RoutineBuilderBloc, RoutineBuilderState>(
           listenWhen: (prev, curr) =>
               (curr.pendingSpotToAddFromMap != null &&
-                  prev.pendingSpotToAddFromMap != curr.pendingSpotToAddFromMap) ||
-              (curr.lastSavedAt != null && prev.lastSavedAt != curr.lastSavedAt),
+                  prev.pendingSpotToAddFromMap !=
+                      curr.pendingSpotToAddFromMap) ||
+              (curr.lastSavedAt != null &&
+                  prev.lastSavedAt != curr.lastSavedAt),
           listener: (context, state) {
             final spot = state.pendingSpotToAddFromMap;
             if (spot != null) {
@@ -68,10 +72,8 @@ class _RoutineBuilderView extends StatelessWidget {
               return;
             }
             if (state.lastSavedAt != null && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Routine saved')),
-              );
-              context.read<RoutineBuilderBloc>().add(ClearSaveStatus());
+              context.read<RoutineBuilderBloc>().add(TripCleared());
+              context.go(AppPage.trips.path);
             }
           },
           buildWhen: (prev, curr) =>
@@ -325,9 +327,12 @@ class _RoutineMoreButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 22, color: theme.colorScheme.onSurface),
+              Icon(Icons.edit_outlined,
+                  size: 22, color: theme.colorScheme.onSurface),
               const SizedBox(width: 14),
-              Text('Edit', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface)),
+              Text('Edit',
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(color: theme.colorScheme.onSurface)),
             ],
           ),
         ),
@@ -336,9 +341,12 @@ class _RoutineMoreButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.delete_outline, size: 22, color: theme.colorScheme.error),
+              Icon(Icons.delete_outline,
+                  size: 22, color: theme.colorScheme.error),
               const SizedBox(width: 14),
-              Text('Delete', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error)),
+              Text('Delete',
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(color: theme.colorScheme.error)),
             ],
           ),
         ),

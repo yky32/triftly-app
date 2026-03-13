@@ -25,7 +25,6 @@ class RoutineBuilderBloc
     on<SpotsClearedForDay>(_onSpotsClearedForDay);
     on<DayLabelUpdated>(_onDayLabelUpdated);
     on<SaveRoutine>(_onSaveRoutine);
-    on<ClearSaveStatus>(_onClearSaveStatus);
   }
 
   final RoutineRepository _repository;
@@ -120,12 +119,5 @@ class RoutineBuilderBloc
       dayLabels: state.dayLabels,
     );
     emit(state.copyWith(lastSavedAt: DateTime.now()));
-  }
-
-  void _onClearSaveStatus(
-    ClearSaveStatus event,
-    Emitter<RoutineBuilderState> emit,
-  ) {
-    emit(state.copyWith(clearLastSavedAt: true));
   }
 }

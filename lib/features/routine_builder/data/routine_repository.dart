@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:triftly/features/routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
 const String _keyRoutine = 'triftly_saved_routine';
+const String _keySavedTrips = 'triftly_saved_trips';
 
 /// Persists and restores the current routine (trip + spots + day labels) using SharedPreferences.
 /// Used by [RoutineBuilderBloc] for the Save action.
@@ -13,6 +15,8 @@ class RoutineRepository {
   RoutineRepository(this._prefs);
 
   final SharedPreferences _prefs;
+  final StreamController<List<SavedTripSummary>> _savedTripsController =
+      StreamController<List<SavedTripSummary>>.broadcast();
 
   /// Saves the current trip, spots per day, and day labels.
   /// No-op if [trip] is null.
@@ -24,6 +28,22 @@ class RoutineRepository {
     if (trip == null) return;
     final payload = _toJson(trip, spotsByDay, dayLabels);
     await _prefs.setString(_keyRoutine, jsonEncode(payload));
+
+    final savedTrips = loadSavedTrips();
+    final next = SavedTripSummary.fromTrip(trip, savedAt: DateTime.now());
+    final existingIndex = savedTrips.indexWhere((item) =>
+        item.name == next.name &&
+        item.startDate == next.startDate &&
+        item.endDate == next.endDate);
+    if (existingIndex != -1) {
+      savedTrips.removeAt(existingIndex);
+    }
+    savedTrips.insert(0, next);
+    await _prefs.setString(
+      _keySavedTrips,
+      jsonEncode(savedTrips.map((item) => item.toJson()).toList()),
+    );
+    _savedTripsController.add(List<SavedTripSummary>.unmodifiable(savedTrips));
   }
 
   /// Restores the last saved routine, or null if none.
@@ -36,6 +56,32 @@ class RoutineRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  List<SavedTripSummary> loadSavedTrips() {
+    final raw = _prefs.getString(_keySavedTrips);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list
+            .map((item) =>
+                SavedTripSummary.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    final legacy = load();
+    if (legacy == null) return const [];
+    return [
+      SavedTripSummary.fromTrip(legacy.trip, savedAt: legacy.trip.endDate)
+    ];
+  }
+
+  Stream<List<SavedTripSummary>> watchSavedTrips() async* {
+    yield List<SavedTripSummary>.unmodifiable(loadSavedTrips());
+    yield* _savedTripsController.stream;
   }
 
   Map<String, dynamic> _toJson(
@@ -76,7 +122,8 @@ class RoutineRepository {
       name: tripMap['name'] as String? ?? '',
       startDate: DateTime.parse(tripMap['startDate'] as String),
       endDate: DateTime.parse(tripMap['endDate'] as String),
-      countries: (tripMap['countries'] as List<dynamic>?)?.cast<String>() ?? const [],
+      countries:
+          (tripMap['countries'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
 
     final spotsMap = map['spotsByDay'] as Map<String, dynamic>? ?? {};
@@ -113,7 +160,8 @@ class RoutineRepository {
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
       location: map['location'] as String? ?? '',
-      icon: IconData(map['iconCodePoint'] as int? ?? Icons.place_outlined.codePoint),
+      icon: IconData(
+          map['iconCodePoint'] as int? ?? Icons.place_outlined.codePoint),
       color: Color(map['colorValue'] as int? ?? 0xFF0277BD),
     );
   }
@@ -130,4 +178,54 @@ class SavedRoutine {
   final RoutineTripResult trip;
   final Map<int, List<RoutineSpot>> spotsByDay;
   final Map<int, String> dayLabels;
+}
+
+class SavedTripSummary {
+  const SavedTripSummary({
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    required this.countries,
+    required this.savedAt,
+  });
+
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+  final List<String> countries;
+  final DateTime savedAt;
+
+  factory SavedTripSummary.fromTrip(
+    RoutineTripResult trip, {
+    required DateTime savedAt,
+  }) {
+    return SavedTripSummary(
+      name: trip.name,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      countries: List<String>.from(trip.countries),
+      savedAt: savedAt,
+    );
+  }
+
+  factory SavedTripSummary.fromJson(Map<String, dynamic> map) {
+    return SavedTripSummary(
+      name: map['name'] as String? ?? '',
+      startDate: DateTime.parse(map['startDate'] as String),
+      endDate: DateTime.parse(map['endDate'] as String),
+      countries:
+          (map['countries'] as List<dynamic>?)?.cast<String>() ?? const [],
+      savedAt: DateTime.parse(map['savedAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'countries': countries,
+      'savedAt': savedAt.toIso8601String(),
+    };
+  }
 }

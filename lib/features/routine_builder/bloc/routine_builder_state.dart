@@ -24,7 +24,7 @@ class RoutineBuilderState {
   /// When non-null, UI should open add-spot sheet with this as initial, then dispatch [PendingSpotFromMapConsumed].
   final RoutineSpot? pendingSpotToAddFromMap;
 
-  /// Set when [SaveRoutine] completes; UI shows "Saved" and dispatches [ClearSaveStatus].
+  /// Set when [SaveRoutine] completes; UI can react (e.g. navigate to trips tab).
   final DateTime? lastSavedAt;
 
   int get pageCount => trip?.daysOfTrip ?? 0;
@@ -45,7 +45,6 @@ class RoutineBuilderState {
     RoutineSpot? pendingSpotToAddFromMap,
     bool clearPendingSpotToAddFromMap = false,
     DateTime? lastSavedAt,
-    bool clearLastSavedAt = false,
   }) {
     return RoutineBuilderState(
       trip: trip ?? this.trip,
@@ -55,7 +54,7 @@ class RoutineBuilderState {
       pendingSpotToAddFromMap: clearPendingSpotToAddFromMap
           ? null
           : (pendingSpotToAddFromMap ?? this.pendingSpotToAddFromMap),
-      lastSavedAt: clearLastSavedAt ? null : (lastSavedAt ?? this.lastSavedAt),
+      lastSavedAt: lastSavedAt ?? this.lastSavedAt,
     );
   }
 }

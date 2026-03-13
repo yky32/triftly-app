@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/routine_builder/data/routine_repository.dart';
+import 'package:triftly/features/trips/bloc/trips_bloc.dart';
 
 class TripsPage extends StatelessWidget {
   const TripsPage({super.key});
 
-  static const List<_TripItem> _sampleTrips = [];
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => TripsBloc(
+        repository: context.read<RoutineRepository>(),
+      ),
+      child: const _TripsView(),
+    );
+  }
+}
+
+class _TripsView extends StatelessWidget {
+  const _TripsView();
 
   @override
   Widget build(BuildContext context) {
@@ -67,32 +82,56 @@ class TripsPage extends StatelessWidget {
               _TripsSearchBar(hintText: context.l10n.trips_search_hint),
               const SizedBox(height: 24),
               Expanded(
-                child: GestureDetector(
-                  onTap: () => FocusScope.of(context).unfocus(),
-                  behavior: HitTestBehavior.opaque,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const crossAxisSpacing = 12.0;
-                      const mainAxisSpacing = 12.0;
-                      const crossAxisCount = 2;
-                      final itemWidth =
-                          (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
-                      return GridView.builder(
-                        padding: EdgeInsets.zero,
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          childAspectRatio: itemWidth / 240,
-                          crossAxisSpacing: crossAxisSpacing,
-                          mainAxisSpacing: mainAxisSpacing,
+                child: BlocBuilder<TripsBloc, TripsState>(
+                  builder: (context, state) {
+                    if (state.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final items = state.trips
+                        .map((trip) => _TripItem.fromSavedTrip(context, trip))
+                        .toList();
+
+                    if (items.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No saved trips yet',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                        itemCount: _sampleTrips.length,
-                        itemBuilder: (context, index) {
-                          return _TripCard(item: _sampleTrips[index]);
-                        },
                       );
-                    },
-                  ),
+                    }
+
+                    return GestureDetector(
+                      onTap: () => FocusScope.of(context).unfocus(),
+                      behavior: HitTestBehavior.opaque,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          const crossAxisSpacing = 12.0;
+                          const mainAxisSpacing = 12.0;
+                          const crossAxisCount = 2;
+                          final itemWidth =
+                              (constraints.maxWidth - crossAxisSpacing) /
+                                  crossAxisCount;
+                          return GridView.builder(
+                            padding: EdgeInsets.zero,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: itemWidth / 240,
+                              crossAxisSpacing: crossAxisSpacing,
+                              mainAxisSpacing: mainAxisSpacing,
+                            ),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              return _TripCard(item: items[index]);
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -109,6 +148,25 @@ class _TripItem {
     required this.country,
     required this.dateLabel,
   });
+
+  factory _TripItem.fromSavedTrip(
+    BuildContext context,
+    SavedTripSummary trip,
+  ) {
+    final localizations = MaterialLocalizations.of(context);
+    final startLabel = localizations.formatShortDate(trip.startDate);
+    final endLabel = localizations.formatShortDate(trip.endDate);
+    final dateLabel =
+        trip.startDate == trip.endDate ? startLabel : '$startLabel - $endLabel';
+
+    return _TripItem(
+      name: trip.name.trim().isEmpty ? 'Untitled trip' : trip.name,
+      country:
+          trip.countries.isEmpty ? 'No country' : trip.countries.join(', '),
+      dateLabel: dateLabel,
+    );
+  }
+
   final String name;
   final String country;
   final String dateLabel;

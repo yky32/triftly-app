@@ -69,6 +69,7 @@ class _MapViewContent extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: _isPickMode
           ? AppBar(
               title: const Text('Pick location'),
@@ -99,68 +100,106 @@ class _MapViewContent extends StatelessWidget {
                       child: const _SearchBar(),
                     ),
                     BlocBuilder<MapViewBloc, MapViewState>(
-                    buildWhen: (prev, curr) =>
-                        prev.isSearching != curr.isSearching ||
-                        prev.locations != curr.locations ||
-                        prev.searchQuery != curr.searchQuery,
-                    builder: (context, state) {
-                      if (state.isSearching) {
-                        return Padding(
-                          padding:
-                              const EdgeInsets.only(top: 10, left: 4, right: 4),
-                          child: Row(
+                      buildWhen: (prev, curr) =>
+                          prev.isSearching != curr.isSearching ||
+                          prev.locations != curr.locations ||
+                          prev.searchQuery != curr.searchQuery,
+                      builder: (context, state) {
+                        if (state.isSearching) {
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                                top: 10, left: 4, right: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Searching...',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        if (state.searchQuery.isNotEmpty &&
+                            state.locations.isNotEmpty) {
+                          final count = state.locations.length;
+                          final label =
+                              count == 1 ? '1 result' : '$count results';
+                          return Column(
                             mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.primary,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 8, left: 4, right: 4),
+                                child: Text(
+                                  label,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Searching...',
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                height: 88,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  itemCount: state.locations.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    final loc = state.locations[index];
+                                    return _SearchResultChip(
+                                      location: loc,
+                                      onTap: () =>
+                                          context.read<MapViewBloc>().add(
+                                                MapFocusOnLocation(loc),
+                                              ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],
-                          ),
-                        );
-                      }
-                      if (state.searchQuery.isNotEmpty) {
-                        final count = state.locations.length;
-                        final label = count == 0
-                            ? 'No results'
-                            : count == 1
-                                ? '1 result'
-                                : '$count results';
-                        return Padding(
-                          padding:
-                              const EdgeInsets.only(top: 8, left: 4, right: 4),
-                          child: Text(
-                            label,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                          );
+                        }
+                        if (state.searchQuery.isNotEmpty &&
+                            state.locations.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                                top: 8, left: 4, right: 4),
+                            child: Text(
+                              'No results',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 }
-
 
 /// Search bar driven by [MapViewBloc]. Uses a [TextEditingController] synced with
 /// [MapViewState.searchQuery] so that clearing the bloc clears the field.
@@ -204,7 +243,7 @@ class _SearchBarState extends State<_SearchBar> {
           onSubmitted: (query) =>
               context.read<MapViewBloc>().add(MapSearchQuerySubmitted(query)),
           decoration: InputDecoration(
-            hintText: 'Search location...',
+            hintText: 'Search places or address',
             hintStyle: TextStyle(
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
@@ -246,6 +285,132 @@ class _SearchBarState extends State<_SearchBar> {
   }
 }
 
+/// Map type selector (Map / Satellite / Hybrid), similar to Google Maps layer control.
+class _MapTypeSelector extends StatelessWidget {
+  const _MapTypeSelector({required this.current, required this.onChanged});
+
+  final MapType current;
+  final void Function(MapType) onChanged;
+
+  static const _options = [
+    (MapType.normal, 'Map'),
+    (MapType.satellite, 'Satellite'),
+    (MapType.hybrid, 'Hybrid'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(8),
+      color: colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _options.map((option) {
+            final (type, label) = option;
+            final selected = current == type;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Material(
+                color: selected
+                    ? colorScheme.primaryContainer
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                child: InkWell(
+                  onTap: () => onChanged(type),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: selected
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurface,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable search result chip (Google Maps–style horizontal list).
+class _SearchResultChip extends StatelessWidget {
+  const _SearchResultChip({required this.location, required this.onTap});
+
+  final MapLocation location;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Material(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 220,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.place_outlined,
+                    size: 20, color: colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        location.title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (location.address != null &&
+                          location.address!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          location.address!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Holds [GoogleMapController] and reacts to bloc state (camera fit, move to user location).
 /// When [onLocationPicked] is non-null, tap fetches location and shows confirm card; "Use this location" calls the callback.
 class _MapBody extends StatefulWidget {
@@ -261,12 +426,15 @@ class _MapBody extends StatefulWidget {
 class _MapBodyState extends State<_MapBody> {
   GoogleMapController? _mapController;
   bool _locationRequested = false;
+
   /// Exact position the user tapped; a pin is shown here so they see what they clicked.
   LatLng? _tappedPosition;
+
   /// In pick mode: location fetched after tap, shown in confirm card.
   MapLocation? _pickedLocation;
   bool _loading = false;
   bool _hasHandledSharedLocation = false;
+  MapType _mapType = MapType.normal;
 
   Future<void> _handleSharedLocation(LatLng position) async {
     if (_hasHandledSharedLocation || widget.onLocationPicked != null) return;
@@ -400,9 +568,25 @@ class _MapBodyState extends State<_MapBody> {
     final isPickMode = widget.onLocationPicked != null;
 
     return BlocConsumer<MapViewBloc, MapViewState>(
-      listenWhen: (prev, curr) =>
-          curr.cameraShouldFitResults && curr.locations.isNotEmpty,
+      listenWhen: (prev, curr) {
+        if (curr.cameraShouldFitResults && curr.locations.isNotEmpty) {
+          return true;
+        }
+        if (curr.focusOnLocation != prev.focusOnLocation &&
+            curr.focusOnLocation != null) {
+          return true;
+        }
+        return false;
+      },
       listener: (context, state) {
+        if (state.focusOnLocation != null) {
+          final loc = state.focusOnLocation!;
+          _mapController
+              ?.animateCamera(CameraUpdate.newLatLngZoom(loc.position, 16));
+          LocationDetailBottomSheet.show(context, location: loc);
+          context.read<MapViewBloc>().add(MapFocusHandled());
+          return;
+        }
         if (!state.cameraShouldFitResults || state.locations.isEmpty) return;
         final controller = _mapController;
         if (controller == null) return;
@@ -453,19 +637,21 @@ class _MapBodyState extends State<_MapBody> {
           markers['_dropped_pin'] = Marker(
             markerId: const MarkerId('_dropped_pin'),
             position: _tappedPosition!,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-            infoWindow: const InfoWindow(title: 'Selected location', snippet: 'Tap elsewhere to move'),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueOrange),
+            infoWindow: const InfoWindow(
+                title: 'Selected location', snippet: 'Tap elsewhere to move'),
             zIndexInt: 1,
           );
         }
 
-        final initialTarget =
-            widget.sharedLocation ?? _fallbackCenter;
+        final initialTarget = widget.sharedLocation ?? _fallbackCenter;
         final mapWidget = GoogleMap(
           initialCameraPosition: CameraPosition(
             target: initialTarget,
             zoom: widget.sharedLocation != null ? 17 : 15,
           ),
+          mapType: _mapType,
           myLocationButtonEnabled: true,
           myLocationEnabled: true,
           mapToolbarEnabled: false,
@@ -492,12 +678,19 @@ class _MapBodyState extends State<_MapBody> {
           },
         );
 
-        if (!isPickMode) return mapWidget;
-
         return Stack(
           children: [
             mapWidget,
-            if (_loading)
+            if (!isPickMode)
+              Positioned(
+                left: 16,
+                bottom: mapBottomPadding + 8,
+                child: _MapTypeSelector(
+                  current: _mapType,
+                  onChanged: (type) => setState(() => _mapType = type),
+                ),
+              ),
+            if (isPickMode && _loading)
               const Center(
                 child: Card(
                   child: Padding(
