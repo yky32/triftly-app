@@ -154,16 +154,38 @@ class RoutineRepository {
   }
 
   RoutineSpot _spotFromJson(Map<String, dynamic> map) {
+    final iconCodePoint = map['iconCodePoint'] as int?;
     return RoutineSpot(
       startTime: map['startTime'] as String? ?? '',
       endTime: map['endTime'] as String? ?? '',
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
       location: map['location'] as String? ?? '',
-      icon: IconData(
-          map['iconCodePoint'] as int? ?? Icons.place_outlined.codePoint),
+      icon: _iconFromCodePoint(iconCodePoint),
       color: Color(map['colorValue'] as int? ?? 0xFF0277BD),
     );
+  }
+
+  IconData _iconFromCodePoint(int? codePoint) {
+    if (codePoint == null) return Icons.place_outlined;
+    if (codePoint == Icons.coffee.codePoint) return Icons.coffee;
+    if (codePoint == Icons.train.codePoint) return Icons.train;
+    if (codePoint == Icons.museum_outlined.codePoint) {
+      return Icons.museum_outlined;
+    }
+    if (codePoint == Icons.restaurant_outlined.codePoint) {
+      return Icons.restaurant_outlined;
+    }
+    if (codePoint == Icons.directions_car_outlined.codePoint) {
+      return Icons.directions_car_outlined;
+    }
+    if (codePoint == Icons.flight_takeoff_rounded.codePoint) {
+      return Icons.flight_takeoff_rounded;
+    }
+    if (codePoint == Icons.shopping_bag_outlined.codePoint) {
+      return Icons.shopping_bag_outlined;
+    }
+    return Icons.place_outlined;
   }
 }
 

@@ -368,14 +368,13 @@ platform :ios do
   lane :upload_testflight do |options|
     skip_build = options[:skip_build] || false
     env_value = options[:env] || "prod"  # Default to prod for TestFlight
-    
+    version_name = nil
+    new_build_number = nil
+
     unless skip_build
       # Automatically increment build number before building
       UI.important("🔢 Auto-incrementing build number...")
       version_name, new_build_number = increment_build_number_in_pubspec
-
-      # Commit and push the build number change
-      commit_and_push_build_number(version_name, new_build_number)
       UI.important("")
       
       UI.important("📦 Building IPA for App Store...")
@@ -514,6 +513,10 @@ platform :ios do
         UI.message("📱 Look for build #{uploaded_build} (version #{uploaded_version}) in TestFlight → 构建版本上传. Processing usually 5–30 min; if missing after 24h, contact Apple or re-upload with next build number.")
       else
         UI.message("📱 Build will appear in App Store Connect in 5–30 min. If it does not, check email for processing errors or re-upload.")
+      end
+
+      if !skip_build && version_name && new_build_number
+        commit_and_push_build_number(version_name, new_build_number)
       end
     rescue => ex
       error_msg = ex.message
