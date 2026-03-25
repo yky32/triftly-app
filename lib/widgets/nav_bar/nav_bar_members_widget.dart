@@ -14,8 +14,9 @@ class NavBarMembersWidget extends StatelessWidget {
   });
 
   static List<AppPage> get _navPages {
-    final list =
-        AppPage.values.where((p) => p.navBarMemberIndex != 99).toList();
+    final list = AppPage.values
+        .where((p) => p.navBarMemberIndex != 99 && p != AppPage.today)
+        .toList();
     list.sort((a, b) => a.navBarMemberIndex.compareTo(b.navBarMemberIndex));
     return list;
   }
