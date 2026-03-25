@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/core/theme/theme_bloc.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
-import 'package:triftly/router/app_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
                       if (context.canPop()) {
                         context.pop();
                       } else {
-                        context.go(AppPage.today.path);
+                        context.go(AppConfig.defaultPage.path);
                       }
                     },
                     padding: EdgeInsets.zero,
@@ -99,7 +99,7 @@ class SettingsPage extends StatelessWidget {
                     );
                   }
                   return TextButton(
-                    onPressed: () => context.go(AppPage.login.path),
+                    onPressed: () => context.go(AppConfig.loginPage.path),
                     child: const Text('Sign In'),
                   );
                 },
@@ -162,7 +162,7 @@ class SettingsPage extends StatelessWidget {
             onPressed: () {
               Navigator.of(ctx).pop();
               context.read<LoginBloc>().add(LogoutRequest());
-              context.go(AppPage.login.path);
+              context.go(AppConfig.loginPage.path);
             },
             child: const Text('Sign Out'),
           ),

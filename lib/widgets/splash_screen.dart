@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/services/share_receiver_service.dart';
 
-/// Simple splash screen. If app was opened via Share → Triftly (e.g. from Google Maps), goes to map with that location; otherwise /today after a short delay.
+/// Simple splash screen. If app was opened via Share → Triftly (e.g. from Google Maps), goes to map with that location; otherwise to the default page after a short delay.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -27,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     await Future<void>.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
-    context.go('/today');
+    context.go(AppConfig.defaultPage.path);
   }
 
   @override

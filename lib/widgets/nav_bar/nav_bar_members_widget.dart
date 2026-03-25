@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/router/app_page.dart';
 
-/// Bottom nav bar with 5 tabs: Today, My Trips, Routine, Map, Spend.
-/// Driven by [AppPage]; shows only pages with navBarMemberIndex != 99.
+/// Bottom nav bar driven by [AppConfig.enabledNavPages].
 class NavBarMembersWidget extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -13,12 +13,7 @@ class NavBarMembersWidget extends StatelessWidget {
     required this.onTap,
   });
 
-  static List<AppPage> get _navPages {
-    final list =
-        AppPage.values.where((p) => p.navBarMemberIndex != 99).toList();
-    list.sort((a, b) => a.navBarMemberIndex.compareTo(b.navBarMemberIndex));
-    return list;
-  }
+  static List<AppPage> get _navPages => AppConfig.enabledNavPages;
 
   /// Short label for nav bar (fits 5 tabs).
   static String _navLabel(AppPage page) {

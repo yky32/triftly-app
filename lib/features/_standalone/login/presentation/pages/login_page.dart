@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/core/extensions/localizations.dart';
 import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
-import 'package:triftly/router/app_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -37,7 +37,7 @@ class LoginPage extends StatelessWidget {
             child: BlocConsumer<LoginBloc, LoginState>(
               listener: (context, state) {
                 if (state is LoginSuccess) {
-                  context.go(AppPage.today.path);
+                  context.go(AppConfig.defaultPage.path);
                 }
                 if (state is LoginFailure) {
                   // Feedback via other patterns (e.g. inline error); no SnackBar per app principles.
@@ -55,7 +55,7 @@ class LoginPage extends StatelessWidget {
                             if (context.canPop()) {
                               context.pop();
                             } else {
-                              context.go(AppPage.today.path);
+                              context.go(AppConfig.defaultPage.path);
                             }
                           },
                           padding: EdgeInsets.zero,

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/features/4_map_view/presentation/pages/map_view_page.dart';
 import 'package:triftly/features/3_routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/3_routine_builder/presentation/pages/routine_builder_page.dart';
 import 'package:triftly/features/_standalone/settings/presentation/pages/settings_page.dart';
 import 'package:triftly/features/_standalone/login/presentation/pages/login_page.dart';
 import 'package:triftly/features/5_spend_tracker/presentation/pages/spend_tracker_page.dart';
-import 'package:triftly/features/1_today/presentation/pages/today_page.dart';
 import 'package:triftly/features/2_trips/presentation/pages/trips_page.dart';
+import 'package:triftly/features/1_today/presentation/pages/today_page.dart';
 import 'package:triftly/router/app_page.dart';
 import 'package:triftly/widgets/nav_bar/scaffold_with_nav_bar.dart';
 import 'package:triftly/widgets/splash_screen.dart';
@@ -31,10 +32,8 @@ class AppRouter {
   };
 
   static List<StatefulShellBranch> get _navigationBranches {
-    final navPages = AppPage.values
-        .where((p) => p.navBarMemberIndex != 99)
-        .toList()
-      ..sort((a, b) => a.navBarMemberIndex.compareTo(b.navBarMemberIndex));
+    // Use AppConfig to get only enabled nav pages
+    final navPages = AppConfig.enabledNavPages;
     return navPages
         .map(
           (page) => StatefulShellBranch(
@@ -51,8 +50,9 @@ class AppRouter {
   }
 
   static List<GoRoute> get _standaloneRoutes {
+    // Use AppConfig to get only enabled standalone pages
     return AppPage.values
-        .where((p) => p.navBarMemberIndex == 99)
+        .where((p) => p.navBarMemberIndex == 99 && AppConfig.isPageEnabled(p))
         .map(
           (page) => GoRoute(
             name: page.name,
