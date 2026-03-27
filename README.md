@@ -13,6 +13,79 @@ A production-ready Flutter app with enterprise-grade features and best practices
 - Forms with [`flutter_form_builder`](https://pub.dev/packages/flutter_form_builder) and [`form_builder_validators`](https://pub.dev/packages/form_builder_validators)
 - Toggle environment variables with a single argument (`--dart-define=ENV=dev`, `--dart-define=ENV=stag`, `--dart-define=ENV=prod`)
 
+## Design principles
+
+Architecture and UI conventions match our sibling **[Depozio](https://github.com/yky32/depozio-app)** app. For the full expanded guide (IntelliJ setup, testing, build commands, and the exhaustive BLoC / UI pattern write-up), see **[Depozio’s README](https://github.com/yky32/depozio-app/blob/main/README.md)**. If you have both repos locally (e.g. under the same `yky/` parent folder), open **`../depozio/README.md`** — that file is the extended reference for these principles.
+
+### Project rule: no SnackBar
+
+**Do not use `SnackBar` or `ScaffoldMessenger.showSnackBar` anywhere in this app.** Use silent completion plus BLoC-driven UI updates, inline validation, dialogs, or in-sheet messaging (see **Bottom Sheets** below). Success and error feedback come from updated UI state, not transient toasts.
+
+### BLoC with stateless widgets
+
+**Core principle:** Prefer **Bloc** (not Cubit) with **stateless** screens: user actions dispatch events; the UI rebuilds from state via `BlocBuilder` / `BlocSelector`. Business logic stays in blocs for predictable behavior, tests, and reuse.
+
+**Why:** Predictable state flow, testable logic, clearer separation of UI vs domain, efficient rebuilds, and traceable transitions.
+
+**Guidelines**
+
+1. **Screens as `StatelessWidget`** – Provide blocs with `BlocProvider` at the right tree level; avoid `setState` for domain or loaded data.
+2. **`BlocProvider` for DI** – `create: (context) => MyBloc()..add(LoadData())` (or inject repositories from above).
+3. **`BlocBuilder` for UI** – Use `buildWhen` to limit rebuilds when comparing meaningful state changes.
+4. **`BlocListener` for side effects** – Navigation, dialogs, one-off reactions; use `listenWhen` where it helps.
+5. **Dispatch events, don’t hide logic in widgets** – `context.read<MyBloc>().add(RefreshData())` instead of imperative state in the widget.
+6. **States and events** – Extend `Equatable` for value equality; model loading / loaded / error (and refresh-with-existing-data if needed) explicitly.
+
+```dart
+// Prefer: Stateless shell + provider
+class MyPage extends StatelessWidget {
+  const MyPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => MyBloc()..add(const LoadData()),
+      child: const _MyPageContent(),
+    );
+  }
+}
+```
+
+**When `StatefulWidget` is OK**
+
+- UI-only state: `TextEditingController`, `ScrollController`, `AnimationController`, focus, `GlobalKey<FormState>`.
+- Lifecycle cleanup (`dispose`) for those controllers.
+- **Not** for loading lists, trips, or map data—that belongs in a bloc.
+
+Debug or one-off test pages may use local `StatefulWidget` + `setState` if they are not production flows.
+
+**Skeleton loading**
+
+- Keep the **same layout** for skeleton and loaded content to avoid jumps.
+- Prefer **Skeletonizer** `enabled:` toggled from bloc state (`Loading` / `Refreshing`) instead of swapping unrelated widgets.
+
+**Reactive streams in blocs**
+
+Watch repositories or services **inside the bloc** (`StreamSubscription` in the bloc, cancel in `close()`), and dispatch refresh events when the stream emits—so screens stay stateless. Example: **`TripsBloc`** (`lib/features/2_trips/bloc/trips_bloc.dart`) subscribes to trip summaries and refreshes when the backing store changes.
+
+### UI feedback (no SnackBar)
+
+- **Silent actions** where the result is obvious from the screen (e.g. sheet closes, list updates).
+- **State-driven UI** – Lists and detail views reflect success or empty/error states from the bloc.
+- **Errors** – Prefer inline messaging, dedicated error states, or dialogs; avoid snackbars for errors.
+
+### Action confirmation and bloc refresh
+
+After destructive or mutating actions (delete, save that affects multiple tabs), check **`context.mounted`**, initialize services if needed, then **`read<RelevantBloc>().add(...)`** so every visible surface stays in sync. Wrap `context.read` in try/catch when the bloc might not be in scope.
+
+### Shared widgets
+
+Reusable pieces used across features live under **`lib/widgets/`** (e.g. `lib/widgets/bottom_sheets/app_bottom_sheet.dart`). Feature-only UI stays under that feature. Document shared widgets with a short comment when reuse isn’t obvious from the name.
+
+### Bottom sheet action buttons
+
+Align primary/secondary actions with existing sheets: **primary** full-width **`FilledButton`** (or **`ElevatedButton`** if matching older Material patterns); **Cancel + confirm** in a **`Row`** with two **`Expanded`** children and spacing between. Use consistent vertical padding (e.g. `16`) and **`BorderRadius.circular(16)`** on button shapes. Reference: add/edit spot and other sheets under `lib/features/3_routine_builder/.../bottom_sheets/` and `lib/widgets/bottom_sheets/app_bottom_sheet.dart`.
+
 ## Getting Started
 
 Clone the repository and use it as a base for development.
@@ -54,7 +127,7 @@ To create a new locale, create a new file inside the `l10n` folder and run the a
 
 ## State Management
 
-Use **Bloc only** (no Cubit). All state is managed via [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) with events and states. Define blocs as specific as possible—e.g. `LoginBloc`, `ThemeBloc`, `ForgotPasswordBloc`—and avoid a single catch‑all bloc (e.g. no `UserBloc` for all auth logic).
+Use **Bloc only** (no Cubit). All state is managed via [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) with events and states. Define blocs as specific as possible—e.g. `LoginBloc`, `ThemeBloc`, `ForgotPasswordBloc`—and avoid a single catch‑all bloc (e.g. no `UserBloc` for all auth logic). For stateless screens, `BlocBuilder` / `BlocListener`, stream subscriptions in blocs, and feedback patterns, see **Design principles** above.
 
 ## Bottom Sheets
 
@@ -66,7 +139,7 @@ Bottom sheets in this app follow a consistent set of behaviors and design rules:
 - **Keyboard insets** – Sheet layout must account for the keyboard (e.g. `MediaQuery.viewInsetsOf(context).bottom`) so content remains visible and scrollable when the keyboard is open.
 - **Present via `showAppModalBottomSheet`** – Use the shared helper in `app_bottom_sheet.dart` so sheets use the root navigator and consistent styling.
 
-Do not use `SnackBar` / `showSnackBar` in this app; use other patterns for feedback (e.g. inline validation, dialogs, or in-sheet messaging).
+**Feedback:** Do not use `SnackBar` / `showSnackBar` (see **Design principles → Project rule: no SnackBar**).
 
 ## Layout & nav bar
 
