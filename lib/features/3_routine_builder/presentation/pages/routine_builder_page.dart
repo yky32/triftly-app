@@ -7,9 +7,9 @@ import 'package:triftly/features/3_routine_builder/data/routine_repository.dart'
 import 'package:triftly/features/3_routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/routine_day_carousel.dart';
+import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
-import 'package:triftly/router/app_page.dart';
 
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
 /// Horizontal padding for routine builder content; use for header and alignment of actions.
@@ -73,7 +73,7 @@ class _RoutineBuilderView extends StatelessWidget {
             }
             if (state.lastSavedAt != null && context.mounted) {
               context.read<RoutineBuilderBloc>().add(TripCleared());
-              context.go(AppPage.trips.path);
+              context.go(AppConfig.defaultPage.path);
             }
           },
           buildWhen: (prev, curr) =>

@@ -16,9 +16,9 @@ class AppConfig {
   /// Example: To disable 'Today', remove `AppPage.today` from this set.
   static const Set<AppPage> enabledPages = {
     // AppPage.today,  // Disabled - uncomment to enable
-    AppPage.trips,
+    // AppPage.trips,
     AppPage.routine,
-    AppPage.map,
+    // AppPage.map,
     AppPage.spend,
     AppPage.login,
     AppPage.settings,
@@ -28,7 +28,7 @@ class AppConfig {
   /// navigating to a disabled page.
   ///
   /// This should be one of the enabled pages with navBarMemberIndex != 99.
-  static const AppPage defaultPage = AppPage.trips;
+  static const AppPage defaultPage = AppPage.routine;
 
   /// The login page (standalone, always enabled for auth flow).
   static const AppPage loginPage = AppPage.login;
