@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths-ignore:
-  workflow_dispatch:
       - '**.md'
       - '.gitignore'
       - 'DESIGN.md'
       - 'LICENSE'
       - 'README.md'
+  workflow_dispatch:
 
 concurrency:
   group: testflight-deploy
