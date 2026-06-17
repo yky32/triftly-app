@@ -44,29 +44,6 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Setup Apple code signing (auto via App Store Connect API)
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-        run: |
-          # Write App Store Connect API key for fastlane
-          mkdir -p ~/.appstoreconnect
-          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/.appstoreconnect/api_key.p8
-
-          # Create temporary keychain for CI
-          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-          security create-keychain -p "" $KEYCHAIN_PATH
-          security default-keychain -s $KEYCHAIN_PATH
-          security unlock-keychain -p "" $KEYCHAIN_PATH
-          security set-keychain-settings -t 3600 -u $KEYCHAIN_PATH
-
-          # Let fastlane auto-manage certificates via App Store Connect API
-          cd ios
-          bundle exec fastlane ios setup_appstore_signing
-
-          echo "✅ Code signing setup complete"
-
       - name: Deploy to TestFlight
         env:
           CI: true
