@@ -58,6 +58,63 @@ class RoutineRepository {
     }
   }
 
+  /// Returns the saved routine whose date range includes today, or null.
+  /// This is the "active trip" shown on the Today page.
+  SavedRoutine? getActiveTrip() {
+    final routine = load();
+    if (routine == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(
+      routine.trip.startDate.year,
+      routine.trip.startDate.month,
+      routine.trip.startDate.day,
+    );
+    final end = DateTime(
+      routine.trip.endDate.year,
+      routine.trip.endDate.month,
+      routine.trip.endDate.day,
+    );
+    if (today.isBefore(start) || today.isAfter(end)) return null;
+    return routine;
+  }
+
+  /// Toggles the completion status of a spot and persists.
+  /// Returns the updated [SavedRoutine] after the toggle.
+  Future<SavedRoutine> toggleSpotCompletion({
+    required int dayIndex,
+    required int spotIndex,
+  }) async {
+    final routine = load();
+    if (routine == null) {
+      throw StateError('No saved routine to update');
+    }
+
+    final spots = List<RoutineSpot>.from(
+      routine.spotsByDay[dayIndex] ?? const [],
+    );
+    if (spotIndex < 0 || spotIndex >= spots.length) {
+      throw RangeError('spotIndex $spotIndex out of range for day $dayIndex');
+    }
+
+    final spot = spots[spotIndex];
+    spots[spotIndex] = spot.copyWith(isCompleted: !spot.isCompleted);
+
+    final updatedSpotsByDay =
+        Map<int, List<RoutineSpot>>.from(routine.spotsByDay)
+          ..[dayIndex] = spots;
+
+    // Persist the updated routine
+    final payload = _toJson(routine.trip, updatedSpotsByDay, routine.dayLabels);
+    await _prefs.setString(_keyRoutine, jsonEncode(payload));
+
+    return SavedRoutine(
+      trip: routine.trip,
+      spotsByDay: updatedSpotsByDay,
+      dayLabels: routine.dayLabels,
+    );
+  }
+
   List<SavedTripSummary> loadSavedTrips() {
     final raw = _prefs.getString(_keySavedTrips);
     if (raw != null && raw.isNotEmpty) {
@@ -112,6 +169,7 @@ class RoutineRepository {
       'location': s.location,
       'iconCodePoint': s.icon.codePoint,
       'colorValue': s.color.toARGB32(),
+      'isCompleted': s.isCompleted,
     };
   }
 
@@ -163,6 +221,7 @@ class RoutineRepository {
       location: map['location'] as String? ?? '',
       icon: _iconFromCodePoint(iconCodePoint),
       color: Color(map['colorValue'] as int? ?? 0xFF0277BD),
+      isCompleted: map['isCompleted'] as bool? ?? false,
     );
   }
 
@@ -200,6 +259,63 @@ class SavedRoutine {
   final RoutineTripResult trip;
   final Map<int, List<RoutineSpot>> spotsByDay;
   final Map<int, String> dayLabels;
+
+  /// Calculates the day index for today relative to the trip start date.
+  /// Returns null if today is outside the trip date range.
+  int? get todayDayIndex {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(
+      trip.startDate.year,
+      trip.startDate.month,
+      trip.startDate.day,
+    );
+    final end = DateTime(
+      trip.endDate.year,
+      trip.endDate.month,
+      trip.endDate.day,
+    );
+    if (today.isBefore(start) || today.isAfter(end)) return null;
+    return today.difference(start).inDays;
+  }
+
+  /// Returns the spots for today, or empty list if today is not in range.
+  List<RoutineSpot> get todaySpots {
+    final idx = todayDayIndex;
+    if (idx == null) return const [];
+    return spotsByDay[idx] ?? const [];
+  }
+
+  /// Total completed spots across all days.
+  int get completedSpotCount {
+    int count = 0;
+    for (final spots in spotsByDay.values) {
+      count += spots.where((s) => s.isCompleted).length;
+    }
+    return count;
+  }
+
+  /// Total spots across all days.
+  int get totalSpotCount {
+    int count = 0;
+    for (final spots in spotsByDay.values) {
+      count += spots.length;
+    }
+    return count;
+  }
+
+  /// Days remaining in the trip (including today).
+  int get daysRemaining {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final end = DateTime(
+      trip.endDate.year,
+      trip.endDate.month,
+      trip.endDate.day,
+    );
+    final diff = end.difference(today).inDays;
+    return diff >= 0 ? diff + 1 : 0;
+  }
 }
 
 class SavedTripSummary {

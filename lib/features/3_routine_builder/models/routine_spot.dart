@@ -10,6 +10,7 @@ class RoutineSpot {
     required this.location,
     required this.icon,
     required this.color,
+    this.isCompleted = false,
   });
 
   final String startTime;
@@ -20,6 +21,9 @@ class RoutineSpot {
   final IconData icon;
   final Color color;
 
+  /// Whether this spot/activity has been completed (checked off) during the trip.
+  final bool isCompleted;
+
   RoutineSpot copyWith({
     String? startTime,
     String? endTime,
@@ -28,6 +32,7 @@ class RoutineSpot {
     String? location,
     IconData? icon,
     Color? color,
+    bool? isCompleted,
   }) {
     return RoutineSpot(
       startTime: startTime ?? this.startTime,
@@ -37,6 +42,7 @@ class RoutineSpot {
       location: location ?? this.location,
       icon: icon ?? this.icon,
       color: color ?? this.color,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
 }
