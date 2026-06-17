@@ -1,0 +1,85 @@
+name: Deploy to TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'DESIGN.md'
+      - 'LICENSE'
+      - 'README.md'
+
+concurrency:
+  group: testflight-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.6.10'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Setup Apple code signing (auto via App Store Connect API)
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          # Write App Store Connect API key for fastlane
+          mkdir -p ~/.appstoreconnect
+          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/.appstoreconnect/api_key.p8
+
+          # Create temporary keychain for CI
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          security create-keychain -p "" $KEYCHAIN_PATH
+          security default-keychain -s $KEYCHAIN_PATH
+          security unlock-keychain -p "" $KEYCHAIN_PATH
+          security set-keychain-settings -t 3600 -u $KEYCHAIN_PATH
+
+          # Let fastlane auto-manage certificates via App Store Connect API
+          cd ios
+          bundle exec fastlane ios setup_appstore_signing
+
+          echo "✅ Code signing setup complete"
+
+      - name: Deploy to TestFlight
+        env:
+          CI: true
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          cd ios
+          bundle exec fastlane ios upload_testflight env:prod
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ TestFlight deploy failed!"
+          echo "Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
