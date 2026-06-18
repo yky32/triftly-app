@@ -291,7 +291,7 @@ class LocationDetailBottomSheet extends StatelessWidget {
   static void _onAddToRoutine(BuildContext context, MapLocation location) {
     final spot = _routineSpotFromMapLocation(location);
     Navigator.of(context).pop();
-    if (context.mounted) context.go('/routine', extra: spot);
+    if (context.mounted) context.push('/trips/plan', extra: spot);
   }
 }
 

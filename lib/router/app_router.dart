@@ -17,13 +17,18 @@ import 'package:triftly/widgets/splash_screen.dart';
 class AppRouter {
   AppRouter._();
 
-  static final Map<AppPage, Widget Function(Object? extra)> _appPages = {
+  /// Shell tabs (bottom nav).
+  static final Map<AppPage, Widget Function(Object? extra)> _shellPages = {
     AppPage.today: (_) => const TodayPage(),
     AppPage.trips: (_) => const TripsPage(),
+    AppPage.spend: (_) => const SpendTrackerPage(),
+  };
+
+  /// Full-screen flows (no bottom nav).
+  static final Map<AppPage, Widget Function(Object? extra)> _overlayPages = {
     AppPage.routine: (extra) =>
         RoutineBuilderPage(pendingSpotFromMap: extra as RoutineSpot?),
     AppPage.map: (extra) => MapViewPage(sharedLocation: extra as LatLng?),
-    AppPage.spend: (_) => const SpendTrackerPage(),
   };
 
   static final Map<AppPage, Widget Function()> _standaloneAppPages = {
@@ -32,7 +37,6 @@ class AppRouter {
   };
 
   static List<StatefulShellBranch> get _navigationBranches {
-    // Use AppConfig to get only enabled nav pages
     final navPages = AppConfig.enabledNavPages;
     return navPages
         .map(
@@ -41,7 +45,7 @@ class AppRouter {
               GoRoute(
                 name: page.name,
                 path: page.path,
-                builder: (_, state) => _appPages[page]!(state.extra),
+                builder: (_, state) => _shellPages[page]!(state.extra),
               ),
             ],
           ),
@@ -50,9 +54,9 @@ class AppRouter {
   }
 
   static List<GoRoute> get _standaloneRoutes {
-    // Use AppConfig to get only enabled standalone pages
     return AppPage.values
         .where((p) => p.navBarMemberIndex == 99 && AppConfig.isPageEnabled(p))
+        .where((p) => _standaloneAppPages.containsKey(p))
         .map(
           (page) => GoRoute(
             name: page.name,
@@ -63,11 +67,27 @@ class AppRouter {
         .toList();
   }
 
+  static List<GoRoute> get _overlayRoutes {
+    return AppPage.values
+        .where((p) => p.navBarMemberIndex == 99 && AppConfig.isPageEnabled(p))
+        .where((p) => _overlayPages.containsKey(p))
+        .map(
+          (page) => GoRoute(
+            name: page.name,
+            path: page.path,
+            builder: (_, state) => _overlayPages[page]!(state.extra),
+          ),
+        )
+        .toList();
+  }
+
   static final router = GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
       final path = state.uri.path;
       if (path == '/' || path.isEmpty) return '/splash';
+      // Legacy route from earlier builds.
+      if (path == '/routine') return AppPage.routine.path;
       return null;
     },
     routes: [
@@ -77,6 +97,7 @@ class AppRouter {
         builder: (_, __) => const SplashScreen(),
       ),
       ..._standaloneRoutes,
+      ..._overlayRoutes,
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             ScaffoldWithNavBar(navigationShell: navigationShell),

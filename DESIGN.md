@@ -1,33 +1,68 @@
-# Sample App — Starter Structure
+# Triftly — Product architecture
 
-This project is a **skeleton starter** aligned with the Triftly app structure. Use it as a template for new projects (clone and rename).
+Light-mode-first Flutter app. Design tokens live in `lib/core/theme/` (`AppColors`, `CustomTheme`).
 
-## Design focus
+## Use cases → screens
 
-- **Light mode first** — All UI (screens, components, colors, contrast) is designed and tuned for light mode. Dark mode is supported via theme switching but is secondary; polish dark-mode specifics later if needed.
+| Use case | Screen | Nav |
+|----------|--------|-----|
+| Plan a trip (days + spots) | **Trips** list + **Plan trip** (`/trips/plan`) | Trips tab + full-screen planner |
+| Share with travel buddies | Trip detail → **Invite** (placeholder deep link; login required later) | — |
+| Handy view while travelling | **Today** — today’s spots, check-offs, progress | Today tab |
+| Follow the routine | Same data as planner; Today toggles spot completion | Today tab |
+| Track trip spending | **Spend** — budget UI tied to active trip dates | Spend tab |
 
-## Structure (Triftly-aligned)
+## Navigation (minimal)
 
-- **Router** (`lib/router/`)
-  - `app_page.dart` — Enum of all pages with `name`, `path`, `icon` (IconData), and `navBarMemberIndex` (99 = standalone, not in bottom nav).
-  - `app_router.dart` — Splash at `/splash`, redirect `/` → `/splash`, standalone routes (e.g. login), and `StatefulShellRoute.indexedStack` with branches built from `AppPage` (navBarMemberIndex ≠ 99).
+Bottom bar — **3 tabs only** (`AppConfig.enabledNavPages`):
 
-- **Navigation**
-  - `ScaffoldWithNavBar` — Uses theme `colorScheme.surface`, bottom offset -25, `SafeArea(top: false)`.
-  - `NavBarMembersWidget` — Bottom bar driven by `AppPage` (sorted by `navBarMemberIndex`).
+1. **Today** — in-trip companion  
+2. **Trips** — library + entry to planner  
+3. **Spend** — group spending for the active trip  
 
-- **Splash** — `SplashScreen` shows briefly then navigates to `/home`.
+Full-screen (no bottom bar):
 
-- **main.dart** — `try/catch` around `Environment.load()`, `FlutterError.onError`, `runZonedGuarded` for error handling.
+- `/trips/plan` — day carousel, add/edit spots (`RoutineBuilderPage`)  
+- `/login`, `/settings`  
+- `/map` — optional, off by default  
 
-## Skeleton scope
+Configured in `lib/core/constants/app_config.dart` and `lib/router/app_page.dart`.
 
-- No real features; placeholder pages only (Home, Explore, Activity, Settings, Login).
-- Login flow is minimal (BLoC + go_router); Settings has Sign In / Sign Out only.
+## Data (current)
+
+Single source of truth for itinerary: `RoutineRepository` (SharedPreferences).
+
+- One **active saved routine** (trip + spots by day + labels)  
+- **Saved trip summaries** for the Trips grid  
+- **Active trip** = saved routine whose date range includes today → powers Today + Spend  
+
+Future: backend sync, multi-trip storage, spend ledger, share/deep-link service.
+
+## Layers
+
+```
+lib/
+  core/           theme, env, navigation helpers
+  router/         go_router shell + overlay routes
+  features/
+    1_today/      in-trip dashboard (TodayBloc)
+    2_trips/      trip library (TripsBloc)
+    3_routine_builder/  planner UI + RoutineRepository
+    5_spend_tracker/    spend tab (SpendBloc → active trip)
+    _standalone/  login, settings
+  services/       trip_share_service (placeholder)
+  widgets/        nav bar, bottom sheets
+```
+
+## Patterns
+
+- **Bloc** + **stateless** screens (see README)  
+- **No SnackBar** — inline state, sheets, dialogs  
+- **Skeletonizer** for loading  
+- Planner opens via `AppNavigation.openTripPlanner()` (`context.push`)
 
 ## Extending
 
-- Add new nav tabs: add an enum value to `AppPage` with the desired `navBarMemberIndex`, then add the page to `_appPages` and a branch in the router.
-- Add standalone routes: add to `AppPage` with `navBarMemberIndex: 99` and to `_standaloneAppPages`.
-
-Design practices and patterns follow the Triftly codebase.
+- **Share**: implement `TripShareService` + auth gate after login API is real  
+- **Spend**: add `SpendRepository` keyed by trip id  
+- **Map**: re-enable `AppPage.map` in `AppConfig`; spots can deep-link to map  

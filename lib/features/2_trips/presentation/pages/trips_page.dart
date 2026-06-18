@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
 import 'package:triftly/features/2_trips/bloc/trips_bloc.dart';
@@ -31,6 +32,13 @@ class _TripsView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AppNavigation.openTripPlanner(context),
+        backgroundColor: AppColors.driftTeal,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Plan trip'),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -136,11 +144,32 @@ class _TripsView extends StatelessWidget {
 
                           if (!isLoading && items.isEmpty) {
                             return Center(
-                              child: Text(
-                                'No saved trips yet',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'No trips yet',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      color: colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Plan days and spots for your next adventure',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  FilledButton.icon(
+                                    onPressed: () =>
+                                        AppNavigation.openTripPlanner(context),
+                                    icon: const Icon(Icons.edit_calendar_outlined),
+                                    label: const Text('Plan your first trip'),
+                                  ),
+                                ],
                               ),
                             );
                           }
