@@ -44,6 +44,14 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Setup App Store Connect API key
+        env:
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/.appstoreconnect
+          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > ~/.appstoreconnect/api_key.p8
+          echo "✅ API key written"
+
       - name: Deploy to TestFlight
         env:
           CI: true

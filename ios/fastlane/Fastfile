@@ -355,15 +355,38 @@ platform :ios do
     if export_method == "app-store"
       UI.message("📦 Building for App Store - ensuring provisioning profile is available...")
       begin
-        get_provisioning_profile(
-          app_identifier: "com.triftly",
-          adhoc: false,
-          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-          team_id: "3G34999H3A"
-        )
+        api_key_params = app_store_connect_api_key_params
+        if api_key_params
+          get_provisioning_profile(
+            app_identifier: "com.triftly",
+            api_key: app_store_connect_api_key(**api_key_params),
+            team_id: "3G34999H3A"
+          )
+        else
+          get_provisioning_profile(
+            app_identifier: "com.triftly",
+            adhoc: false,
+            username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+            team_id: "3G34999H3A"
+          )
+        end
         UI.success("✅ Provisioning profile ready")
       rescue => ex
-        UI.important("⚠️  Could not fetch profile (you may need to run setup_appstore_signing with 2FA): #{ex.message}")
+        UI.important("⚠️  Could not fetch profile: #{ex.message}")
+        UI.important("   Relying on Xcode automatic signing instead.")
+      end
+    end
+
+    # Build xcargs for automatic signing in CI
+    xcargs = "-allowProvisioningUpdates"
+    api_key_params = app_store_connect_api_key_params
+    if api_key_params
+      key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
+      if File.exist?(key_path)
+        xcargs += " -authenticationKeyID #{api_key_params[:key_id]}"
+        xcargs += " -authenticationKeyIssuerID #{api_key_params[:issuer_id]}"
+        xcargs += " -authenticationKeyPath #{key_path}"
+        UI.message("🔑 Using App Store Connect API key for automatic signing")
       end
     end
 
@@ -372,7 +395,8 @@ platform :ios do
       scheme: "Runner",
       export_method: export_method,
       output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
-      export_options: export_opts
+      export_options: export_opts,
+      xcargs: xcargs
     )
     
     UI.success("✅ IPA created successfully!")
@@ -420,37 +444,16 @@ platform :ios do
         if is_signing_error && retry_count < max_retries
           retry_count += 1
           UI.important("")
-          UI.important("🔧 Detected code signing issue. Attempting to configure certificates automatically...")
+          UI.important("🔧 Detected code signing issue. Retrying with Xcode automatic signing...")
           UI.important("")
           
           begin
-            # Try to setup App Store signing automatically
-            setup_appstore_signing
-            UI.important("")
-            UI.important("🔄 Retrying build with newly configured certificates...")
-            UI.important("")
-            
-            # Retry the build
+            # Retry the build — xcodebuild with automatic signing should handle it
             build_ipa(export_method: "app-store", env: env_value)
             build_success = true
           rescue => setup_ex
             UI.error("")
-            UI.error("❌ Automatic certificate setup failed: #{setup_ex.message}")
-            UI.error("")
-            UI.error("   This usually means you need to set up App Store distribution certificates.")
-            UI.error("")
-            UI.error("   📋 Manual Setup (Xcode):")
-            UI.error("      1. open ios/Runner.xcworkspace")
-            UI.error("      2. Select Runner target → Signing & Capabilities")
-            UI.error("      3. Enable 'Automatically manage signing'")
-            UI.error("      4. Select your team (3G34999H3A)")
-            UI.error("      5. Xcode will create App Store provisioning profile automatically")
-            UI.error("")
-            UI.error("   🔧 Or try manual CLI setup:")
-            UI.error("      bundle exec fastlane ios setup_appstore_signing")
-            UI.error("")
-            UI.error("   💡 Alternative: Build development IPA for local testing:")
-            UI.error("      bundle exec fastlane ios build_ipa")
+            UI.error("❌ Build failed again: #{setup_ex.message}")
             UI.error("")
             raise
           end
