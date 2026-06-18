@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:triftly/core/constants/app_config.dart';
 import 'package:triftly/router/app_page.dart';
+import 'package:triftly/widgets/design/triftly_layout.dart';
 
-/// Bottom nav bar driven by [AppConfig.enabledNavPages].
+/// Minimal floating nav: **Plan · Day · Spend**.
 class NavBarMembersWidget extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -15,13 +16,12 @@ class NavBarMembersWidget extends StatelessWidget {
 
   static List<AppPage> get _navPages => AppConfig.enabledNavPages;
 
-  /// Short labels for the minimal bottom nav (3 tabs).
   static String _navLabel(AppPage page) {
     switch (page) {
-      case AppPage.today:
-        return 'Today';
       case AppPage.trips:
-        return 'Trips';
+        return 'Plan';
+      case AppPage.today:
+        return 'Day';
       case AppPage.spend:
         return 'Spend';
       default:
@@ -34,21 +34,20 @@ class NavBarMembersWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final navPages = _navPages;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(TriftlyLayout.navRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (int i = 0; i < navPages.length; i++)
             Expanded(
@@ -87,14 +86,21 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               page.icon,
-              size: 24,
+              size: 22,
               color: isSelected
                   ? colorScheme.primary
                   : colorScheme.onSurfaceVariant,
@@ -104,7 +110,7 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,

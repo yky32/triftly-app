@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 /// 99 = full-screen or standalone (planner, map, login, settings).
 enum AppPage {
   login('Login', '/login', Icons.login_rounded, 99),
-  today('Today', '/today', Icons.today_outlined, 0),
-  trips('Trips', '/trips', Icons.luggage_outlined, 1),
+  today('Day', '/today', Icons.view_timeline_rounded, 0),
+  trips('Plan', '/trips', Icons.edit_note_rounded, 1),
   routine('Plan trip', '/trips/plan', Icons.edit_calendar_outlined, 99),
   map('Map', '/map', Icons.map_outlined, 99),
   spend('Spend', '/spend', Icons.account_balance_wallet_outlined, 2),

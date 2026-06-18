@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/constants/layout_constants.dart';
 import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
-import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
 import 'package:triftly/features/2_trips/bloc/trips_bloc.dart';
 import 'package:triftly/features/2_trips/presentation/widgets/bottom_sheets/trip_details_bottom_sheet.dart';
+import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
+import 'package:triftly/widgets/design/triftly_layout.dart';
+import 'package:triftly/widgets/design/triftly_page_header.dart';
 
+/// **Plan** tab — trip library and entry to the day/spot planner.
 class TripsPage extends StatelessWidget {
   const TripsPage({super.key});
 
@@ -17,191 +20,131 @@ class TripsPage extends StatelessWidget {
       create: (context) => TripsBloc(
         repository: context.read<RoutineRepository>(),
       ),
-      child: const _TripsView(),
+      child: const _PlanView(),
     );
   }
 }
 
-class _TripsView extends StatelessWidget {
-  const _TripsView();
+class _PlanView extends StatelessWidget {
+  const _PlanView();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AppNavigation.openTripPlanner(context),
-        backgroundColor: AppColors.driftTeal,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Plan trip'),
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: TriftlyLayout.pagePadding,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GestureDetector(
-                onTap: () => FocusScope.of(context).unfocus(),
-                behavior: HitTestBehavior.opaque,
+              TriftlyPageHeader(
+                title: 'Plan',
+                subtitle: 'Trips, days, and spots',
+                trailing: IconButton(
+                  onPressed: () => context
+                      .read<TripsBloc>()
+                      .add(const TripsReloadRequested()),
+                  icon: const Icon(Icons.refresh_rounded),
+                  color: AppColors.driftTeal,
+                  tooltip: 'Refresh',
+                ),
+              ),
+              const SizedBox(height: 20),
+              TriftlySurfaceCard(
+                gradient: TriftlyLayout.gradientPrimary,
+                onTap: () => AppNavigation.openTripPlanner(context),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Text(
-                          context.l10n.page_my_trips,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: colorScheme.onSurface,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'New trip',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Pick dates, add spots per day',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.88),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () => context
-                                  .read<TripsBloc>()
-                                  .add(const TripsReloadRequested()),
-                              icon: Icon(
-                                Icons.refresh_rounded,
-                                size: 18,
-                                color: colorScheme.primary,
-                              ),
-                              tooltip: 'Refresh trips',
-                              padding: const EdgeInsets.only(right: 6),
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              visualDensity: const VisualDensity(
-                                horizontal: -3,
-                                vertical: -3,
-                              ),
-                            ),
-                            Text(
-                              context.l10n.trips_view_all,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 12,
-                              color: colorScheme.primary,
-                            ),
-                          ],
-                        ),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-              _TripsSearchBar(hintText: context.l10n.trips_search_hint),
               const SizedBox(height: 24),
+              const TriftlySectionLabel(title: 'Your trips'),
               Expanded(
                 child: BlocBuilder<TripsBloc, TripsState>(
                   builder: (context, state) {
                     final isLoading = state.isLoading;
-                    return GestureDetector(
-                      onTap: () => FocusScope.of(context).unfocus(),
-                      behavior: HitTestBehavior.opaque,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          const crossAxisSpacing = 12.0;
-                          const mainAxisSpacing = 8.0;
-                          const crossAxisCount = 2;
-                          const itemHeight = 170.0;
-                          final visibleRows =
-                              ((constraints.maxHeight + mainAxisSpacing) /
-                                      (itemHeight + mainAxisSpacing))
-                                  .ceil();
-                          final skeletonCount =
-                              (visibleRows <= 0 ? 1 : visibleRows) *
-                                  crossAxisCount;
-
-                          final items = isLoading
-                              ? List<_TripItem>.generate(
-                                  skeletonCount,
-                                  (_) => const _TripItem.placeholder(),
-                                )
-                              : state.trips
-                                  .map((trip) =>
-                                      _TripItem.fromSavedTrip(context, trip))
-                                  .toList();
-
-                          if (!isLoading && items.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'No trips yet',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: colorScheme.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Plan days and spots for your next adventure',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  FilledButton.icon(
-                                    onPressed: () =>
-                                        AppNavigation.openTripPlanner(context),
-                                    icon: const Icon(Icons.edit_calendar_outlined),
-                                    label: const Text('Plan your first trip'),
-                                  ),
-                                ],
+                    return Skeletonizer(
+                      enabled: isLoading,
+                      child: state.trips.isEmpty && !isLoading
+                          ? TriftlyEmptyState(
+                              icon: Icons.luggage_outlined,
+                              title: 'No trips yet',
+                              message:
+                                  'Start with a name, dates, and your first spots.',
+                              action: FilledButton(
+                                onPressed: () =>
+                                    AppNavigation.openTripPlanner(context),
+                                child: const Text('Plan your first trip'),
                               ),
-                            );
-                          }
-
-                          final itemWidth =
-                              (constraints.maxWidth - crossAxisSpacing) /
-                                  crossAxisCount;
-                          return GridView.builder(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              childAspectRatio: itemWidth / 170,
-                              crossAxisSpacing: crossAxisSpacing,
-                              mainAxisSpacing: mainAxisSpacing,
+                            )
+                          : GridView.builder(
+                              padding: EdgeInsets.only(
+                                bottom: LayoutConstants.scrollPaddingBelowNavBar(
+                                  context,
+                                ),
+                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.82,
+                              ),
+                              itemCount: isLoading ? 4 : state.trips.length,
+                              itemBuilder: (context, index) {
+                                if (isLoading) {
+                                  return const _TripGridCard.placeholder();
+                                }
+                                final trip = state.trips[index];
+                                return _TripGridCard(
+                                  trip: trip,
+                                  onTap: () => TripDetailsBottomSheet.show(
+                                    context,
+                                    trip,
+                                  ),
+                                );
+                              },
                             ),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              return _TripCard(
-                                item: items[index],
-                                isLoading: isLoading,
-                                onTap: items[index].source != null
-                                    ? () => TripDetailsBottomSheet.show(
-                                          context,
-                                          items[index].source!,
-                                        )
-                                    : null,
-                              );
-                            },
-                          );
-                        },
-                      ),
                     );
                   },
                 ),
@@ -214,351 +157,79 @@ class _TripsView extends StatelessWidget {
   }
 }
 
-class _TripItem {
-  const _TripItem({
-    required this.name,
-    required this.country,
-    required this.dateLabel,
-    required this.daysCount,
-    required this.source,
-  });
+class _TripGridCard extends StatelessWidget {
+  const _TripGridCard({required this.trip, required this.onTap});
 
-  const _TripItem.placeholder()
-      : name = 'Trip to Japan',
-        country = 'Japan',
-        dateLabel = 'Apr 1 – Apr 10',
-        daysCount = 10,
-        source = null;
+  const _TripGridCard.placeholder()
+      : trip = null,
+        onTap = null;
 
-  factory _TripItem.fromSavedTrip(
-    BuildContext context,
-    SavedTripSummary trip,
-  ) {
-    final localizations = MaterialLocalizations.of(context);
-    final startLabel = localizations.formatShortDate(trip.startDate);
-    final endLabel = localizations.formatShortDate(trip.endDate);
-    final dateLabel =
-        trip.startDate == trip.endDate ? startLabel : '$startLabel – $endLabel';
-    final daysCount = trip.endDate.difference(trip.startDate).inDays + 1;
-
-    return _TripItem(
-      name: trip.name.trim().isEmpty ? 'Untitled trip' : trip.name,
-      country:
-          trip.countries.isEmpty ? 'No country' : trip.countries.join(', '),
-      dateLabel: dateLabel,
-      daysCount: daysCount,
-      source: trip,
-    );
-  }
-
-  final String name;
-  final String country;
-  final String dateLabel;
-  final int daysCount;
-
-  /// The original [SavedTripSummary]; null for placeholder skeleton items.
-  final SavedTripSummary? source;
-}
-
-class _TripCard extends StatelessWidget {
-  const _TripCard({
-    required this.item,
-    this.isLoading = false,
-    this.onTap,
-  });
-
-  final _TripItem item;
-  final bool isLoading;
+  final SavedTripSummary? trip;
   final VoidCallback? onTap;
-
-  // Assign a banner gradient per card cycling through brand palette
-  static const List<List<Color>> _gradients = [
-    [AppColors.deepTeal, AppColors.driftTeal],
-    [AppColors.driftTeal, AppColors.calmGreen],
-    [Color(0xFF0E7490), AppColors.driftTeal],
-  ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final gradient = _gradients[
-        (item.name.codeUnitAt(0) + item.daysCount) % _gradients.length];
-    final dayLabel = item.daysCount == 1 ? '1 day' : '${item.daysCount} days';
+    final t = trip;
+    final name = t == null
+        ? 'Trip name'
+        : (t.name.trim().isEmpty ? 'Untitled trip' : t.name);
+    final country = t?.countries.isNotEmpty == true
+        ? t!.countries.first
+        : 'Destination';
+    final days = t == null
+        ? '7 days'
+        : '${t.endDate.difference(t.startDate).inDays + 1} days';
 
-    return Skeletonizer(
-      enabled: isLoading,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: isLoading ? null : onTap,
-          splashColor: AppColors.driftTeal.withValues(alpha: 0.12),
-          highlightColor: AppColors.driftTeal.withValues(alpha: 0.06),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: gradient.first.withValues(alpha: 0.28),
-                  blurRadius: 24,
-                  spreadRadius: -2,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: gradient.first.withValues(alpha: 0.12),
-                  blurRadius: 8,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+    return TriftlySurfaceCard(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            height: 88,
+            decoration: const BoxDecoration(
+              gradient: TriftlyLayout.gradientWarm,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             ),
+            padding: const EdgeInsets.all(14),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                country,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Banner ──────────────────────────────────────────────
-                SizedBox(
-                  height: 88,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // gradient
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: gradient,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                      ),
-                      // decorative circle top-right
-                      Positioned(
-                        right: -24,
-                        top: -24,
-                        child: Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ),
-                      // decorative circle bottom-left
-                      Positioned(
-                        left: -16,
-                        bottom: -28,
-                        child: Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.06),
-                          ),
-                        ),
-                      ),
-                      // icon
-                      const Center(
-                        child: Icon(
-                          Icons.terrain_rounded,
-                          size: 42,
-                          color: Colors.white,
-                        ),
-                      ),
-                      // days pill – top right
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.20),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: Text(
-                            dayLabel,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate,
                   ),
                 ),
-
-                // ── Body ────────────────────────────────────────────────
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.fogGray.withValues(alpha: 0.10),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(20),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // trip name
-                        Text(
-                          item.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        // country row
-                        _MetaRow(
-                          icon: Icons.place_rounded,
-                          label: item.country,
-                          iconColor: AppColors.driftTeal,
-                        ),
-                        const SizedBox(height: 3),
-                        // date row
-                        _MetaRow(
-                          icon: Icons.date_range_rounded,
-                          label: item.dateLabel,
-                          iconColor: AppColors.softAmber,
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 6),
+                Text(
+                  days,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.mistGray,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({
-    required this.icon,
-    required this.label,
-    required this.iconColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 13, color: iconColor),
-        const SizedBox(width: 5),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                  height: 1.3,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Search bar with animated focus / non-focus effects.
-class _TripsSearchBar extends StatefulWidget {
-  const _TripsSearchBar({required this.hintText});
-
-  final String hintText;
-
-  @override
-  State<_TripsSearchBar> createState() => _TripsSearchBarState();
-}
-
-class _TripsSearchBarState extends State<_TripsSearchBar> {
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isFocused = _focusNode.hasFocus;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: isFocused
-            ? colorScheme.surface
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: TextField(
-        focusNode: _focusNode,
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          hintStyle: TextStyle(
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: isFocused
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            size: 22,
-          ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
+        ],
       ),
     );
   }

@@ -67,7 +67,7 @@ class CustomTheme {
     return ThemeData.light(
       useMaterial3: true,
     ).copyWith(
-      scaffoldBackgroundColor: AppColors.cloudWhite,
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       appBarTheme: AppBarTheme(
         centerTitle: true,
         titleTextStyle: textThemeLight.bodyLarge?.copyWith(

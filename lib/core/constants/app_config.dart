@@ -2,7 +2,7 @@ import 'package:triftly/router/app_page.dart';
 
 /// Centralized app configuration for enabling/disabling features.
 ///
-/// Bottom nav is intentionally minimal: **Today → Trips → Spend**.
+/// Bottom nav: **Plan → Day → Spend** (see DESIGN.md).
 /// Trip planning (`/trips/plan`) and map are full-screen overlays.
 class AppConfig {
   AppConfig._();

@@ -4,12 +4,16 @@ sealed class TodayEvent {
   const TodayEvent();
 }
 
-/// Triggered when the Today page is first built — loads the active trip.
 class TodayLoaded extends TodayEvent {
   const TodayLoaded();
 }
 
-/// Triggered when the user taps a spot to mark it complete/incomplete.
+class TodayDaySelected extends TodayEvent {
+  const TodayDaySelected(this.dayIndex);
+
+  final int dayIndex;
+}
+
 class TodaySpotToggled extends TodayEvent {
   const TodaySpotToggled({required this.spotIndex});
 

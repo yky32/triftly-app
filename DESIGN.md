@@ -14,19 +14,15 @@ Light-mode-first Flutter app. Design tokens live in `lib/core/theme/` (`AppColor
 
 ## Navigation (minimal)
 
-Bottom bar — **3 tabs only** (`AppConfig.enabledNavPages`):
+Bottom bar — **3 tabs** (`Plan` · `Day` · `Spend`):
 
-1. **Today** — in-trip companion  
-2. **Trips** — library + entry to planner  
-3. **Spend** — group spending for the active trip  
+1. **Plan** (`/trips`) — trip library + gradient CTA to planner  
+2. **Day** (`/today`) — horizontal day chips + spot timeline  
+3. **Spend** (`/spend`) — budget ring + categories (mock ledger)  
 
-Full-screen (no bottom bar):
+Full-screen: `/trips/plan` (planner), login, settings.
 
-- `/trips/plan` — day carousel, add/edit spots (`RoutineBuilderPage`)  
-- `/login`, `/settings`  
-- `/map` — optional, off by default  
-
-Configured in `lib/core/constants/app_config.dart` and `lib/router/app_page.dart`.
+UI building blocks: `lib/widgets/design/` (`TriftlySurfaceCard`, `TriftlyDayChip`, `TriftlySpotTimelineTile`, …).
 
 ## Data (current)
 
