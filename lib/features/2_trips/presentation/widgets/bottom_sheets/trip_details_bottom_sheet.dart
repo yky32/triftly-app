@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
 import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
 import 'package:triftly/router/app_page.dart';
+import 'package:triftly/services/trip_share_service.dart';
 import 'package:triftly/widgets/bottom_sheets/app_bottom_sheet.dart';
 
-/// Bottom sheet shown when the user taps a saved trip card.
-///
-/// Displays trip details and gives the user two choices:
-///   • **Open in Routine Builder** – navigates to the routine tab and loads
-///     the selected trip (replacing any current routine).
-///   • **Dismiss** – closes the sheet, staying on the Trips page.
+/// Bottom sheet for a saved trip: view details, edit plan, or share (placeholder).
 class TripDetailsBottomSheet extends StatelessWidget {
   const TripDetailsBottomSheet({super.key, required this.trip});
 
@@ -50,8 +50,6 @@ class TripDetailsBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const BottomSheetDragHandle(),
-
-          // ── Banner ────────────────────────────────────────────────────
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
@@ -68,7 +66,6 @@ class TripDetailsBottomSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // decorative circles
                   Positioned(
                     right: -28,
                     top: -28,
@@ -100,7 +97,6 @@ class TripDetailsBottomSheet extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  // days pill
                   Positioned(
                     top: 12,
                     right: 12,
@@ -130,10 +126,7 @@ class TripDetailsBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // ── Trip name ─────────────────────────────────────────────────
           Text(
             trip.name.trim().isEmpty ? 'Untitled trip' : trip.name,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -142,8 +135,6 @@ class TripDetailsBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-
-          // ── Meta rows ─────────────────────────────────────────────────
           _DetailRow(
             icon: Icons.place_rounded,
             iconColor: AppColors.driftTeal,
@@ -163,10 +154,7 @@ class TripDetailsBottomSheet extends StatelessWidget {
             iconColor: AppColors.calmGreen,
             label: dayLabel,
           ),
-
-          const SizedBox(height: 28),
-
-          // ── Primary CTA: open in routine builder ──────────────────────
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: DecoratedBox(
@@ -177,7 +165,7 @@ class TripDetailsBottomSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: TextButton.icon(
-                onPressed: () => _openInRoutineBuilder(context),
+                onPressed: () => _editPlan(context),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -190,7 +178,7 @@ class TripDetailsBottomSheet extends StatelessWidget {
                   size: 18,
                 ),
                 label: Text(
-                  'Open in Routine Builder',
+                  'Edit days & spots',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -199,10 +187,21 @@ class TripDetailsBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // ── Secondary CTA: dismiss ────────────────────────────────────
+          OutlinedButton.icon(
+            onPressed: () => _shareWithBuddies(context),
+            icon: const Icon(Icons.ios_share_rounded, size: 18),
+            label: const Text('Invite travel buddies'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              foregroundColor: AppColors.driftTeal,
+              side: BorderSide(color: AppColors.driftTeal.withValues(alpha: 0.4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             style: TextButton.styleFrom(
@@ -222,12 +221,74 @@ class TripDetailsBottomSheet extends StatelessWidget {
     );
   }
 
-  /// Dismisses the sheet, navigates to the Routine tab, and fires [TripSelected]
-  /// on the existing [RoutineBuilderBloc] so the trip is loaded immediately.
-  void _openInRoutineBuilder(BuildContext context) {
+  void _editPlan(BuildContext context) {
     Navigator.of(context).pop();
-    // Navigate to the Routine tab via go_router named route.
-    context.goNamed(AppPage.routine.name);
+    AppNavigation.openTripPlanner(context);
+  }
+
+  Future<void> _shareWithBuddies(BuildContext context) async {
+    final isSignedIn = context.read<LoginBloc>().state is LoginSuccess;
+    final message = TripShareService.shareMessage(trip);
+    final link = TripShareService.placeholderInviteLink(trip);
+
+    if (!context.mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          title: const Text('Invite travel buddies'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isSignedIn) ...[
+                Text(
+                  'Sign in will be required to share trips and sync with your group. This is a preview link only.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.push(AppPage.login.path);
+                  },
+                  child: const Text('Sign in'),
+                ),
+                const SizedBox(height: 8),
+              ] else
+                Text(
+                  'Deep link sharing is coming soon. Copy the placeholder invite link below.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              const SizedBox(height: 8),
+              SelectableText(
+                link,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: message));
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Copy invite'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

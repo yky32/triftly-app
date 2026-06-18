@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/1_today/bloc/today_bloc.dart';
 import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
@@ -104,13 +105,11 @@ class _TodayView extends StatelessWidget {
                         completedToday: state.completedTodayCount,
                         totalToday: state.totalTodayCount,
                         daysRemaining: state.daysRemaining,
-                        onTap: () =>
-                            context.goNamed(AppPage.routine.name),
+                        onTap: () => AppNavigation.openTripPlanner(context),
                       )
                     else if (!state.isLoading)
                       _EmptyTripBanner(
-                        onTap: () =>
-                            context.goNamed(AppPage.routine.name),
+                        onTap: () => AppNavigation.openTripPlanner(context),
                       )
                     else
                       _ActiveTripBanner.skeleton(),
@@ -131,12 +130,12 @@ class _TodayView extends StatelessWidget {
                         state.todaySpots.isEmpty)
                       _EmptyTodaySchedule(
                         onAdd: () =>
-                            context.goNamed(AppPage.routine.name),
+                            AppNavigation.openTripPlanner(context),
                       )
                     else if (!state.isLoading)
                       _NoTripSchedule(
                         onCreate: () =>
-                            context.goNamed(AppPage.routine.name),
+                            AppNavigation.openTripPlanner(context),
                       )
                     else
                       _TodaySchedule.skeleton(),
@@ -168,28 +167,25 @@ class _TodayView extends StatelessWidget {
                           label: 'New Trip',
                           color: AppColors.driftTeal,
                           onTap: () =>
-                              context.goNamed(AppPage.routine.name),
+                              AppNavigation.openTripPlanner(context),
                         ),
                         _QuickAction(
                           icon: Icons.luggage_rounded,
                           label: 'My Trips',
                           color: AppColors.calmGreen,
-                          onTap: () =>
-                              context.goNamed(AppPage.trips.name),
+                        onTap: () => AppNavigation.openTripsTab(context),
                         ),
                         _QuickAction(
-                          icon: Icons.map_outlined,
-                          label: 'Map',
+                          icon: Icons.ios_share_rounded,
+                          label: 'Share',
                           color: AppColors.softAmber,
-                          onTap: () =>
-                              context.goNamed(AppPage.map.name),
+                          onTap: () => AppNavigation.openTripsTab(context),
                         ),
                         _QuickAction(
                           icon: Icons.account_balance_wallet_outlined,
                           label: 'Spend',
                           color: AppColors.sunsetCoral,
-                          onTap: () =>
-                              context.goNamed(AppPage.spend.name),
+                        onTap: () => AppNavigation.openSpendTab(context),
                         ),
                       ],
                     ),

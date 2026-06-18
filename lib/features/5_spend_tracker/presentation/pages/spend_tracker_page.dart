@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:triftly/core/extensions/localizations.dart';
+import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
+import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
+import 'package:triftly/features/5_spend_tracker/bloc/spend_bloc.dart';
 
 class SpendTrackerPage extends StatelessWidget {
   const SpendTrackerPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => SpendBloc(
+        repository: context.read<RoutineRepository>(),
+      )..add(const SpendLoaded()),
+      child: const _SpendTrackerView(),
+    );
+  }
+}
+
+class _SpendTrackerView extends StatelessWidget {
+  const _SpendTrackerView();
 
   @override
   Widget build(BuildContext context) {
@@ -13,71 +31,131 @@ class SpendTrackerPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Header ───────────────────────────────────────────────
-              Row(
+        child: BlocBuilder<SpendBloc, SpendState>(
+          builder: (context, state) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.page_spend_tracker,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: colorScheme.onSurface,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          context.l10n.page_spend_tracker,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline_rounded),
+                        color: AppColors.driftTeal,
+                        onPressed: () {},
+                        tooltip: 'Add expense',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.hasActiveTrip
+                        ? 'Track spending for the whole trip'
+                        : 'Start or select an active trip to track group spending',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (state.hasActiveTrip && state.tripName != null)
+                    _TripBudgetCard(
+                      tripName: state.tripName!,
+                      daysRemaining: state.daysRemaining,
+                      totalBudget: 3500,
+                      spent: 2180,
+                      currency: 'USD',
+                    )
+                  else
+                    _NoActiveTripCard(
+                      onPlanTrip: () => AppNavigation.openTripPlanner(context),
+                      onOpenTrips: () => AppNavigation.openTripsTab(context),
+                    ),
+                  if (state.hasActiveTrip) ...[
+                    const SizedBox(height: 24),
+                    const _SectionHeader(title: 'Spending by Category'),
+                    const SizedBox(height: 12),
+                    const _CategoryBreakdown(),
+                    const SizedBox(height: 24),
+                    _SectionHeader(
+                      title: 'Recent Transactions',
+                      action: TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'View all',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded),
-                    color: AppColors.driftTeal,
-                    onPressed: () {},
-                    tooltip: 'Add expense',
-                  ),
+                    const SizedBox(height: 12),
+                    const _RecentTransactions(),
+                  ],
+                  const SizedBox(height: 32),
                 ],
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
-              const SizedBox(height: 24),
+class _NoActiveTripCard extends StatelessWidget {
+  const _NoActiveTripCard({
+    required this.onPlanTrip,
+    required this.onOpenTrips,
+  });
 
-              // ── Trip Budget Overview ─────────────────────────────────
-              _TripBudgetCard(
-                tripName: 'Japan Spring Tour',
-                totalBudget: 3500,
-                spent: 2180,
-                currency: 'USD',
-              ),
+  final VoidCallback onPlanTrip;
+  final VoidCallback onOpenTrips;
 
-              const SizedBox(height: 24),
-
-              // ── Spending by Category ─────────────────────────────────
-              _SectionHeader(title: 'Spending by Category'),
-              const SizedBox(height: 12),
-              const _CategoryBreakdown(),
-
-              const SizedBox(height: 24),
-
-              // ── Recent Transactions ──────────────────────────────────
-              _SectionHeader(
-                title: 'Recent Transactions',
-                action: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'View all',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const _RecentTransactions(),
-
-              const SizedBox(height: 32),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.fogGray.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No active trip',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Spending is tied to your in-progress trip dates. Plan a trip on the Trips tab first.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              TextButton(onPressed: onPlanTrip, child: const Text('Plan trip')),
+              TextButton(onPressed: onOpenTrips, child: const Text('My trips')),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -88,12 +166,14 @@ class SpendTrackerPage extends StatelessWidget {
 class _TripBudgetCard extends StatelessWidget {
   const _TripBudgetCard({
     required this.tripName,
+    required this.daysRemaining,
     required this.totalBudget,
     required this.spent,
     required this.currency,
   });
 
   final String tripName;
+  final int daysRemaining;
   final double totalBudget;
   final double spent;
   final String currency;
@@ -150,6 +230,15 @@ class _TripBudgetCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (daysRemaining > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              '$daysRemaining day${daysRemaining == 1 ? '' : 's'} left',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),

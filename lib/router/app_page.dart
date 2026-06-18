@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// App pages and routes. navBarMemberIndex 99 = not in bottom nav (standalone).
+/// App pages and routes.
+///
+/// [navBarMemberIndex] 0–2 = bottom nav (Today, Trips, Spend).
+/// 99 = full-screen or standalone (planner, map, login, settings).
 enum AppPage {
-  login('Login', '/login', Icons.login, 99),
-  today('Today', '/today', Icons.today, 0),
-  trips('My Trips', '/trips', Icons.luggage, 1),
-  routine('Routine', '/routine', Icons.schedule, 2),
-  map('Map', '/map', Icons.map, 3),
-  spend('Spend', '/spend', Icons.account_balance_wallet, 4),
-  settings('Settings', '/settings', Icons.settings, 99);
+  login('Login', '/login', Icons.login_rounded, 99),
+  today('Today', '/today', Icons.today_outlined, 0),
+  trips('Trips', '/trips', Icons.luggage_outlined, 1),
+  routine('Plan trip', '/trips/plan', Icons.edit_calendar_outlined, 99),
+  map('Map', '/map', Icons.map_outlined, 99),
+  spend('Spend', '/spend', Icons.account_balance_wallet_outlined, 2),
+  settings('Settings', '/settings', Icons.settings_outlined, 99);
 
   const AppPage(this.name, this.path, this.icon, this.navBarMemberIndex);
 

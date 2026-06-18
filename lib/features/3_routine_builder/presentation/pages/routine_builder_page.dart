@@ -7,7 +7,7 @@ import 'package:triftly/features/3_routine_builder/data/routine_repository.dart'
 import 'package:triftly/features/3_routine_builder/models/routine_spot.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/bottom_sheets/routine_day_add_spot_bottom_sheet.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/routine_day_carousel.dart';
-import 'package:triftly/core/constants/app_config.dart';
+import 'package:triftly/core/navigation/app_navigation.dart';
 import 'package:triftly/core/theme/app_colors.dart';
 import 'package:triftly/features/3_routine_builder/presentation/widgets/bottom_sheets/routine_builder_bottom_sheet.dart';
 
@@ -73,7 +73,7 @@ class _RoutineBuilderView extends StatelessWidget {
             }
             if (state.lastSavedAt != null && context.mounted) {
               context.read<RoutineBuilderBloc>().add(TripCleared());
-              context.go(AppConfig.defaultPage.path);
+              AppNavigation.openTripsTab(context);
             }
           },
           buildWhen: (prev, curr) =>
@@ -204,6 +204,16 @@ Widget _buildHeader(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (context.canPop())
+          Padding(
+            padding: const EdgeInsets.only(right: 4, top: 2),
+            child: IconButton(
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Back',
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

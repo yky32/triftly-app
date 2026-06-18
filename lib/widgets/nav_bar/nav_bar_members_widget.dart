@@ -15,17 +15,13 @@ class NavBarMembersWidget extends StatelessWidget {
 
   static List<AppPage> get _navPages => AppConfig.enabledNavPages;
 
-  /// Short label for nav bar (fits 5 tabs).
+  /// Short labels for the minimal bottom nav (3 tabs).
   static String _navLabel(AppPage page) {
     switch (page) {
       case AppPage.today:
         return 'Today';
       case AppPage.trips:
         return 'Trips';
-      case AppPage.routine:
-        return 'Routine';
-      case AppPage.map:
-        return 'Map';
       case AppPage.spend:
         return 'Spend';
       default:
