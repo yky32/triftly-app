@@ -128,6 +128,46 @@ def app_store_connect_api_key_params
   { key_id: key_id, issuer_id: issuer_id, key_content: key_content }
 end
 
+def build_app_store_connect_api_key
+  params = app_store_connect_api_key_params
+  return nil unless params
+
+  key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
+  if File.exist?(key_path)
+    app_store_connect_api_key(
+      key_id: params[:key_id],
+      issuer_id: params[:issuer_id],
+      key_filepath: key_path
+    )
+  else
+    app_store_connect_api_key(
+      key_id: params[:key_id],
+      issuer_id: params[:issuer_id],
+      key_content: params[:key_content],
+      is_key_content_base64: false
+    )
+  end
+end
+
+def testflight_upload_options(ipa_path)
+  options = {
+    ipa: ipa_path,
+    app_identifier: "com.triftly",
+    skip_waiting_for_build_processing: false,
+    skip_submission: true,
+    distribute_external: false,
+    notify_external_testers: false
+  }
+
+  api_key = build_app_store_connect_api_key
+  if api_key
+    options[:api_key] = api_key
+    UI.message("🔑 Using App Store Connect API key for TestFlight upload (no Apple ID / 2FA)")
+  end
+
+  options
+end
+
 default_platform(:ios)
 
 # Helper function to increment build number in pubspec.yaml
@@ -483,14 +523,7 @@ platform :ios do
     UI.message("")
     
     begin
-      upload_to_testflight(
-        ipa: ipa_path,
-        app_identifier: "com.triftly",
-        skip_waiting_for_build_processing: false,
-        skip_submission: true,
-        distribute_external: false,
-        notify_external_testers: false
-      )
+      upload_to_testflight(**testflight_upload_options(ipa_path))
       
       UI.success("✅ Successfully uploaded to App Store Connect!")
       if uploaded_build
@@ -519,14 +552,7 @@ platform :ios do
           UI.important("")
           
           # Retry the upload with release notes
-          upload_to_testflight(
-            ipa: ipa_path,
-            app_identifier: "com.triftly",
-            skip_waiting_for_build_processing: false,
-            skip_submission: true,
-            distribute_external: false,
-            notify_external_testers: false
-          )
+          upload_to_testflight(**testflight_upload_options(ipa_path))
           
           UI.success("✅ Successfully uploaded to App Store Connect!")
           UI.message("📱 Check App Store Connect for build processing status")
@@ -572,14 +598,20 @@ platform :ios do
     UI.important("⚠️  This requires App Store Connect access")
     
     begin
-      produce(
-        username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+      api_key = build_app_store_connect_api_key
+      produce_options = {
         app_identifier: "com.triftly",
         app_name: "Triftly",
         team_id: "3G34999H3A",
-        skip_itc: false,  # Don't skip App Store Connect creation
-        skip_devcenter: false  # Don't skip Developer Center
-      )
+        skip_itc: false,
+        skip_devcenter: false
+      }
+      if api_key
+        produce_options[:api_key] = api_key
+      else
+        produce_options[:username] = ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com"
+      end
+      produce(**produce_options)
       
       UI.success("✅ App created successfully in App Store Connect!")
       UI.message("📝 You can now upload to TestFlight using: bundle exec fastlane ios upload_testflight")
