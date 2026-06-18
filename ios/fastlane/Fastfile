@@ -328,22 +328,35 @@ platform :ios do
     # Run pod install (bundle exec or system pod)
     bundle_pod_ok = run_pod_install
     
-    # Build IPA using flutter build ipa (handles archive + export in one step)
-    UI.message("🔧 Building IPA with ENV=#{env_value} (using env/.env.#{env_value})")
+    # Step 1: Build Flutter artifacts (no codesign — gym handles signing)
+    UI.message("🔧 Step 1/2: Building Flutter artifacts (ENV=#{env_value})...")
+    sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign --dart-define=ENV=#{env_value}")
     
-    # Build authentication args for xcodebuild
-    extra_args = ""
+    # Step 2: Archive + export IPA using gym with App Store Connect API key
+    UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")
+    
+    gym_opts = {
+      workspace: "#{IOS_DIR}/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: export_method,
+      output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
+      export_options: {
+        method: export_method,
+        signingStyle: "automatic",
+        teamID: "3G34999H3A"
+      },
+      clean: false,
+      include_bitcode: false,
+    }
+    
+    # Use API key for authentication (CI) — gym handles cert + profile automatically
     api_key_params = app_store_connect_api_key_params
     if api_key_params
-      key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
-      if File.exist?(key_path)
-        extra_args += " --export-options-plist=/dev/stdin <<< '{\"method\":\"app-store\",\"signingStyle\":\"automatic\",\"teamID\":\"3G34999H3A\"}'"
-        UI.message("🔑 Using App Store Connect API key for automatic signing")
-      end
+      gym_opts[:api_key] = app_store_connect_api_key(**api_key_params)
+      UI.message("🔑 Using App Store Connect API key for signing")
     end
     
-    # Use flutter build ipa which handles the full pipeline
-    sh("cd #{PROJECT_ROOT} && flutter build ipa --release --dart-define=ENV=#{env_value} --export-method app-store")
+    build_app(gym_opts)
     
     UI.success("✅ IPA created successfully!")
     UI.message("📦 IPA location: #{PROJECT_ROOT}/build/ios/ipa/")
