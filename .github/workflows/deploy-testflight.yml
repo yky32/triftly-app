@@ -55,13 +55,12 @@ jobs:
       - name: Deploy to TestFlight
         env:
           CI: true
-          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: |
           cd ios
+          unset SPACESHIP_2FA_SMS_DEFAULT_PHONE_NUMBER FASTLANE_SESSION FASTLANE_PASSWORD FASTLANE_USER FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD || true
           bundle exec fastlane ios upload_testflight env:prod
 
       - name: Notify failure
