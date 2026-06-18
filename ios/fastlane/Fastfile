@@ -328,76 +328,22 @@ platform :ios do
     # Run pod install (bundle exec or system pod)
     bundle_pod_ok = run_pod_install
     
-    # Build iOS app: ensure Flutter sees the same pod we used (wrapper or system pod dir in PATH)
-    UI.message("🔧 Building with ENV=#{env_value} (using env/.env.#{env_value})")
-    if bundle_pod_ok
-      pod_wrapper_dir = ensure_pod_wrapper_for_flutter
-      build_path = "#{pod_wrapper_dir}:#{ENV['PATH']}"
-    else
-      # So Flutter's pod uses system Ruby (2.6), put /usr/bin first so pod's shebang finds it
-      pod_cmd = find_pod_command
-      pod_dir = (pod_cmd && pod_cmd.to_s.start_with?("/")) ? File.dirname(pod_cmd) : ""
-      build_path = pod_dir.empty? ? ENV['PATH'] : "/usr/bin:#{pod_dir}:#{ENV['PATH']}"
-    end
-    build_env = "PATH=#{build_path}"
-    sh("cd #{PROJECT_ROOT} && #{build_env} flutter build ios --release --dart-define=ENV=#{env_value}")
+    # Build IPA using flutter build ipa (handles archive + export in one step)
+    UI.message("🔧 Building IPA with ENV=#{env_value} (using env/.env.#{env_value})")
     
-    # Build IPA using xcodebuild
-    # Configure export to use automatic signing (matching the archive)
-    # For app-store, ensure we're using Distribution certificate
-    export_opts = {
-      method: export_method,
-      signingStyle: "automatic",
-      teamID: "3G34999H3A"  # Your team ID from Appfile
-    }
-    
-    # For app-store, ensure provisioning profile is installed so export finds it
-    if export_method == "app-store"
-      UI.message("📦 Building for App Store - ensuring provisioning profile is available...")
-      begin
-        api_key_params = app_store_connect_api_key_params
-        if api_key_params
-          get_provisioning_profile(
-            app_identifier: "com.triftly",
-            api_key: app_store_connect_api_key(**api_key_params),
-            team_id: "3G34999H3A"
-          )
-        else
-          get_provisioning_profile(
-            app_identifier: "com.triftly",
-            adhoc: false,
-            username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-            team_id: "3G34999H3A"
-          )
-        end
-        UI.success("✅ Provisioning profile ready")
-      rescue => ex
-        UI.important("⚠️  Could not fetch profile: #{ex.message}")
-        UI.important("   Relying on Xcode automatic signing instead.")
-      end
-    end
-
-    # Build xcargs for automatic signing in CI
-    xcargs = "-allowProvisioningUpdates"
+    # Build authentication args for xcodebuild
+    extra_args = ""
     api_key_params = app_store_connect_api_key_params
     if api_key_params
       key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
       if File.exist?(key_path)
-        xcargs += " -authenticationKeyID #{api_key_params[:key_id]}"
-        xcargs += " -authenticationKeyIssuerID #{api_key_params[:issuer_id]}"
-        xcargs += " -authenticationKeyPath #{key_path}"
+        extra_args += " --export-options-plist=/dev/stdin <<< '{\"method\":\"app-store\",\"signingStyle\":\"automatic\",\"teamID\":\"3G34999H3A\"}'"
         UI.message("🔑 Using App Store Connect API key for automatic signing")
       end
     end
-
-    build_app(
-      workspace: "#{IOS_DIR}/Runner.xcworkspace",
-      scheme: "Runner",
-      export_method: export_method,
-      output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
-      export_options: export_opts,
-      xcargs: xcargs
-    )
+    
+    # Use flutter build ipa which handles the full pipeline
+    sh("cd #{PROJECT_ROOT} && flutter build ipa --release --dart-define=ENV=#{env_value} --export-method app-store")
     
     UI.success("✅ IPA created successfully!")
     UI.message("📦 IPA location: #{PROJECT_ROOT}/build/ios/ipa/")
