@@ -122,7 +122,7 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
                 const SizedBox(height: 16),
                 _label('Estimated Duration'),
                 DropdownButtonFormField<String>(
-                  initialValue: _durationController.text.isEmpty ? null : _durationController.text,
+                  value: _durationController.text.isEmpty ? null : _durationController.text,
                   decoration: const InputDecoration(hintText: 'Select duration'),
                   items: ['30m', '1h', '1.5h', '2h', '2.5h', '3h', '4h', '5h+'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                   onChanged: (v) => setState(() => _durationController.text = v ?? ''),

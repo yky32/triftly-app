@@ -114,7 +114,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                 const SizedBox(height: 16),
                 _label('Default Currency'),
                 DropdownButtonFormField<String>(
-                  initialValue: _currency,
+                  value: _currency,
                   decoration: const InputDecoration(
                     suffixIcon: Icon(Icons.arrow_drop_down),
                   ),
