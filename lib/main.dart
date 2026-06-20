@@ -1,85 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:triftly/core/environment.dart';
-import 'package:triftly/core/localization/app_localizations.dart';
-import 'package:triftly/core/theme/theme.dart';
-import 'package:triftly/core/theme/theme_bloc.dart';
-import 'package:triftly/core/theme/theme_preference.dart';
-import 'package:triftly/features/_standalone/login/bloc/login_bloc.dart';
-import 'package:triftly/features/3_routine_builder/data/routine_repository.dart';
-import 'package:triftly/router/app_router.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
+import 'app.dart';
 
 void main() {
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-
-    try {
-      await Environment.load();
-    } catch (e, st) {
-      debugPrint('Environment.load failed: $e\n$st');
-    }
-
-    FlutterError.onError = (details) {
-      debugPrint('FlutterError: ${details.exception}\n${details.stack}');
-      FlutterError.presentError(details);
-    };
-
-    final prefs = await SharedPreferences.getInstance();
-    final themePreference = ThemePreference(prefs);
-    final routineRepository = RoutineRepository(prefs);
-    runApp(MyApp(
-      themePreference: themePreference,
-      routineRepository: routineRepository,
-    ));
-  }, (error, stack) {
-    debugPrint('Zone error: $error\n$stack');
-  });
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({
-    super.key,
-    required this.themePreference,
-    required this.routineRepository,
-  });
-
-  final ThemePreference themePreference;
-  final RoutineRepository routineRepository;
-
-  @override
-  Widget build(BuildContext context) {
-    return RepositoryProvider<RoutineRepository>.value(
-      value: routineRepository,
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<LoginBloc>(
-            create: (BuildContext context) => LoginBloc(),
-          ),
-          BlocProvider<ThemeBloc>(
-            create: (BuildContext context) => ThemeBloc(themePreference),
-          ),
-        ],
-        child: BlocBuilder<ThemeBloc, ThemeMode>(
-          builder: (context, themeMode) {
-            return MaterialApp.router(
-              debugShowCheckedModeBanner: false,
-              title: 'Triftly',
-              theme: CustomTheme.lightThemeData(),
-              darkTheme: CustomTheme.darkThemeData(),
-              themeMode: themeMode,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: AppRouter.router,
-              localizationsDelegates: [
-                ...AppLocalizations.localizationsDelegates,
-                FormBuilderLocalizations.delegate,
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
+  WidgetsFlutterBinding.ensureInitialized();
+  // TODO: Initialize Supabase
+  // TODO: Initialize Hive
+  runApp(const TripApp());
 }

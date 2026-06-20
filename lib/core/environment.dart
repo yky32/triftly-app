@@ -1,24 +1,25 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 class Environment {
-  const Environment._();
+  static const String _env = String.fromEnvironment('ENV', defaultValue: 'dev');
 
-  static Future<void> load() async {
-    const String env = String.fromEnvironment('ENV', defaultValue: 'dev');
+  static bool get isDev => _env == 'dev';
+  static bool get isProd => _env == 'prod';
+  static bool get isStag => _env == 'stag';
 
-    String envFile;
-    switch (env) {
-      case 'stag':
-        envFile = 'env/.env.stag';
-        break;
-      case 'prod':
-        envFile = 'env/.env.prod';
-        break;
-      default:
-        envFile = 'env/.env.dev';
-        break;
-    }
+  static String get envName => _env;
 
-    await dotenv.load(fileName: envFile);
-  }
+  // Supabase
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://your-project.supabase.co',
+  );
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'your-anon-key',
+  );
+
+  // Google Maps
+  static const String googleMapsApiKey = String.fromEnvironment(
+    'GOOGLE_MAPS_API_KEY',
+    defaultValue: '',
+  );
 }
