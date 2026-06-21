@@ -1,207 +1,106 @@
 # Triftly
 
-**Drift Through Your Day – Plans, Maps, Budget**
+**Your Global Travel OS — Explore, Plan, Spend.**
 
-A production-ready Flutter app with enterprise-grade features and best practices.
+A modern, minimal Flutter mobile app redesigned by WY Limited. One app for the entire travel lifecycle: discover destinations, plan your itinerary, and split expenses — no switch between apps.
 
-## 🚀 Core Features
+---
 
-- Theming scaffolding with [`ThemeExtension`](https://api.flutter.dev/flutter/material/ThemeExtension-class.html)
-- Routing scaffolding with [`go_router`](https://pub.dev/packages/go_router)
-- Localization scaffolding with [`flutter_localizations`](https://pub.dev/packages/flutter_localizations)
-- State management with [`flutter_bloc`](https://pub.dev/packages/flutter_bloc)
-- Forms with [`flutter_form_builder`](https://pub.dev/packages/flutter_form_builder) and [`form_builder_validators`](https://pub.dev/packages/form_builder_validators)
-- Toggle environment variables with a single argument (`--dart-define=ENV=dev`, `--dart-define=ENV=stag`, `--dart-define=ENV=prod`)
+## Core Business
 
-## Design principles
+Triftly is built around **3 pillars** that cover every step of a trip:
 
-Architecture and UI conventions match our sibling **[Depozio](https://github.com/yky32/depozio-app)** app. For the full expanded guide (IntelliJ setup, testing, build commands, and the exhaustive BLoC / UI pattern write-up), see **[Depozio’s README](https://github.com/yky32/depozio-app/blob/main/README.md)**. If you have both repos locally (e.g. under the same `yky/` parent folder), open **`../depozio/README.md`** — that file is the extended reference for these principles.
+- **Explore** — Browse curated travel content and popular destinations. Get inspired before you book.
+- **Plan** — Build day-by-day itineraries, add spots (pois, restaurants, hikes), and see everything on a map.
+- **Spend** — Log expenses on the go, split bills with travel buddies, and settle up fairly.
 
-### Project rule: no SnackBar
+We target travelers who care about design and simplicity — not a bloated trip planner, just enough tooling to go.
 
-**Do not use `SnackBar` or `ScaffoldMessenger.showSnackBar` anywhere in this app.** Use silent completion plus BLoC-driven UI updates, inline validation, dialogs, or in-sheet messaging (see **Bottom Sheets** below). Success and error feedback come from updated UI state, not transient toasts.
+---
 
-### BLoC with stateless widgets
+## Tech Stack
 
-**Core principle:** Prefer **Bloc** (not Cubit) with **stateless** screens: user actions dispatch events; the UI rebuilds from state via `BlocBuilder` / `BlocSelector`. Business logic stays in blocs for predictable behavior, tests, and reuse.
+- **Framework:** Flutter 3.6+ (iOS 14+ / Android min SDK 21+)
+- **Language:** Dart 3+
+- **State:** flutter_bloc (Bloc, stateless screens)
+- **Navigation:** go_router + StatefulShellRoute
+- **Database:** Supabase (PostgreSQL + Auth)
+- **Offline:** Hive + Drift
+- **Money:** decimal package (100% accurate — never double/num)
+- **Maps:** google_maps_flutter
+- **Font:** Satoshi (modern, clean, minimal)
 
-**Why:** Predictable state flow, testable logic, clearer separation of UI vs domain, efficient rebuilds, and traceable transitions.
+---
 
-**Guidelines**
+## Architecture
 
-1. **Screens as `StatelessWidget`** – Provide blocs with `BlocProvider` at the right tree level; avoid `setState` for domain or loaded data.
-2. **`BlocProvider` for DI** – `create: (context) => MyBloc()..add(LoadData())` (or inject repositories from above).
-3. **`BlocBuilder` for UI** – Use `buildWhen` to limit rebuilds when comparing meaningful state changes.
-4. **`BlocListener` for side effects** – Navigation, dialogs, one-off reactions; use `listenWhen` where it helps.
-5. **Dispatch events, don’t hide logic in widgets** – `context.read<MyBloc>().add(RefreshData())` instead of imperative state in the widget.
-6. **States and events** – Extend `Equatable` for value equality; model loading / loaded / error (and refresh-with-existing-data if needed) explicitly.
-
-```dart
-// Prefer: Stateless shell + provider
-class MyPage extends StatelessWidget {
-  const MyPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => MyBloc()..add(const LoadData()),
-      child: const _MyPageContent(),
-    );
-  }
-}
+```
+lib/
+ ├── app.dart                      # App entry + MaterialApp theme
+ ├── main.dart                     # main() — init Supabase + Hive + runApp
+ └── core/
+ │   ├── constants/                # AppColors, AppPage enum, AppConfig
+ │   ├── environment/              # Dev / stag / prod env flags
+ │   ├── models/                   # Equatable models (Trip, Day, Spot, Expense, …)
+ │   ├── navigation/               # go_router setup + floating bottom nav shell
+ │   ├── services/                 # SplitCalculator (equal / percent / amount / share)
+ │   └── theme/                    # AppColors + AppTheme (Material 3, light)
+ └── features/
+     ├── 1_explore/                # Explore page (curated destinations)
+     ├── 5_trip_list/             # Trip list + create trip bottom sheet
+     │   └── bloc/                # TripListBloc / state / event
+     ├── 6_trip_detail/           # Trip detail — Plan / Spend / Map tabs
+     │   ├── bloc/                # TripDetailBloc / state / event
+     │   ├── presentation/
+     │   │   ├── pages/           # TripDetailPage (3-tab scaffold)
+     │   │   ├── widgets/         # PlanTab, SpendTab, MapTab
+     │   │   └── bottom_sheets/   # AddSpotBottomSheet
+     │   └── data/                # (Supabase repos — TODO)
+     └── 4_profile/               # Profile page (settings placeholder)
 ```
 
-**When `StatefulWidget` is OK**
+---
 
-- UI-only state: `TextEditingController`, `ScrollController`, `AnimationController`, focus, `GlobalKey<FormState>`.
-- Lifecycle cleanup (`dispose`) for those controllers.
-- **Not** for loading lists, trips, or map data—that belongs in a bloc.
+## Package Name
 
-Debug or one-off test pages may use local `StatefulWidget` + `setState` if they are not production flows.
+- **Flutter package:** `triftly`
+- **iOS bundle ID:** `com.triftly`
+- **Android applicationId:** `com.triftly`
 
-**Skeleton loading**
-
-- Keep the **same layout** for skeleton and loaded content to avoid jumps.
-- Prefer **Skeletonizer** `enabled:` toggled from bloc state (`Loading` / `Refreshing`) instead of swapping unrelated widgets.
-
-**Reactive streams in blocs**
-
-Watch repositories or services **inside the bloc** (`StreamSubscription` in the bloc, cancel in `close()`), and dispatch refresh events when the stream emits—so screens stay stateless. Example: **`TripsBloc`** (`lib/features/2_trips/bloc/trips_bloc.dart`) subscribes to trip summaries and refreshes when the backing store changes.
-
-### UI feedback (no SnackBar)
-
-- **Silent actions** where the result is obvious from the screen (e.g. sheet closes, list updates).
-- **State-driven UI** – Lists and detail views reflect success or empty/error states from the bloc.
-- **Errors** – Prefer inline messaging, dedicated error states, or dialogs; avoid snackbars for errors.
-
-### Action confirmation and bloc refresh
-
-After destructive or mutating actions (delete, save that affects multiple tabs), check **`context.mounted`**, initialize services if needed, then **`read<RelevantBloc>().add(...)`** so every visible surface stays in sync. Wrap `context.read` in try/catch when the bloc might not be in scope.
-
-### Shared widgets
-
-Reusable pieces used across features live under **`lib/widgets/`** (e.g. `lib/widgets/bottom_sheets/app_bottom_sheet.dart`). Feature-only UI stays under that feature. Document shared widgets with a short comment when reuse isn’t obvious from the name.
-
-### Bottom sheet action buttons
-
-Align primary/secondary actions with existing sheets: **primary** full-width **`FilledButton`** (or **`ElevatedButton`** if matching older Material patterns); **Cancel + confirm** in a **`Row`** with two **`Expanded`** children and spacing between. Use consistent vertical padding (e.g. `16`) and **`BorderRadius.circular(16)`** on button shapes. Reference: add/edit spot and other sheets under `lib/features/3_routine_builder/.../bottom_sheets/` and `lib/widgets/bottom_sheets/app_bottom_sheet.dart`.
+---
 
 ## Getting Started
 
-Clone the repository and use it as a base for development.
-
-Use the following command to install dependencies:
-
 ```bash
 flutter pub get
-```
-
-To run the app, run the following command:
-
-```bash
-flutter run
-```
-
-## Environment Variables
-
-Go to the `env` folder and edit the files inside, then run the app with the `--dart-define` argument.
-
-```bash
 flutter run --dart-define=ENV=dev
 ```
 
-Or replace `dev` with `stag` or `prod` to toggle between staging and production environments.
+Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`).
 
-## Theming
+---
 
-Define all styles in the `theme/theme.dart` file. Do not define styles inside components.
-If you want to define some variables that are not available in the `ThemeData` class, you can define them in the `theme/theme_extension.dart` file.
+## Project Conventions
 
-## Routing
+- **No SnackBar.** Feedback via BLoC-driven UI updates, inline validation, dialogs, or in-sheet messaging.
+- **Bloc over Cubit.** Screens are `StatelessWidget`; business logic lives in blocs.
+- **Decimal for money.** Never use `double` or `num` for currency. `package:decimal` only.
+- **Soft deletes.** `is_active` boolean — never hard delete rows.
+- **Minimal design.** Clean, modern, light mode first. Things 3 / Linear / Arc-inspired.
+- **No full-page tables.** Action panels via bottom sheet; cards have left border = category color.
 
-Define all routes in the `enum/route.dart` file, then update the `route/router_config.dart` file.
+---
 
-## Localization
+## CI / CD
 
-To create a new locale, create a new file inside the `l10n` folder and run the app, the localization will be generated automatically.
+- **iOS deployment:** Fastlane → TestFlight (`bundle exec fastlane ios upload_testflight`)
+- **Android deployment:** TBD (Play Console)
+- GitHub Actions workflow: `.github/workflows/deploy-testflight.yml`
+- Secrets: `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT`
+- Never put real credentials in `ios/fastlane/.env.default`
 
-## State Management
+---
 
-Use **Bloc only** (no Cubit). All state is managed via [`flutter_bloc`](https://pub.dev/packages/flutter_bloc) with events and states. Define blocs as specific as possible—e.g. `LoginBloc`, `ThemeBloc`, `ForgotPasswordBloc`—and avoid a single catch‑all bloc (e.g. no `UserBloc` for all auth logic). For stateless screens, `BlocBuilder` / `BlocListener`, stream subscriptions in blocs, and feedback patterns, see **Design principles** above.
+## Status
 
-## Bottom Sheets
-
-Bottom sheets in this app follow a consistent set of behaviors and design rules:
-
-- **Drag handle** – Every bottom sheet shows a drag handle (pill) at the top to signal that it can be dragged to dismiss. Use `BottomSheetDragHandle` from `app_bottom_sheet.dart`.
-- **Tap-to-unfocus** – Tapping outside any focused text field must unfocus it and dismiss the keyboard so the sheet content is not blocked. Wrap sheet content in `TapToUnfocus` from `app_bottom_sheet.dart`.
-- **Borderless inputs** – Text fields inside bottom sheets use borderless styling (no visible border; optional subtle underline). Do not use outlined or filled bordered fields in sheets.
-- **Keyboard insets** – Sheet layout must account for the keyboard (e.g. `MediaQuery.viewInsetsOf(context).bottom`) so content remains visible and scrollable when the keyboard is open.
-- **Present via `showAppModalBottomSheet`** – Use the shared helper in `app_bottom_sheet.dart` so sheets use the root navigator and consistent styling.
-
-**Feedback:** Do not use `SnackBar` / `showSnackBar` (see **Design principles → Project rule: no SnackBar**).
-
-## Layout & nav bar
-
-To avoid content being blocked by the bottom nav bar, use the global layout constants in `lib/core/constants/layout_constants.dart`:
-
-- **`LayoutConstants.scrollPaddingBelowNavBar(BuildContext context)`** – Returns the bottom padding (safe area + nav bar height) to use for scroll views and lists so the last items are visible above the nav bar.
-- **`LayoutConstants.bottomNavBarHeight`** – The nominal nav bar height (72); adjust here if the nav bar design changes.
-- **`LayoutConstants.scrollPaddingBelowNavBarInsets(BuildContext context)`** – Same as above but returns `EdgeInsets.only(bottom: ...)` for padding widgets.
-
-Use for any scrollable content that could extend behind the bottom nav (e.g. `SingleChildScrollView`, `ListView`, day itinerary).
-
-## Map & location data
-
-The map tab uses **Geocoding** (and is prepared for **Places**) so users see useful info when tapping the map and can later add spots to the routine builder.
-
-- **Geocoding**: Set `GOOGLE_MAPS_API_KEY` in `env/.env.dev` (same key as Maps). Enable **Geocoding API** in [Google Cloud Console](https://console.cloud.google.com/apis/library/geocoding-backend.googleapis.com) for the same project. Reverse geocode turns a tap (LatLng) into address and place ID.
-- **MapLocation** in `lib/features/4_map_view/models/map_location.dart` holds: title, address, description, position, plus optional `placeId`, `rating`, `types`, `openingHoursText`, `photoUrl`, `website`, `phoneNumber`, `locality` for when you add Places API later.
-- **Places API**: Place Details is integrated. After reverse geocode, the app fetches place details by `place_id` (rating, opening hours, photo, website, phone). Enable **Places API** in Cloud Console. The bottom sheet shows photo, rating, types, opening hours, website, and phone when returned.
-
-**Troubleshooting: Map shows "Dropped pin" (no POI/address) on real device**
-
-If the location detail sheet shows only "Dropped pin" and coordinates when tapping the map on a **real device** (while it works in simulator), check:
-
-1. **API key on device** – The app loads `GOOGLE_MAPS_API_KEY` from `env/.env.dev` (or `.env.stag` / `.env.prod` when built with `ENV=stag` or `ENV=prod`). For TestFlight/release builds, ensure the env file used for that build contains the key (e.g. `env/.env.prod` if you build with `--dart-define=ENV=prod`).
-2. **API key restrictions** – In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → your API key → Application restrictions: if set to "iOS apps", add your **iOS bundle ID** (e.g. `com.yourcompany.triftly`). If set to "Android apps", add your **package name** and SHA-1. A key restricted to a debug certificate or simulator may work in dev but not on a real device or TestFlight.
-3. **APIs enabled** – Enable **Geocoding API** and **Places API** (and **Maps SDK for iOS** / **Maps SDK for Android**) for the same Google Cloud project.
-4. **Debug logs** – Run the app from Xcode (iOS) or Android Studio and watch the console. On failure you’ll see `[GeocodingService]` or `[PlacesService]` messages (e.g. key missing, `status=REQUEST_DENIED`, or an exception). Fix the reported cause (key, restrictions, or network).
-
-## Map ↔ Routine Builder integration
-
-The **Map** tab and **Routine Builder** are wired both ways so users can add spots from the map and fill spot location from the map.
-
-**Map → Routine (add spot from map)**
-
-- On the Map tab, search or tap a point → location detail bottom sheet opens.
-- **"Add to routine"** converts the MapLocation to a RoutineSpot (title, address, description, default times), closes the sheet, and navigates to the **Routine** tab with that spot as route `extra`.
-- The Routine page opens the add-spot bottom sheet pre-filled with the spot; the user can adjust times/icon and save.
-
-**Routine → Map (pick location for a spot)**
-
-- In **Add spot** or **Edit spot** (routine day), the **Location** field has a **"Pick on map"** button.
-- Tapping it opens **Map** in pick mode (`MapViewPage.pickLocation`): same map UI with app bar “Pick location”, user taps on the map → we reverse geocode and fetch place details → “Use this location” returns the result to the sheet.
-- A preview card shows title and address with **"Use this location"** / **"Choose another"**. On **Use this location**, the picker pops and returns the MapLocation to the sheet.
-- The add/edit spot sheet then fills **Location** (address), **Title** (if empty), and **Description** (if returned) from the picked location.
-
-Shared pieces: `buildMapLocationFromTap` in `lib/features/4_map_view/utils/location_from_tap.dart`, GeocodingService, PlacesService. The map picker reuses this logic so behaviour matches the Map tab.
-
-## Share from Google Maps (native app → Triftly)
-
-Users can search a location in the **native Google Maps app** and use **Share → Triftly** to open that location in the app’s map tab.
-
-**Flow**
-
-1. User opens Google Maps, searches or selects a place, taps **Share**.
-2. System share sheet appears; user chooses **Triftly**.
-3. Triftly opens (or comes to foreground), shows splash briefly, then navigates to the **Map** tab with the shared location: map centers on it, shows the pin, and opens the location detail bottom sheet (reverse geocode + place details). User can then “Add to routine” as usual.
-
-**Android**
-
-- The app is a **share target** for `text/plain`. When the user picks Triftly from the share sheet, the main activity receives the shared URL (or text) via `Intent.ACTION_SEND` and `EXTRA_TEXT`. `MainActivity` stores it and exposes it to Flutter via the `app/share` method channel (`getPendingSharedUrl`). Splash screen calls `ShareReceiverService.getPendingSharedLocation()`, parses the URL with `GoogleMapsShareParser`, and navigates to `/map` with the parsed `LatLng` as route extra.
-
-**iOS**
-
-- The app registers the **URL scheme** `triftly://`. Opening `triftly://map?url=<encoded_google_maps_url>` stores the URL and passes it to Flutter via the same `app/share` channel so the map can show the location.
-- A **Share Extension** target **TriftlyShare** is in the project (`ios/TriftlyShare/`). It supports `public.url` and `public.plain-text`, so Triftly appears in the system Share sheet when the user shares a URL or text (e.g. from Google Maps). Tapping Triftly opens the main app via `triftly://map?url=...` so the map shows the shared location.
+Phase 1 MVP complete — scaffold + core pages + models + navigation + build verified.

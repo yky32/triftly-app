@@ -47,3 +47,4 @@ app.*.map.json
 # Fastlane (secrets)
 ios/fastlane/.env
 **/fastlane/report.xml
+env/env/.env.*
