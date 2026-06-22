@@ -3,11 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
+import '../widgets/trip_phase_segment.dart';
 import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/widgets/section_header.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -21,8 +21,32 @@ class TripListPage extends StatelessWidget {
   }
 }
 
-class _View extends StatelessWidget {
+class _View extends StatefulWidget {
   const _View();
+
+  @override
+  State<_View> createState() => _ViewState();
+}
+
+class _ViewState extends State<_View> {
+  TripPhase? _selectedPhase;
+
+  TripPhase _defaultPhase(TripListSections sections) {
+    if (sections.inProgress.isNotEmpty) return TripPhase.inProgress;
+    if (sections.upcoming.isNotEmpty) return TripPhase.upcoming;
+    return TripPhase.completed;
+  }
+
+  List<Trip> _tripsForPhase(TripListSections sections, TripPhase phase) {
+    switch (phase) {
+      case TripPhase.inProgress:
+        return sections.inProgress;
+      case TripPhase.upcoming:
+        return sections.upcoming;
+      case TripPhase.completed:
+        return sections.completed;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,28 +112,67 @@ class _View extends StatelessWidget {
 
   Widget _buildTripList(BuildContext context, TripListState state) {
     final sections = TripListSections.from(state.trips);
+    final selected = _selectedPhase ?? _defaultPhase(sections);
+    final trips = _tripsForPhase(sections, selected);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
+    final counts = {
+      TripPhase.inProgress: sections.inProgress.length,
+      TripPhase.upcoming: sections.upcoming.length,
+      TripPhase.completed: sections.completed.length,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (sections.inProgress.isNotEmpty)
-          _TripSection(
-            title: 'In progress',
-            trips: sections.inProgress,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+          child: TripPhaseSegment(
+            selected: selected,
+            counts: counts,
+            onChanged: (TripPhase phase) => setState(() => _selectedPhase = phase),
           ),
-        if (sections.upcoming.isNotEmpty)
-          _TripSection(
-            title: 'Upcoming',
-            trips: sections.upcoming,
-          ),
-        if (sections.completed.isNotEmpty)
-          _TripSection(
-            title: 'Completed',
-            trips: sections.completed,
-            dimmed: true,
-          ),
+        ),
+        Expanded(
+          child: trips.isEmpty
+              ? _buildPhaseEmpty(selected)
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
+                  itemCount: trips.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                  itemBuilder: (_, index) {
+                    final trip = trips[index];
+                    final card = TripCard(trip: trip);
+                    if (selected == TripPhase.completed) {
+                      return Opacity(opacity: 0.85, child: card);
+                    }
+                    return card;
+                  },
+                ),
+        ),
       ],
     );
+  }
+
+  Widget _buildPhaseEmpty(TripPhase phase) {
+    final (icon, title, subtitle) = switch (phase) {
+      TripPhase.inProgress => (
+          Icons.flight_takeoff_rounded,
+          'Nothing in progress',
+          'Trips you\'re on right now show up here',
+        ),
+      TripPhase.upcoming => (
+          Icons.event_rounded,
+          'No upcoming trips',
+          'Plan your next adventure',
+        ),
+      TripPhase.completed => (
+          Icons.check_circle_outline_rounded,
+          'No completed trips',
+          'Past trips will appear here',
+        ),
+    };
+
+    return EmptyState(icon: icon, title: title, subtitle: subtitle);
   }
 
   void _showCreateTrip(BuildContext context) {
@@ -136,36 +199,6 @@ class _View extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
         ],
       ),
-    );
-  }
-}
-
-class _TripSection extends StatelessWidget {
-  const _TripSection({
-    required this.title,
-    required this.trips,
-    this.dimmed = false,
-  });
-
-  final String title;
-  final List<Trip> trips;
-  final bool dimmed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(title: title),
-        ...trips.map(
-          (trip) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: dimmed
-                ? Opacity(opacity: 0.72, child: TripCard(trip: trip))
-                : TripCard(trip: trip),
-          ),
-        ),
-      ],
     );
   }
 }
