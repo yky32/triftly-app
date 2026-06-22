@@ -397,7 +397,6 @@ platform :ios do
     # Step 2: Archive + export IPA using gym with xcodebuild auth flags
     UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")
 
-    app_store_build = export_method == "app-store"
     xcargs = "-allowProvisioningUpdates"
     api_key_params = app_store_connect_api_key_params
     if api_key_params
@@ -410,13 +409,9 @@ platform :ios do
       end
     end
 
-    if app_store_build
-      # CI must archive with Distribution — Development identity mints extra API certs and hits Apple's limit.
-      xcargs += ' CODE_SIGN_IDENTITY="Apple Distribution"'
-      UI.message("📜 App Store archive: Apple Distribution signing (not Development)")
-    end
-
-    gym_options = {
+    # Let Xcode automatic signing pick the right cert for app-store export.
+    # Do NOT set codesigning_identity or CODE_SIGN_IDENTITY — that conflicts with automatic signing.
+    build_app(
       workspace: "#{IOS_DIR}/Runner.xcworkspace",
       scheme: "Runner",
       configuration: "Release",
@@ -431,10 +426,7 @@ platform :ios do
       xcargs: xcargs,
       clean: false,
       include_bitcode: false,
-    }
-    gym_options[:codesigning_identity] = "Apple Distribution" if app_store_build
-
-    build_app(**gym_options)
+    )
     
     UI.success("✅ IPA created successfully!")
     UI.message("📦 IPA location: #{PROJECT_ROOT}/build/ios/ipa/")
