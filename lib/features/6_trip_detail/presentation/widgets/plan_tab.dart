@@ -104,7 +104,7 @@ class PlanTab extends StatelessWidget {
                         if (index == daySpots.length) {
                           return _buildAddSpotArea(context);
                         }
-                        return _SpotCard(spot: daySpots[index]);
+                        return _SpotCard(spot: daySpots[index], defaultCurrency: trip.defaultCurrency);
                       },
                     ),
             ),
@@ -119,14 +119,28 @@ class PlanTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.add_location_alt_outlined, size: 48, color: AppColors.textTertiary),
-          const SizedBox(height: 12),
-          const Text('No spots yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDim,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.add_location_alt, size: 48, color: AppColors.primary),
+          ),
           const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => _showAddSpot(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Add your first spot'),
+          Text(
+            'No spots planned yet',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap + button to add your first spot',
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -168,8 +182,12 @@ class PlanTab extends StatelessWidget {
 
 class _SpotCard extends StatelessWidget {
   final Spot spot;
+  final String defaultCurrency;
 
-  const _SpotCard({required this.spot});
+  const _SpotCard({
+    required this.spot,
+    required this.defaultCurrency,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +229,7 @@ class _SpotCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(category.emoji, style: const TextStyle(fontSize: 16)),
+                      Text(category.emoji, style: const TextStyle(fontSize: 18)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -228,7 +246,7 @@ class _SpotCard extends StatelessWidget {
                     [
                       if (spot.openingHours != null) spot.openingHours,
                       if (spot.estimatedDuration != null) spot.estimatedDuration,
-                      if (spot.estimatedCost != null) '¥${spot.estimatedCost}',
+                      if (spot.estimatedCost != null) '$defaultCurrency ${spot.estimatedCost}',
                     ].join(' · '),
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
@@ -236,7 +254,7 @@ class _SpotCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.place, size: 12, color: AppColors.textTertiary),
+                        const Icon(Icons.place_outlined, size: 14, color: AppColors.textTertiary),
                         const SizedBox(width: 2),
                         Text(spot.area!, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
                       ],
@@ -247,8 +265,8 @@ class _SpotCard extends StatelessWidget {
             ),
           ),
           const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: Icon(Icons.more_vert, size: 18, color: AppColors.textTertiary),
+            padding: EdgeInsets.only(right: 12),
+            child: Icon(Icons.more_horiz, size: 18, color: AppColors.textTertiary),
           ),
         ],
       ),

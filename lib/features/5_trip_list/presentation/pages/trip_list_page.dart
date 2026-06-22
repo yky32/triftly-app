@@ -28,9 +28,25 @@ class _View extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Trip App'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () => _showNotifications(context),
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -168,5 +184,14 @@ class _View extends StatelessWidget {
         context.read<TripListBloc>().add(TripListLoadRequested());
       }
     });
+  }
+
+  void _showNotifications(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No notifications yet'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 }
