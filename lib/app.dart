@@ -11,6 +11,8 @@ class TripApp extends StatelessWidget {
       title: 'Triftly',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       routerConfig: appRouter,
     );
   }

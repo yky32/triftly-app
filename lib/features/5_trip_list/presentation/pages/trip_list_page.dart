@@ -4,8 +4,10 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
 import '../bottom_sheets/create_trip_bottom_sheet.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/section_header.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -25,51 +27,35 @@ class _View extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Trip App'),
+        title: const Text('Trips'),
         actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => _showNotifications(context),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => _showNotifications(context),
           ),
         ],
       ),
       body: BlocBuilder<TripListBloc, TripListState>(
         builder: (context, state) {
-          if (state.isLoading) {
-            return _buildLoading();
-          }
-          if (state.trips.isEmpty) {
-            return _buildEmpty(context);
-          }
+          if (state.isLoading) return _buildLoading();
+          if (state.trips.isEmpty) return _buildEmpty(context);
           return _buildTripList(context, state);
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateTrip(context),
-        child: const Icon(Icons.add, size: 28),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.navIslandClearance),
+        child: FloatingActionButton(
+          onPressed: () => _showCreateTrip(context),
+          child: const Icon(Icons.add_rounded),
+        ),
       ),
     );
   }
 
   Widget _buildLoading() {
-    // Mock data for skeletonizer
     final now = DateTime.now();
     final mockTrip = Trip(
       id: 'mock-1',
@@ -82,50 +68,22 @@ class _View extends StatelessWidget {
     );
 
     return Skeletonizer(
-      enabled: true,
-      ignoreContainers: false,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
         itemCount: 3,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TripCard(trip: mockTrip),
-        ),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (_, __) => TripCard(trip: mockTrip),
       ),
     );
   }
 
   Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.flight_takeoff, size: 64, color: AppColors.textTertiary),
-            const SizedBox(height: 16),
-            Text(
-              'No trips yet',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Plan your first adventure',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _showCreateTrip(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Trip'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.luggage_outlined,
+      title: 'No trips yet',
+      subtitle: 'Start planning your next trip',
+      action: () => _showCreateTrip(context),
+      actionLabel: 'Create trip',
     );
   }
 
@@ -134,39 +92,25 @@ class _View extends StatelessWidget {
     final past = state.trips.where((t) => t.isPast).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
       children: [
         if (upcoming.isNotEmpty) ...[
-          Text(
-            'UPCOMING',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1,
-                ),
+          const SectionHeader(title: 'Upcoming'),
+          ...upcoming.map(
+            (trip) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: TripCard(trip: trip),
+            ),
           ),
-          const SizedBox(height: 8),
-          ...upcoming.map((trip) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TripCard(trip: trip),
-              )),
         ],
         if (past.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            'PAST',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1,
-                ),
+          const SectionHeader(title: 'Past'),
+          ...past.map(
+            (trip) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Opacity(opacity: 0.65, child: TripCard(trip: trip)),
+            ),
           ),
-          const SizedBox(height: 8),
-          ...past.map((trip) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Opacity(
-                  opacity: 0.6,
-                  child: TripCard(trip: trip),
-                ),
-              )),
         ],
       ],
     );
@@ -187,10 +131,14 @@ class _View extends StatelessWidget {
   }
 
   void _showNotifications(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No notifications yet'),
-        duration: Duration(seconds: 2),
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notifications'),
+        content: const Text('You\'re all caught up.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+        ],
       ),
     );
   }

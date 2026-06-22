@@ -1,70 +1,73 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/section_header.dart';
 
 class ExplorePage extends StatelessWidget {
   const ExplorePage({super.key});
 
+  static const _destinations = [
+    ('🗼', 'Tokyo', 'Japan'),
+    ('🏔️', 'Seoul', 'Korea'),
+    ('🌴', 'Bali', 'Indonesia'),
+    ('🇬🇧', 'London', 'UK'),
+    ('🇫🇷', 'Paris', 'France'),
+    ('🏯', 'Osaka', 'Japan'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Explore')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
         children: [
-          // Search bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDim,
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.surfaceElevated,
+              borderRadius: AppRadii.card,
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.search, color: AppColors.textTertiary, size: 20),
-                SizedBox(width: 8),
-                Text('Where are you going?', style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
+                Icon(Icons.search_rounded, color: AppColors.textTertiary, size: 22),
+                const SizedBox(width: AppSpacing.sm),
+                Text('Where to next?', style: Theme.of(context).textTheme.bodyLarge),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Popular destinations
-          Text('POPULAR DESTINATIONS', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary, letterSpacing: 1)),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader(title: 'Popular'),
           SizedBox(
             height: 100,
-            child: ListView(
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              children: [
-                _DestinationCard(emoji: '🗼', name: 'Tokyo'),
-                const SizedBox(width: 12),
-                _DestinationCard(emoji: '🏔️', name: 'Seoul'),
-                const SizedBox(width: 12),
-                _DestinationCard(emoji: '🌴', name: 'Bali'),
-                const SizedBox(width: 12),
-                _DestinationCard(emoji: '🇬🇧', name: 'London'),
-                const SizedBox(width: 12),
-                _DestinationCard(emoji: '🇫🇷', name: 'Paris'),
-              ],
+              itemCount: _destinations.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final (emoji, name, _) = _destinations[index];
+                return _DestinationChip(emoji: emoji, name: name);
+              },
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Coming soon
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDim,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-            ),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader(title: 'Pro routes'),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.explore, size: 48, color: AppColors.textTertiary),
-                const SizedBox(height: 12),
-                const Text('Pro Routes Coming Soon', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                const SizedBox(height: 4),
-                const Text('Clone how pros travel the same places', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+                Icon(Icons.route_outlined, size: 28, color: AppColors.primary),
+                const SizedBox(height: AppSpacing.md),
+                Text('Coming soon', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 17)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Clone itineraries from travelers who know these cities well.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ],
             ),
           ),
@@ -74,33 +77,27 @@ class ExplorePage extends StatelessWidget {
   }
 }
 
-class _DestinationCard extends StatelessWidget {
+class _DestinationChip extends StatelessWidget {
+  const _DestinationChip({required this.emoji, required this.name});
+
   final String emoji;
   final String name;
-
-  const _DestinationCard({required this.emoji, required this.name});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
+      width: 88,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.cardBackground(context),
+        borderRadius: AppRadii.card,
+        boxShadow: AppShadows.soft(context),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 32)),
-          const SizedBox(height: 8),
-          Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
+          Text(emoji, style: const TextStyle(fontSize: 28)),
+          const SizedBox(height: 6),
+          Text(name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 13)),
         ],
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../widgets/plan_tab.dart';
 import '../widgets/spend_tab.dart';
@@ -44,52 +46,81 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              // TODO: Share bottom sheet
-            },
+    return BlocBuilder<TripDetailBloc, TripDetailState>(
+      builder: (context, state) {
+        if (state.isLoading) return const _LoadingView();
+        if (state.trip == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('Trip not found')),
+          );
+        }
+
+        final trip = state.trip!;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  trip.name,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  trip.destination,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(icon: const Icon(Icons.ios_share_outlined), onPressed: () {}),
+            ],
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Plan'),
+                Tab(text: 'Spend'),
+                Tab(text: 'Map'),
+              ],
+            ),
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textTertiary,
-          indicatorColor: AppColors.primary,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-          tabs: const [
-            Tab(text: 'Plan'),
-            Tab(text: 'Spend'),
-            Tab(text: 'Map'),
-          ],
-        ),
-      ),
-      body: BlocBuilder<TripDetailBloc, TripDetailState>(
-        builder: (context, state) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator.adaptive());
-          }
-          if (state.trip == null) {
-            return const Center(child: Text('Trip not found'));
-          }
-          return TabBarView(
+          body: TabBarView(
             controller: _tabController,
             children: [
-              PlanTab(trip: state.trip!, days: state.days, spots: state.spots),
-              SpendTab(trip: state.trip!, expenses: state.expenses),
-              MapTab(trip: state.trip!, days: state.days, spots: state.spots),
+              PlanTab(trip: trip, days: state.days, spots: state.spots),
+              SpendTab(trip: trip, expenses: state.expenses),
+              MapTab(trip: trip, days: state.days, spots: state.spots),
             ],
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeletonizer(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Loading...')),
+        body: ListView.separated(
+          padding: AppSpacing.page,
+          itemCount: 5,
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+          itemBuilder: (_, __) => Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceCard,
+              borderRadius: AppRadii.card,
+            ),
+          ),
+        ),
       ),
     );
   }

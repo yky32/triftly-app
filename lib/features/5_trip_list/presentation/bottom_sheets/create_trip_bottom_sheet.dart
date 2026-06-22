@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../bloc/trip_list_bloc.dart';
 
 class CreateTripBottomSheet extends StatefulWidget {
@@ -33,153 +35,91 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    return SheetScaffold(
+      title: 'New Trip',
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+          _label('Trip Name'),
+          TextField(
+            controller: _nameController,
+            onChanged: (_) => setState(() {}),
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(hintText: 'e.g. Tokyo 2026'),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Destination'),
+          TextField(
+            controller: _destinationController,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              hintText: 'Where to?',
+              prefixIcon: Icon(Icons.search_rounded, size: 20),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Dates'),
+          Row(
+            children: [
+              Expanded(child: _DateButton(label: _startDate != null ? _formatDate(_startDate!) : 'Start', onTap: () => _pickDate(context, true))),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: _DateButton(label: _endDate != null ? _formatDate(_endDate!) : 'End', onTap: () => _pickDate(context, false))),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Default Currency'),
+          DropdownButtonFormField<String>(
+            initialValue: _currency,
+            decoration: const InputDecoration(suffixIcon: Icon(Icons.arrow_drop_down_rounded)),
+            items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+            onChanged: (v) => setState(() => _currency = v!),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Buddies'),
+          TextField(
+            controller: _buddyNameController,
+            decoration: InputDecoration(
+              hintText: 'Add a name',
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                onPressed: _addBuddy,
               ),
             ),
+            onSubmitted: (_) => _addBuddy(),
           ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'New Trip',
-                  style: Theme.of(context).textTheme.headlineMedium,
+          if (_buddies.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: _buddies.map((b) => Chip(
+                avatar: CircleAvatar(
+                  backgroundColor: _colorFromHex(b.avatarColor ?? '007AFF'),
+                  child: Text(b.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.white)),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+                label: Text(b.name),
+                onDeleted: () => setState(() => _buddies.remove(b)),
+                deleteIcon: const Icon(Icons.close_rounded, size: 16),
+              )).toList(),
             ),
-          ),
-          // Form
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                _label('Trip Name'),
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(hintText: 'e.g. Tokyo 2026'),
-                ),
-                const SizedBox(height: 16),
-                _label('Destination'),
-                TextField(
-                  controller: _destinationController,
-                  decoration: const InputDecoration(
-                    hintText: 'Where to?',
-                    prefixIcon: Icon(Icons.search, size: 20),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _label('Dates'),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _DateButton(
-                        label: _startDate != null ? _formatDate(_startDate!) : 'Start',
-                        onTap: () => _pickDate(context, true),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _DateButton(
-                        label: _endDate != null ? _formatDate(_endDate!) : 'End',
-                        onTap: () => _pickDate(context, false),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _label('Default Currency'),
-                DropdownButtonFormField<String>(
-                  value: _currency,
-                  decoration: const InputDecoration(
-                    suffixIcon: Icon(Icons.arrow_drop_down),
-                  ),
-                  items: _currencies.map((c) => DropdownMenuItem(
-                    value: c,
-                    child: Text(c),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _currency = v!),
-                ),
-                const SizedBox(height: 16),
-                _label('Buddies'),
-                TextField(
-                  controller: _buddyNameController,
-                  decoration: InputDecoration(
-                    hintText: '+ Add name',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: _addBuddy,
-                    ),
-                  ),
-                  onSubmitted: (_) => _addBuddy(),
-                ),
-                if (_buddies.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _buddies.map((b) => Chip(
-                      avatar: CircleAvatar(
-                        backgroundColor: _colorFromHex(b.avatarColor ?? '007AFF'),
-                        child: Text(
-                          b.name[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 10, color: Colors.white),
-                        ),
-                      ),
-                      label: Text(b.name),
-                      onDeleted: () => setState(() => _buddies.remove(b)),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                    )).toList(),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _createTrip,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Create Trip', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          FilledButton(
+            onPressed: _canCreate ? _createTrip : null,
+            child: const Text('Create Trip'),
           ),
         ],
       ),
     );
   }
 
+  bool get _canCreate =>
+      _nameController.text.trim().isNotEmpty && _startDate != null && _endDate != null;
+
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-      ),
+      child: Text(text, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary, fontSize: 13)),
     );
   }
 
@@ -195,9 +135,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStart
-          ? (_startDate ?? DateTime.now())
-          : (_endDate ?? _startDate ?? DateTime.now()),
+      initialDate: isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? _startDate ?? DateTime.now()),
       firstDate: DateTime(2024),
       lastDate: DateTime(2030),
     );
@@ -205,9 +143,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
       setState(() {
         if (isStart) {
           _startDate = picked;
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-            _endDate = null;
-          }
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) _endDate = null;
         } else {
           _endDate = picked;
         }
@@ -216,8 +152,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
   }
 
   void _createTrip() {
-    if (_nameController.text.trim().isEmpty) return;
-    if (_startDate == null || _endDate == null) return;
+    if (!_canCreate) return;
 
     final trip = Trip(
       id: const Uuid().v4(),
@@ -239,9 +174,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  Color _colorFromHex(String hex) {
-    return Color(int.parse('FF$hex', radix: 16));
-  }
+  Color _colorFromHex(String hex) => Color(int.parse('FF$hex', radix: 16));
 }
 
 class _DateButton extends StatelessWidget {
@@ -252,22 +185,26 @@ class _DateButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPlaceholder = label == 'Start' || label == 'End';
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surfaceDim,
-          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(context).inputDecorationTheme.fillColor,
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: label == 'Start' || label == 'End'
-                ? AppColors.textTertiary
-                : AppColors.textPrimary,
-          ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today_outlined, size: 16, color: isPlaceholder ? AppColors.textTertiary : AppColors.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: isPlaceholder ? AppColors.textTertiary : null,
+                  ),
+            ),
+          ],
         ),
       ),
     );
