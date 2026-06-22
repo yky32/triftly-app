@@ -41,6 +41,8 @@ class Buddy extends Equatable {
   List<Object?> get props => [id, name, avatarColor];
 }
 
+enum TripPhase { upcoming, inProgress, completed }
+
 class Trip extends Equatable {
   final String id;
   final String name;
@@ -68,9 +70,48 @@ class Trip extends Equatable {
 
   int get numberOfDays => endDate.difference(startDate).inDays + 1;
 
-  bool get isUpcoming => startDate.isAfter(DateTime.now());
+  DateTime get startDay => DateTime(startDate.year, startDate.month, startDate.day);
 
-  bool get isPast => endDate.isBefore(DateTime.now());
+  DateTime get endDay => DateTime(endDate.year, endDate.month, endDate.day);
+
+  static DateTime get today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// Trip hasn't started yet (by calendar day).
+  bool get isUpcoming => startDay.isAfter(today);
+
+  /// Trip is active today (inclusive of start and end dates).
+  bool get isInProgress => !startDay.isAfter(today) && !endDay.isBefore(today);
+
+  /// Trip has ended (by calendar day).
+  bool get isCompleted => endDay.isBefore(today);
+
+  /// @deprecated Use [isCompleted]
+  bool get isPast => isCompleted;
+
+  TripPhase get phase {
+    if (isCompleted) return TripPhase.completed;
+    if (isInProgress) return TripPhase.inProgress;
+    return TripPhase.upcoming;
+  }
+
+  /// 1-based day index while in progress; `null` otherwise.
+  int? get currentDayNumber {
+    if (!isInProgress) return null;
+    return today.difference(startDay).inDays + 1;
+  }
+
+  int? get daysUntilStart {
+    if (!isUpcoming) return null;
+    return startDay.difference(today).inDays;
+  }
+
+  int? get daysRemaining {
+    if (!isInProgress) return null;
+    return endDay.difference(today).inDays;
+  }
 
   Map<String, dynamic> toMap() => {
         'id': id,

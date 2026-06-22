@@ -87,30 +87,27 @@ class _View extends StatelessWidget {
   }
 
   Widget _buildTripList(BuildContext context, TripListState state) {
-    final upcoming = state.trips.where((t) => t.isUpcoming || !t.isPast).toList();
-    final past = state.trips.where((t) => t.isPast).toList();
+    final sections = TripListSections.from(state.trips);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
       children: [
-        if (upcoming.isNotEmpty) ...[
-          const SectionHeader(title: 'Upcoming'),
-          ...upcoming.map(
-            (trip) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: TripCard(trip: trip),
-            ),
+        if (sections.inProgress.isNotEmpty)
+          _TripSection(
+            title: 'In progress',
+            trips: sections.inProgress,
           ),
-        ],
-        if (past.isNotEmpty) ...[
-          const SectionHeader(title: 'Past'),
-          ...past.map(
-            (trip) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Opacity(opacity: 0.65, child: TripCard(trip: trip)),
-            ),
+        if (sections.upcoming.isNotEmpty)
+          _TripSection(
+            title: 'Upcoming',
+            trips: sections.upcoming,
           ),
-        ],
+        if (sections.completed.isNotEmpty)
+          _TripSection(
+            title: 'Completed',
+            trips: sections.completed,
+            dimmed: true,
+          ),
       ],
     );
   }
@@ -139,6 +136,36 @@ class _View extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
         ],
       ),
+    );
+  }
+}
+
+class _TripSection extends StatelessWidget {
+  const _TripSection({
+    required this.title,
+    required this.trips,
+    this.dimmed = false,
+  });
+
+  final String title;
+  final List<Trip> trips;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(title: title),
+        ...trips.map(
+          (trip) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: dimmed
+                ? Opacity(opacity: 0.72, child: TripCard(trip: trip))
+                : TripCard(trip: trip),
+          ),
+        ),
+      ],
     );
   }
 }

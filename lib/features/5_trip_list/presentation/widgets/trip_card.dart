@@ -17,8 +17,7 @@ class TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final daysUntil = trip.startDate.difference(DateTime.now()).inDays;
-    final isSoon = trip.isUpcoming && daysUntil >= 0 && daysUntil <= 14;
+    final phase = trip.phase;
 
     return Pressable(
       onTap: () => context.go('/plan/${trip.id}'),
@@ -28,6 +27,9 @@ class TripCard extends StatelessWidget {
           color: AppColors.cardBackground(context),
           borderRadius: AppRadii.card,
           boxShadow: AppShadows.card(context),
+          border: phase == TripPhase.inProgress
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.2)
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,24 +70,13 @@ class TripCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (isSoon)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryMuted,
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                    ),
-                    child: Text(
-                      daysUntil == 0 ? 'Today' : '${daysUntil}d',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ),
+                _StatusBadge(trip: trip),
               ],
             ),
+            if (phase == TripPhase.inProgress) ...[
+              const SizedBox(height: AppSpacing.md),
+              _InProgressBar(trip: trip),
+            ],
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -128,6 +119,7 @@ class TripCard extends StatelessWidget {
     if (lower.contains('london')) return '🇬🇧';
     if (lower.contains('paris')) return '🇫🇷';
     if (lower.contains('taipei')) return '🇹🇼';
+    if (lower.contains('hong kong')) return '🇭🇰';
     return '✈️';
   }
 }
@@ -159,4 +151,110 @@ class _BuddyDots extends StatelessWidget {
   }
 
   Color _colorFromHex(String hex) => Color(int.parse('FF$hex', radix: 16));
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.trip});
+
+  final Trip trip;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (trip.phase) {
+      case TripPhase.inProgress:
+        final day = trip.currentDayNumber!;
+        return _Badge(
+          label: 'Day $day',
+          background: AppColors.primaryMuted,
+          foreground: AppColors.primaryDark,
+        );
+      case TripPhase.upcoming:
+        final days = trip.daysUntilStart!;
+        if (days > 14) return const SizedBox.shrink();
+        return _Badge(
+          label: days == 0 ? 'Today' : '${days}d',
+          background: AppColors.primaryMuted,
+          foreground: AppColors.primaryDark,
+        );
+      case TripPhase.completed:
+        return _Badge(
+          label: 'Done',
+          background: AppColors.borderLight,
+          foreground: AppColors.textTertiary,
+        );
+    }
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: foreground),
+      ),
+    );
+  }
+}
+
+class _InProgressBar extends StatelessWidget {
+  const _InProgressBar({required this.trip});
+
+  final Trip trip;
+
+  @override
+  Widget build(BuildContext context) {
+    final day = trip.currentDayNumber!;
+    final total = trip.numberOfDays;
+    final progress = (day / total).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Day $day of $total',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            if (trip.daysRemaining != null && trip.daysRemaining! > 0)
+              Text(
+                '${trip.daysRemaining}d left',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 4,
+            backgroundColor: AppColors.primaryMuted.withValues(alpha: 0.5),
+            color: AppColors.primary,
+          ),
+        ),
+      ],
+    );
+  }
 }
