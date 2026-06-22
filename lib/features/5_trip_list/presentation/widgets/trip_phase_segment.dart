@@ -23,13 +23,25 @@ class TripPhaseSegment extends StatelessWidget {
     TripPhase.completed: 'Done',
   };
 
+  static final _icons = {
+    TripPhase.inProgress: Icons.flight_takeoff_rounded,
+    TripPhase.upcoming: Icons.event_rounded,
+    TripPhase.completed: Icons.check_circle_rounded,
+  };
+
+  static final _iconsOutlined = {
+    TripPhase.inProgress: Icons.flight_takeoff_outlined,
+    TripPhase.upcoming: Icons.event_outlined,
+    TripPhase.completed: Icons.check_circle_outline_rounded,
+  };
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final phases = TripPhase.values;
 
     return Container(
-      height: 44,
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
@@ -79,10 +91,16 @@ class TripPhaseSegment extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            Icon(
+                              isSelected ? _icons[phase]! : _iconsOutlined[phase]!,
+                              size: 16,
+                              color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
+                            ),
+                            const SizedBox(width: 4),
                             AnimatedDefaultTextStyle(
                               duration: const Duration(milliseconds: 200),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                 color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
                               ),
