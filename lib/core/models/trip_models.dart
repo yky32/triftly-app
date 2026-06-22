@@ -43,6 +43,44 @@ class Buddy extends Equatable {
 
 enum TripPhase { upcoming, inProgress, completed }
 
+/// Outbound or return flight details.
+class FlightLeg extends Equatable {
+  const FlightLeg({
+    this.flightNumber,
+    this.departAt,
+    this.fromAirport,
+    this.toAirport,
+  });
+
+  final String? flightNumber;
+  final DateTime? departAt;
+  final String? fromAirport;
+  final String? toAirport;
+
+  bool get isEmpty =>
+      (flightNumber == null || flightNumber!.isEmpty) &&
+      departAt == null &&
+      (fromAirport == null || fromAirport!.isEmpty) &&
+      (toAirport == null || toAirport!.isEmpty);
+
+  Map<String, dynamic> toMap() => {
+        'flight_number': flightNumber,
+        'depart_at': departAt?.toIso8601String(),
+        'from_airport': fromAirport,
+        'to_airport': toAirport,
+      };
+
+  factory FlightLeg.fromMap(Map<String, dynamic> map) => FlightLeg(
+        flightNumber: map['flight_number'] as String?,
+        departAt: map['depart_at'] != null ? DateTime.parse(map['depart_at'] as String) : null,
+        fromAirport: map['from_airport'] as String?,
+        toAirport: map['to_airport'] as String?,
+      );
+
+  @override
+  List<Object?> get props => [flightNumber, departAt, fromAirport, toAirport];
+}
+
 class Trip extends Equatable {
   final String id;
   final String name;
@@ -50,6 +88,8 @@ class Trip extends Equatable {
   final DateTime startDate;
   final DateTime endDate;
   final String defaultCurrency;
+  final FlightLeg? outboundFlight;
+  final FlightLeg? returnFlight;
   final List<Buddy> buddies;
   final String? ownerToken;
   final String? shareToken;
@@ -62,6 +102,8 @@ class Trip extends Equatable {
     required this.startDate,
     required this.endDate,
     required this.defaultCurrency,
+    this.outboundFlight,
+    this.returnFlight,
     this.buddies = const [],
     this.ownerToken,
     this.shareToken,
@@ -120,6 +162,8 @@ class Trip extends Equatable {
         'start_date': startDate.toIso8601String(),
         'end_date': endDate.toIso8601String(),
         'default_currency': defaultCurrency,
+        'outbound_flight': outboundFlight?.toMap(),
+        'return_flight': returnFlight?.toMap(),
         'buddies': buddies.map((b) => b.toMap()).toList(),
         'owner_token': ownerToken,
         'share_token': shareToken,
@@ -133,6 +177,14 @@ class Trip extends Equatable {
         startDate: DateTime.parse(map['start_date'] as String),
         endDate: DateTime.parse(map['end_date'] as String),
         defaultCurrency: map['default_currency'] as String,
+        outboundFlight: map['outbound_flight'] != null
+            ? FlightLeg.fromMap(map['outbound_flight'] as Map<String, dynamic>)
+            : (map['flight_number'] != null
+                ? FlightLeg(flightNumber: map['flight_number'] as String?)
+                : null),
+        returnFlight: map['return_flight'] != null
+            ? FlightLeg.fromMap(map['return_flight'] as Map<String, dynamic>)
+            : null,
         buddies: (map['buddies'] as List<dynamic>)
             .map((b) => Buddy.fromMap(b as Map<String, dynamic>))
             .toList(),
@@ -147,6 +199,8 @@ class Trip extends Equatable {
     DateTime? startDate,
     DateTime? endDate,
     String? defaultCurrency,
+    FlightLeg? outboundFlight,
+    FlightLeg? returnFlight,
     List<Buddy>? buddies,
     String? ownerToken,
     String? shareToken,
@@ -158,6 +212,8 @@ class Trip extends Equatable {
         startDate: startDate ?? this.startDate,
         endDate: endDate ?? this.endDate,
         defaultCurrency: defaultCurrency ?? this.defaultCurrency,
+        outboundFlight: outboundFlight ?? this.outboundFlight,
+        returnFlight: returnFlight ?? this.returnFlight,
         buddies: buddies ?? this.buddies,
         ownerToken: ownerToken ?? this.ownerToken,
         shareToken: shareToken ?? this.shareToken,
