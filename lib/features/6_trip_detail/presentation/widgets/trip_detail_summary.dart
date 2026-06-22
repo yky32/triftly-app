@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/theme/segment_style.dart';
+import '../../../../core/widgets/flight_leg_display.dart';
 
 class TripDetailSummary extends StatelessWidget {
   const TripDetailSummary({required this.trip, super.key});
@@ -59,11 +60,11 @@ class TripDetailSummary extends StatelessWidget {
     final rows = <Widget>[];
     final outbound = trip.outboundFlight;
     if (outbound != null && !outbound.isEmpty) {
-      rows.add(_FlightRow(label: 'Outbound', leg: outbound));
+      rows.add(FlightLegSummaryRow(isOutbound: true, leg: outbound));
     }
     final returnLeg = trip.returnFlight;
     if (returnLeg != null && !returnLeg.isEmpty) {
-      rows.add(_FlightRow(label: 'Return', leg: returnLeg));
+      rows.add(FlightLegSummaryRow(isOutbound: false, leg: returnLeg));
     }
     return rows;
   }
@@ -159,39 +160,4 @@ class _BuddyRow extends StatelessWidget {
   }
 
   Color _colorFromHex(String hex) => Color(int.parse('FF$hex', radix: 16));
-}
-
-class _FlightRow extends StatelessWidget {
-  const _FlightRow({required this.label, required this.leg});
-
-  final String label;
-  final FlightLeg leg;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = <String>[
-      if (leg.flightNumber != null && leg.flightNumber!.isNotEmpty) leg.flightNumber!,
-      if (leg.fromAirport != null && leg.toAirport != null) '${leg.fromAirport} → ${leg.toAirport}',
-      if (leg.departAt != null) DateFormatters.shortDate(leg.departAt!),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 6,
-          children: [
-            Icon(Icons.flight_takeoff_rounded, size: 14, color: AppColors.textTertiary),
-            Text(
-              '$label · ${parts.join(' · ')}',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/flight_leg_display.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
@@ -33,6 +34,7 @@ class PlanTab extends StatelessWidget {
           daySpots = spots.where((s) => s.dayId == selectedDay.id).toList()
             ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
         }
+        final dayFlight = selectedDay != null ? _flightForDay(selectedDay, trip) : null;
 
         return TripDetailTabScroll(
           key: key,
@@ -78,7 +80,17 @@ class PlanTab extends StatelessWidget {
                   ),
                 ),
               ),
-            if (daySpots.isEmpty)
+            if (dayFlight != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                  child: FlightLegCard(
+                    isOutbound: dayFlight.isOutbound,
+                    leg: dayFlight.leg,
+                  ),
+                ),
+              ),
+            if (daySpots.isEmpty && dayFlight == null)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyState(
@@ -115,6 +127,16 @@ class PlanTab extends StatelessWidget {
     );
   }
 
+  _DayFlight? _flightForDay(TripDay day, Trip trip) {
+    return switch (day.title) {
+      'Arrival' when trip.outboundFlight != null && !trip.outboundFlight!.isEmpty =>
+        _DayFlight(isOutbound: true, leg: trip.outboundFlight!),
+      'Departure' when trip.returnFlight != null && !trip.returnFlight!.isEmpty =>
+        _DayFlight(isOutbound: false, leg: trip.returnFlight!),
+      _ => null,
+    };
+  }
+
   void _showAddSpot(BuildContext context) {
     final tripDetailBloc = context.read<TripDetailBloc>();
 
@@ -130,6 +152,13 @@ class PlanTab extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DayFlight {
+  const _DayFlight({required this.isOutbound, required this.leg});
+
+  final bool isOutbound;
+  final FlightLeg leg;
 }
 
 class _PlanDayChip extends StatelessWidget {

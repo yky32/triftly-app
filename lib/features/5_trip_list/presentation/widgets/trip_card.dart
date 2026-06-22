@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/theme/segment_style.dart';
+import '../../../../core/widgets/flight_leg_display.dart';
 
 class TripCard extends StatelessWidget {
   final Trip trip;
@@ -103,6 +104,27 @@ class TripCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (_showUpcomingFlight(trip)) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Icon(
+                    Icons.flight_takeoff_rounded,
+                    size: 14,
+                    color: FlightDirectionBadge.accentFor(true, isDark),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      flightLegCompactLabel(trip.outboundFlight!),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (trip.buddies.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               _BuddyDots(buddies: trip.buddies),
@@ -111,6 +133,14 @@ class TripCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _showUpcomingFlight(Trip trip) {
+    if (trip.phase != TripPhase.upcoming) return false;
+    final outbound = trip.outboundFlight;
+    if (outbound == null || outbound.isEmpty) return false;
+    final daysUntil = trip.daysUntilStart;
+    return daysUntil != null && daysUntil <= 7;
   }
 
   String _formatDate(DateTime date) {
