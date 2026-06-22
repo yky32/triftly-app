@@ -41,6 +41,7 @@ class TripPhaseSegment extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final phases = TripPhase.values;
     final selectedStyle = TripPhaseStyle.of(selected);
+    final isLive = selected == TripPhase.inProgress;
 
     return Container(
       height: 48,
@@ -54,6 +55,7 @@ class TripPhaseSegment extends StatelessWidget {
           final slotWidth = constraints.maxWidth / phases.length;
 
           return Stack(
+            clipBehavior: Clip.none,
             children: [
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 320),
@@ -62,18 +64,31 @@ class TripPhaseSegment extends StatelessWidget {
                 top: 0,
                 bottom: 0,
                 width: slotWidth,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: selectedStyle.pill(isDark),
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: selectedStyle.foreground(isDark).withValues(alpha: isDark ? 0.2 : 0.12),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (isLive)
+                      Positioned.fill(
+                        child: _LiveRipple(
+                          color: selectedStyle.foreground(isDark),
+                        ),
                       ),
-                    ],
-                  ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: selectedStyle.pill(isDark),
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        boxShadow: [
+                          BoxShadow(
+                            color: selectedStyle.foreground(isDark).withValues(
+                                  alpha: isLive ? (isDark ? 0.28 : 0.18) : (isDark ? 0.2 : 0.12),
+                                ),
+                            blurRadius: isLive ? 14 : 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Row(
@@ -82,6 +97,7 @@ class TripPhaseSegment extends StatelessWidget {
                   final count = counts[phase] ?? 0;
                   final style = TripPhaseStyle.of(phase);
                   final fg = isSelected ? style.foreground(isDark) : AppColors.textTertiary;
+                  final showLiveDot = phase == TripPhase.inProgress && isSelected;
 
                   return Expanded(
                     child: GestureDetector(
@@ -95,6 +111,10 @@ class TripPhaseSegment extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (showLiveDot) ...[
+                              _LiveDot(color: fg),
+                              const SizedBox(width: 4),
+                            ],
                             Icon(
                               isSelected ? _icons[phase]! : _iconsOutlined[phase]!,
                               size: 16,
@@ -142,6 +162,133 @@ class TripPhaseSegment extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Expanding rings behind the Active pill when selected.
+class _LiveRipple extends StatefulWidget {
+  const _LiveRipple({required this.color});
+
+  final Color color;
+
+  @override
+  State<_LiveRipple> createState() => _LiveRippleState();
+}
+
+class _LiveRippleState extends State<_LiveRipple> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            for (var i = 0; i < 2; i++) _RippleRing(
+              progress: (_controller.value + i * 0.5) % 1.0,
+              color: widget.color,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RippleRing extends StatelessWidget {
+  const _RippleRing({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final opacity = (1 - progress) * 0.45;
+    final scale = 0.92 + progress * 0.28;
+
+    return Transform.scale(
+      scale: scale,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: color.withValues(alpha: opacity), width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pulsing dot beside the Active label.
+class _LiveDot extends StatefulWidget {
+  const _LiveDot({required this.color});
+
+  final Color color;
+
+  @override
+  State<_LiveDot> createState() => _LiveDotState();
+}
+
+class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = 0.75 + _controller.value * 0.35;
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: 0.5),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
