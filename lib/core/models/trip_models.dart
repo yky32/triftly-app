@@ -241,6 +241,19 @@ class TripDay extends Equatable {
 
   String get displayTitle => title ?? 'Day $dayNumber';
 
+  /// First day → Arrival; last day → Departure (when trip is 2+ days).
+  static String? defaultTitle(int dayNumber, int totalDays) {
+    if (dayNumber == 1) return 'Arrival';
+    if (totalDays > 1 && dayNumber == totalDays) return 'Departure';
+    return null;
+  }
+
+  String get displayTitleLine {
+    final base = 'Day $dayNumber';
+    if (title != null && title!.isNotEmpty) return '$base — $title';
+    return base;
+  }
+
   String get displayDate {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}';

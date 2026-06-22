@@ -3,11 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
+import 'trip_detail_tab_scroll.dart';
 
 class PlanTab extends StatelessWidget {
   final Trip trip;
@@ -32,63 +34,81 @@ class PlanTab extends StatelessWidget {
             ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        return TripDetailTabScroll(
+          key: key,
+          slivers: [
             if (days.isNotEmpty)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
-                child: Row(
-                  children: days.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final day = entry.value;
-                    final isSelected = index == state.selectedDayIndex;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.sm),
-                      child: FilterChip(
-                        label: Text(day.displayTitle),
-                        selected: isSelected,
-                        onSelected: (_) => context.read<TripDetailBloc>().add(TripDetailDaySelected(index: index)),
-                        showCheckmark: false,
-                        labelStyle: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+              SliverToBoxAdapter(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
+                  child: Row(
+                    children: days.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final day = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
+                        child: _PlanDayChip(
+                          day: day,
+                          isSelected: index == state.selectedDayIndex,
+                          onSelected: () => context.read<TripDetailBloc>().add(TripDetailDaySelected(index: index)),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             if (selectedDay != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
-                child: Text(selectedDay.displayDate, style: Theme.of(context).textTheme.bodySmall),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedDay.displayTitleLine,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        DateFormatters.weekdayDate(selectedDay.date),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            Expanded(
-              child: daySpots.isEmpty
-                  ? EmptyState(
-                      icon: Icons.place_outlined,
-                      title: 'Nothing planned',
-                      subtitle: 'Add spots for this day',
-                      action: () => _showAddSpot(context),
-                      actionLabel: 'Add spot',
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
-                      itemCount: daySpots.length + 1,
-                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (context, index) {
-                        if (index == daySpots.length) {
-                          return _AddSpotButton(onTap: () => _showAddSpot(context));
-                        }
-                        return _SpotCard(
-                          spot: daySpots[index],
-                          defaultCurrency: trip.defaultCurrency,
-                        );
-                      },
-                    ),
-            ),
+            if (daySpots.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  icon: Icons.place_outlined,
+                  title: 'Nothing planned',
+                  subtitle: 'Add spots for this day',
+                  action: () => _showAddSpot(context),
+                  actionLabel: 'Add spot',
+                ),
+              )
+            else
+              TripDetailTabScroll.listBottomPadding(
+                context,
+                sliver: SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                  sliver: SliverList.separated(
+                    itemCount: daySpots.length + 1,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (context, index) {
+                      if (index == daySpots.length) {
+                        return _AddSpotButton(onTap: () => _showAddSpot(context));
+                      }
+                      return _SpotCard(
+                        spot: daySpots[index],
+                        defaultCurrency: trip.defaultCurrency,
+                      );
+                    },
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -96,13 +116,65 @@ class PlanTab extends StatelessWidget {
   }
 
   void _showAddSpot(BuildContext context) {
+    final tripDetailBloc = context.read<TripDetailBloc>();
+
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => const AddSpotBottomSheet(),
+      builder: (sheetContext) => BlocProvider.value(
+        value: tripDetailBloc,
+        child: const AddSpotBottomSheet(),
+      ),
+    );
+  }
+}
+
+class _PlanDayChip extends StatelessWidget {
+  const _PlanDayChip({
+    required this.day,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final TripDay day;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  IconData? get _icon => switch (day.title) {
+        'Arrival' => Icons.flight_land_rounded,
+        'Departure' => Icons.flight_takeoff_rounded,
+        _ => null,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _icon;
+    final fg = isSelected ? AppColors.primaryDark : AppColors.textSecondary;
+
+    if (icon != null) {
+      return FilterChip(
+        label: Icon(icon, size: 18, color: fg),
+        selected: isSelected,
+        onSelected: (_) => onSelected(),
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        labelPadding: EdgeInsets.zero,
+        labelStyle: TextStyle(color: fg),
+      );
+    }
+
+    return FilterChip(
+      label: Text(day.displayTitle),
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      showCheckmark: false,
+      labelStyle: TextStyle(
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        color: fg,
+      ),
     );
   }
 }
@@ -116,8 +188,13 @@ class _AddSpotButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Pressable(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          borderRadius: AppRadii.card,
+          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -143,34 +220,54 @@ class _SpotCard extends StatelessWidget {
       (c) => c.value == spot.category,
       orElse: () => SpotCategory.other,
     );
+    final categoryColor = AppColors.categoryColor(category);
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(category.emoji, style: const TextStyle(fontSize: 22)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  spot.name,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                if (_meta(spot).isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
-                ],
-                if (spot.area != null) ...[
-                  const SizedBox(height: 2),
-                  Text(spot.area!, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ],
+      padding: EdgeInsets.zero,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: categoryColor,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.md)),
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(category.emoji, style: const TextStyle(fontSize: 22)),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            spot.name,
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          if (_meta(spot).isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                          if (spot.area != null) ...[
+                            const SizedBox(height: 2),
+                            Text('📍 ${spot.area!}', style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

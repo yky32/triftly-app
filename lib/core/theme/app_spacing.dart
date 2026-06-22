@@ -14,6 +14,11 @@ abstract final class AppSpacing {
 
   /// Vertical clearance so content / FAB sit above the floating nav island.
   static const double navIslandClearance = 80;
+
+  /// List bottom inset when the floating nav island is visible (nested routes).
+  static double listBottomInset(BuildContext context) {
+    return MediaQuery.paddingOf(context).bottom + navIslandClearance;
+  }
 }
 
 abstract final class AppRadii {

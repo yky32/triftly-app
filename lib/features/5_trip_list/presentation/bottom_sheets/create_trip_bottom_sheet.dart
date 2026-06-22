@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/trip_date_picker_sheet.dart';
+import '../../../../core/widgets/trip_time_picker_sheet.dart';
 import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_list_bloc.dart';
@@ -134,7 +135,13 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Divider(
+                    height: 1,
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                  ),
+                ),
                 const _FlightColumnHeaders(),
                 const SizedBox(height: AppSpacing.xs),
                 _FlightLegRow(
@@ -330,14 +337,20 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
     if (pickedDate == null) return;
     if (!context.mounted) return;
 
-    final pickedTime = await showTimePicker(
-      context: context,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _FlightDirectionBadge.accentFor(isOutbound, isDark);
+
+    final pickedTime = await TripTimePickerSheet.show(
+      context,
       initialTime: TimeOfDay.fromDateTime(current ?? pickedDate),
+      accentColor: accent,
+      title: isOutbound ? 'Outbound departure' : 'Return departure',
     );
+    if (pickedTime == null) return;
     if (!context.mounted) return;
 
-    final hour = pickedTime?.hour ?? (current?.hour ?? 12);
-    final minute = pickedTime?.minute ?? (current?.minute ?? 0);
+    final hour = pickedTime.hour;
+    final minute = pickedTime.minute;
 
     setState(() {
       final departAt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, hour, minute);
@@ -592,14 +605,23 @@ class _FlightDirectionBadge extends StatelessWidget {
 
   final bool isOutbound;
 
+  static const outboundBlue = Color(0xFF0369A1);
+  static const outboundBlueLight = Color(0xFFE0F2FE);
+  static const outboundBlueDark = Color(0xFF7DD3FC);
+  static const returnOrange = Color(0xFFC2410C);
+  static const returnOrangeLight = Color(0xFFFFEDD5);
+  static const returnOrangeDark = Color(0xFFFDBA74);
+
+  static Color accentFor(bool isOutbound, bool isDark) =>
+      isOutbound ? (isDark ? outboundBlueDark : outboundBlue) : (isDark ? returnOrangeDark : returnOrange);
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final color = isOutbound ? AppColors.primary : const Color(0xFF64748B);
+    final color = accentFor(isOutbound, isDark);
     final bg = isOutbound
-        ? AppColors.primaryMuted.withValues(alpha: isDark ? 0.28 : 0.6)
-        : (isDark ? AppColors.surfaceElevatedDark : const Color(0xFFF1F5F9));
+        ? outboundBlueLight.withValues(alpha: isDark ? 0.22 : 0.85)
+        : returnOrangeLight.withValues(alpha: isDark ? 0.22 : 0.85);
 
     return Container(
       width: 30,
@@ -646,7 +668,7 @@ class _FlightLegRow extends StatelessWidget {
     final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final fieldStyle = TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w600, color: primary);
     final hintStyle = TextStyle(fontSize: _hintSize, fontWeight: FontWeight.w500, color: tertiary);
-    final accent = isOutbound ? AppColors.primary : const Color(0xFF64748B);
+    final accent = _FlightDirectionBadge.accentFor(isOutbound, isDark);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -685,25 +707,10 @@ class _FlightLegRow extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: Pressable(
+                    child: _FlightDepartCell(
+                      departAt: departAt,
+                      accent: accent,
                       onTap: onPickDepart,
-                      child: departAt != null
-                          ? Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _formatTime(departAt!),
-                                  style: fieldStyle,
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  _formatDateWeekday(departAt!),
-                                  style: TextStyle(fontSize: 11, color: tertiary),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            )
-                          : Text('Select', style: hintStyle, textAlign: TextAlign.center),
                     ),
                   ),
                   Expanded(
@@ -754,19 +761,117 @@ class _FlightLegRow extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _formatTime(DateTime date) {
-    final hour = date.hour;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final h = hour % 12 == 0 ? 12 : hour % 12;
-    return '$h:$minute $period';
+class _FlightDepartCell extends StatelessWidget {
+  const _FlightDepartCell({
+    required this.departAt,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final DateTime? departAt;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+
+    return Pressable(
+      onTap: onTap,
+      child: departAt == null
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.schedule_rounded, size: 15, color: tertiary.withValues(alpha: 0.8)),
+                const SizedBox(height: 3),
+                Text(
+                  'Set',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: tertiary),
+                ),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatDateWeekday(departAt!),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: tertiary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                _ModernTimeLabel(date: departAt!, accent: accent),
+              ],
+            ),
+    );
   }
 
   String _formatDateWeekday(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${months[date.month - 1]} ${date.day} ${weekdays[date.weekday - 1]}';
+  }
+}
+
+class _ModernTimeLabel extends StatelessWidget {
+  const _ModernTimeLabel({required this.date, required this.accent});
+
+  final DateTime date;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final hour = date.hour;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour % 12 == 0 ? 12 : hour % 12;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$hour12:$minute',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.8,
+            height: 1,
+            color: accent,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(width: 3),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 1),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              period,
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+                height: 1,
+                color: accent,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

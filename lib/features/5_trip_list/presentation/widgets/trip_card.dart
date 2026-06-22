@@ -4,7 +4,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import 'trip_phase_style.dart';
+import '../../../../core/theme/segment_style.dart';
 
 class TripCard extends StatelessWidget {
   final Trip trip;
@@ -20,7 +20,7 @@ class TripCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final phase = trip.phase;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final style = TripPhaseStyle.of(phase);
+    final style = SegmentStyle.of(phase);
 
     return Pressable(
       onTap: () => context.go('/plan/${trip.id}'),
@@ -166,7 +166,7 @@ class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.trip, required this.style});
 
   final Trip trip;
-  final TripPhaseStyle style;
+  final SegmentStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +223,7 @@ class _InProgressBar extends StatelessWidget {
   const _InProgressBar({required this.trip, required this.style});
 
   final Trip trip;
-  final TripPhaseStyle style;
+  final SegmentStyle style;
 
   @override
   Widget build(BuildContext context) {
