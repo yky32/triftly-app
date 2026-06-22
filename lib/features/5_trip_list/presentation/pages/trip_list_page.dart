@@ -35,6 +35,12 @@ class _View extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => _showNotifications(context),
+            tooltip: 'Notifications',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => _showCreateTrip(context),
+            tooltip: 'New trip',
           ),
         ],
       ),
@@ -44,13 +50,6 @@ class _View extends StatelessWidget {
           if (state.trips.isEmpty) return _buildEmpty(context);
           return _buildTripList(context, state);
         },
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.navIslandClearance),
-        child: FloatingActionButton(
-          onPressed: () => _showCreateTrip(context),
-          child: const Icon(Icons.add_rounded),
-        ),
       ),
     );
   }
