@@ -423,6 +423,7 @@ platform :ios do
       xcargs: xcargs,
       clean: false,
       include_bitcode: false,
+      codesigning_identity: nil,  # Disable manual signing to avoid conflict with automatic signing
     )
     
     UI.success("✅ IPA created successfully!")
