@@ -6,7 +6,7 @@ on:
 
 jobs:
   flutter-tests:
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
