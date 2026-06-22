@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../bloc/trip_detail_bloc.dart';
 
 class AddSpotBottomSheet extends StatefulWidget {
@@ -30,121 +32,91 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    return SheetScaffold(
+      title: 'Add Spot',
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
+          _label('Spot Name'),
+          TextField(
+            controller: _nameController,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(hintText: 'e.g. Ichiran Ramen'),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Address'),
+          TextField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+              hintText: 'Search or enter address',
+              prefixIcon: Icon(Icons.search_rounded, size: 20),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Category'),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Add Spot', style: Theme.of(context).textTheme.headlineMedium),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                _label('Spot Name'),
-                TextField(controller: _nameController, decoration: const InputDecoration(hintText: 'e.g. Ichiran Ramen')),
-                const SizedBox(height: 16),
-                _label('Address'),
-                TextField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(hintText: 'Search or enter address', prefixIcon: Icon(Icons.search, size: 20)),
-                ),
-                const SizedBox(height: 16),
-                _label('Category'),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: SpotCategory.values.map((cat) {
-                      final isSelected = cat.value == _category;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => setState(() => _category = cat.value),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.categoryColor(cat).withValues(alpha: 0.1) : AppColors.surfaceDim,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? AppColors.categoryColor(cat) : AppColors.border,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(cat.emoji, style: const TextStyle(fontSize: 14)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  cat.label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                    color: isSelected ? AppColors.categoryColor(cat) : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
+              children: SpotCategory.values.map((cat) {
+                final isSelected = cat.value == _category;
+                final color = AppColors.categoryColor(cat);
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _category = cat.value),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color.withValues(alpha: 0.12) : Theme.of(context).inputDecorationTheme.fillColor,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        border: Border.all(color: isSelected ? color : AppColors.border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(cat.emoji, style: const TextStyle(fontSize: 14)),
+                          const SizedBox(width: 4),
+                          Text(
+                            cat.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              color: isSelected ? color : AppColors.textSecondary,
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _label('Opening Hours'),
-                TextField(controller: _hoursController, decoration: const InputDecoration(hintText: 'e.g. 09:00 - 22:00')),
-                const SizedBox(height: 16),
-                _label('Estimated Duration'),
-                DropdownButtonFormField<String>(
-                  value: _durationController.text.isEmpty ? null : _durationController.text,
-                  decoration: const InputDecoration(hintText: 'Select duration'),
-                  items: ['30m', '1h', '1.5h', '2h', '2.5h', '3h', '4h', '5h+'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                  onChanged: (v) => setState(() => _durationController.text = v ?? ''),
-                ),
-                const SizedBox(height: 16),
-                _label('Notes (optional)'),
-                TextField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(hintText: 'Any tips or reminders...'),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _addSpot,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Add Spot', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ],
+                );
+              }).toList(),
             ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Opening Hours'),
+          TextField(controller: _hoursController, decoration: const InputDecoration(hintText: 'e.g. 09:00 – 22:00')),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Estimated Duration'),
+          DropdownButtonFormField<String>(
+            initialValue: _durationController.text.isEmpty ? null : _durationController.text,
+            decoration: const InputDecoration(hintText: 'Select duration'),
+            items: ['30m', '1h', '1.5h', '2h', '2.5h', '3h', '4h', '5h+']
+                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                .toList(),
+            onChanged: (v) => setState(() => _durationController.text = v ?? ''),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _label('Notes (optional)'),
+          TextField(
+            controller: _notesController,
+            decoration: const InputDecoration(hintText: 'Tips or reminders...'),
+            maxLines: 2,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          FilledButton(
+            onPressed: _nameController.text.trim().isEmpty ? null : _addSpot,
+            child: const Text('Add Spot'),
           ),
         ],
       ),
@@ -154,20 +126,20 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+      child: Text(text, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary, fontSize: 13)),
     );
   }
 
   void _addSpot() {
     if (_nameController.text.trim().isEmpty) return;
     context.read<TripDetailBloc>().add(TripDetailSpotAdded(
-      name: _nameController.text.trim(),
-      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-      category: _category,
-      openingHours: _hoursController.text.trim().isEmpty ? null : _hoursController.text.trim(),
-      estimatedDuration: _durationController.text.isEmpty ? null : _durationController.text,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-    ));
+          name: _nameController.text.trim(),
+          address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+          category: _category,
+          openingHours: _hoursController.text.trim().isEmpty ? null : _hoursController.text.trim(),
+          estimatedDuration: _durationController.text.isEmpty ? null : _durationController.text,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        ));
     Navigator.pop(context);
   }
 }

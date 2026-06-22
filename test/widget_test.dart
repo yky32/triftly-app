@@ -4,6 +4,11 @@ import 'package:triftly/app.dart';
 void main() {
   testWidgets('App renders', (WidgetTester tester) async {
     await tester.pumpWidget(const TripApp());
-    expect(find.text('Explore'), findsOneWidget);
+    await tester.pump();
+    // Flush trip list load + stagger animations
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('My Trips'), findsOneWidget);
   });
 }

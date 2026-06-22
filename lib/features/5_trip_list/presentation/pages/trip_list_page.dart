@@ -5,7 +5,10 @@ import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
 import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/section_header.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -25,51 +28,56 @@ class _View extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trip App'),
-        actions: [
-          Stack(
-            children: [
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            title: const Text('My Trips'),
+            actions: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => _showNotifications(context),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_outlined),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                onPressed: () => _showNotifications(context),
               ),
             ],
           ),
+          SliverToBoxAdapter(
+            child: BlocBuilder<TripListBloc, TripListState>(
+              builder: (context, state) {
+                if (state.isLoading) return _buildLoading();
+                if (state.trips.isEmpty) return _buildEmpty(context);
+                return _buildTripList(context, state);
+              },
+            ),
+          ),
         ],
       ),
-      body: BlocBuilder<TripListBloc, TripListState>(
-        builder: (context, state) {
-          if (state.isLoading) {
-            return _buildLoading();
-          }
-          if (state.trips.isEmpty) {
-            return _buildEmpty(context);
-          }
-          return _buildTripList(context, state);
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateTrip(context),
-        child: const Icon(Icons.add, size: 28),
+        icon: const Icon(Icons.add_rounded, size: 22),
+        label: const Text('New Trip'),
       ),
     );
   }
 
   Widget _buildLoading() {
-    // Mock data for skeletonizer
     final now = DateTime.now();
     final mockTrip = Trip(
       id: 'mock-1',
@@ -83,48 +91,30 @@ class _View extends StatelessWidget {
 
     return Skeletonizer(
       enabled: true,
-      ignoreContainers: false,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 3,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TripCard(trip: mockTrip),
+      child: Padding(
+        padding: AppSpacing.page,
+        child: Column(
+          children: List.generate(
+            3,
+            (index) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: TripCard(trip: mockTrip, index: index),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.flight_takeoff, size: 64, color: AppColors.textTertiary),
-            const SizedBox(height: 16),
-            Text(
-              'No trips yet',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Plan your first adventure',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _showCreateTrip(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Trip'),
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.65,
+      child: EmptyState(
+        icon: Icons.flight_takeoff_rounded,
+        title: 'No trips yet',
+        subtitle: 'Plan your first adventure — add dates, buddies, and spots',
+        action: () => _showCreateTrip(context),
+        actionLabel: 'Create Trip',
       ),
     );
   }
@@ -132,43 +122,41 @@ class _View extends StatelessWidget {
   Widget _buildTripList(BuildContext context, TripListState state) {
     final upcoming = state.trips.where((t) => t.isUpcoming || !t.isPast).toList();
     final past = state.trips.where((t) => t.isPast).toList();
+    var index = 0;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      children: [
-        if (upcoming.isNotEmpty) ...[
-          Text(
-            'UPCOMING',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1,
-                ),
-          ),
-          const SizedBox(height: 8),
-          ...upcoming.map((trip) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TripCard(trip: trip),
-              )),
-        ],
-        if (past.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            'PAST',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textTertiary,
-                  letterSpacing: 1,
-                ),
-          ),
-          const SizedBox(height: 8),
-          ...past.map((trip) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+    return Padding(
+      padding: AppSpacing.page,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (upcoming.isNotEmpty) ...[
+            const SectionHeader(title: 'UPCOMING'),
+            ...upcoming.map((trip) {
+              final card = Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: TripCard(trip: trip, index: index),
+              );
+              index++;
+              return card;
+            }),
+          ],
+          if (past.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            const SectionHeader(title: 'PAST'),
+            ...past.map((trip) {
+              final card = Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Opacity(
-                  opacity: 0.6,
-                  child: TripCard(trip: trip),
+                  opacity: 0.72,
+                  child: TripCard(trip: trip, index: index),
                 ),
-              )),
+              );
+              index++;
+              return card;
+            }),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -187,10 +175,17 @@ class _View extends StatelessWidget {
   }
 
   void _showNotifications(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No notifications yet'),
-        duration: Duration(seconds: 2),
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notifications'),
+        content: const Text('You\'re all caught up — no new notifications.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

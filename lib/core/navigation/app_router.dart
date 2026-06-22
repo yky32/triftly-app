@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/app_page.dart';
 import 'scaffold_with_nav_bar.dart';
+import 'page_transitions.dart';
 import '../../features/1_explore/presentation/pages/explore_page.dart';
 import '../../features/4_profile/presentation/pages/profile_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
+import '../../core/widgets/empty_state.dart';
 
 final appRouter = GoRouter(
   initialLocation: AppPage.plan.path,
@@ -15,7 +17,6 @@ final appRouter = GoRouter(
         return ScaffoldWithNavBar(navigationShell: navigationShell);
       },
       branches: [
-        // Tab 0: Explore
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -25,7 +26,6 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 1: Plan (Trip List → Trip Detail)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -38,8 +38,8 @@ final appRouter = GoRouter(
                   name: 'trip_detail',
                   pageBuilder: (context, state) {
                     final tripId = state.pathParameters['tripId']!;
-                    return MaterialPage(
-                      key: state.pageKey,
+                    return triftlyPage(
+                      state: state,
                       child: TripDetailPage(tripId: tripId),
                     );
                   },
@@ -48,7 +48,6 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 2: Spend (redirects to plan tab's trip detail)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -58,7 +57,6 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 3: Profile
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -78,12 +76,13 @@ class _SpendPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Select a trip to track spending',
-          style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
-        ),
+    return Scaffold(
+      body: EmptyState(
+        icon: Icons.account_balance_wallet_outlined,
+        title: 'Track spending',
+        subtitle: 'Open a trip from Plan to view expenses and settlements',
+        action: () => context.go(AppPage.plan.path),
+        actionLabel: 'Go to Plan',
       ),
     );
   }

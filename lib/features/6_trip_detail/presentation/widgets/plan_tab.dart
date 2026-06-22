@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
 
@@ -30,11 +33,10 @@ class PlanTab extends StatelessWidget {
 
         return Column(
           children: [
-            // Day tabs
             if (days.isNotEmpty)
               Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                color: AppColors.cardBackground(context),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -43,23 +45,26 @@ class PlanTab extends StatelessWidget {
                       final day = entry.value;
                       final isSelected = index == state.selectedDayIndex;
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => context
-                              .read<TripDetailBloc>()
-                              .add(TripDetailDaySelected(index: index)),
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
+                        child: Pressable(
+                          onTap: () => context.read<TripDetailBloc>().add(TripDetailDaySelected(index: index)),
+                          scale: 0.95,
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primary : AppColors.surfaceDim,
-                              borderRadius: BorderRadius.circular(8),
+                              color: isSelected ? AppColors.primary : AppColors.pageBackground(context),
+                              borderRadius: BorderRadius.circular(AppRadii.md),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : AppColors.border,
+                              ),
                             ),
                             child: Text(
                               day.displayTitle,
                               style: TextStyle(
                                 fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                 color: isSelected ? Colors.white : AppColors.textSecondary,
                               ),
                             ),
@@ -71,101 +76,54 @@ class PlanTab extends StatelessWidget {
                 ),
               ),
 
-            // Day title
             if (selectedDay != null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${selectedDay.displayTitle} — ${selectedDay.title ?? ''}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        selectedDay.title?.isNotEmpty == true
+                            ? '${selectedDay.displayTitle} — ${selectedDay.title}'
+                            : selectedDay.displayTitle,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 17),
                       ),
-                      Text(
-                        selectedDay.displayDate,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
+                      Text(selectedDay.displayDate, style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
                 ),
               ),
 
-            // Spots list
             Expanded(
               child: daySpots.isEmpty
-                  ? _buildEmptyDay(context)
+                  ? EmptyState(
+                      icon: Icons.add_location_alt_outlined,
+                      title: 'No spots planned yet',
+                      subtitle: 'Add restaurants, sights, and stays for this day',
+                      action: () => _showAddSpot(context),
+                      actionLabel: 'Add Spot',
+                    )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
                       itemCount: daySpots.length + 1,
                       itemBuilder: (context, index) {
                         if (index == daySpots.length) {
-                          return _buildAddSpotArea(context);
+                          return _AddSpotButton(onTap: () => _showAddSpot(context)).staggerIn(index);
                         }
-                        return _SpotCard(spot: daySpots[index], defaultCurrency: trip.defaultCurrency);
+                        return _SpotCard(
+                          spot: daySpots[index],
+                          defaultCurrency: trip.defaultCurrency,
+                          index: index,
+                          isLast: index == daySpots.length - 1,
+                        );
                       },
                     ),
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildEmptyDay(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDim,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.add_location_alt, size: 48, color: AppColors.primary),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No spots planned yet',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap + button to add your first spot',
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddSpotArea(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showAddSpot(context),
-      child: Container(
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, size: 18, color: AppColors.textTertiary),
-            SizedBox(width: 8),
-            Text('Add a spot', style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
-          ],
-        ),
-      ),
     );
   }
 
@@ -180,13 +138,49 @@ class PlanTab extends StatelessWidget {
   }
 }
 
+class _AddSpotButton extends StatelessWidget {
+  const _AddSpotButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(top: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border, width: 1.5),
+          borderRadius: AppRadii.card,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Add a spot',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SpotCard extends StatelessWidget {
   final Spot spot;
   final String defaultCurrency;
+  final int index;
+  final bool isLast;
 
   const _SpotCard({
     required this.spot,
     required this.defaultCurrency,
+    required this.index,
+    required this.isLast,
   });
 
   @override
@@ -197,79 +191,123 @@ class _SpotCard extends StatelessWidget {
     );
     final color = AppColors.categoryColor(category);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Category color bar
-          Container(
-            width: 4,
-            height: 72,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+          SizedBox(
+            width: 28,
+            child: Column(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(top: 18),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 4),
+                    ],
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: AppColors.border,
+                    ),
+                  ),
+              ],
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(category.emoji, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          spot.name,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+            child: Pressable(
+              onTap: () {},
+              child: Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground(context),
+                  borderRadius: AppRadii.card,
+                  boxShadow: AppShadows.soft(context),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.borderDark
+                        : AppColors.borderLight,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.lg)),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(category.emoji, style: const TextStyle(fontSize: 18)),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    spot.name,
+                                    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(Icons.more_horiz_rounded, size: 18, color: AppColors.textTertiary),
+                              ],
+                            ),
+                            if (_metaLine(spot, defaultCurrency).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(_metaLine(spot, defaultCurrency), style: Theme.of(context).textTheme.bodySmall),
+                            ],
+                            if (spot.area != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.place_outlined, size: 14, color: AppColors.textTertiary),
+                                  const SizedBox(width: 2),
+                                  Expanded(
+                                    child: Text(
+                                      spot.area!,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    [
-                      if (spot.openingHours != null) spot.openingHours,
-                      if (spot.estimatedDuration != null) spot.estimatedDuration,
-                      if (spot.estimatedCost != null) '$defaultCurrency ${spot.estimatedCost}',
-                    ].join(' · '),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  if (spot.area != null) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.place_outlined, size: 14, color: AppColors.textTertiary),
-                        const SizedBox(width: 2),
-                        Text(spot.area!, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
-                      ],
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.more_horiz, size: 18, color: AppColors.textTertiary),
+            ).staggerIn(index),
           ),
         ],
       ),
     );
+  }
+
+  String _metaLine(Spot spot, String currency) {
+    return [
+      if (spot.openingHours != null) spot.openingHours,
+      if (spot.estimatedDuration != null) spot.estimatedDuration,
+      if (spot.estimatedCost != null) '$currency ${spot.estimatedCost}',
+    ].join(' · ');
   }
 }
