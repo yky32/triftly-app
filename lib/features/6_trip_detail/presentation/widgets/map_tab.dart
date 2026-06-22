@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/widgets/triftly_motion.dart';
+import '../../../../core/widgets/section_header.dart';
 
 class MapTab extends StatelessWidget {
   final Trip trip;
@@ -21,127 +21,67 @@ class MapTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (spots.isEmpty) {
-      return EmptyState(
+      return const EmptyState(
         icon: Icons.map_outlined,
-        title: 'No spots to map',
-        subtitle: 'Add spots in Plan to see them here',
+        title: 'No spots yet',
+        subtitle: 'Add places in Plan to see them here',
       );
     }
 
     return ListView(
-      padding: AppSpacing.page,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
       children: [
-        _MapPlaceholder(spotCount: spots.length, destination: trip.destination).fadeSlideIn(),
+        AppCard(
+          color: AppColors.accentSurface,
+          child: Row(
+            children: [
+              Icon(Icons.map_outlined, size: 32, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(trip.destination, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      '${spots.length} spots · Maps integration coming soon',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: AppSpacing.lg),
-        Text('All spots', style: Theme.of(context).textTheme.labelSmall),
-        const SizedBox(height: AppSpacing.sm),
-        ...spots.asMap().entries.map((entry) {
-          final spot = entry.value;
+        const SectionHeader(title: 'Spots'),
+        ...spots.map((spot) {
           final category = SpotCategory.values.firstWhere(
             (c) => c.value == spot.category,
             orElse: () => SpotCategory.other,
           );
-          return AppCard(
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.categoryColor(category).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: AppCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Text(category.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(spot.name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        if (spot.area != null) Text(spot.area!, style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
                   ),
-                  child: Center(child: Text(category.emoji, style: const TextStyle(fontSize: 16))),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        spot.name,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      if (spot.area != null)
-                        Text(spot.area!, style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-                Icon(Icons.north_east_rounded, size: 18, color: AppColors.textTertiary),
-              ],
+                ],
+              ),
             ),
-          ).staggerIn(entry.key);
+          );
         }),
       ],
-    );
-  }
-}
-
-class _MapPlaceholder extends StatelessWidget {
-  const _MapPlaceholder({
-    required this.spotCount,
-    required this.destination,
-  });
-
-  final int spotCount;
-  final String destination;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primaryMuted,
-            AppColors.surfaceDim,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: 16,
-            top: 16,
-            child: Icon(Icons.map_outlined, size: 64, color: AppColors.primary.withValues(alpha: 0.2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                  ),
-                  child: Text(
-                    'Map preview',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  destination,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20),
-                ),
-                Text(
-                  '$spotCount spot${spotCount == 1 ? '' : 's'} · Google Maps coming soon',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

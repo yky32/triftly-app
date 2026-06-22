@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Consistent spacing and shape tokens across the app.
 abstract final class AppSpacing {
   static const double xs = 4;
   static const double sm = 8;
@@ -8,16 +7,17 @@ abstract final class AppSpacing {
   static const double lg = 16;
   static const double xl = 24;
   static const double xxl = 32;
+  static const double xxxl = 48;
 
-  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, sm, lg, 100);
+  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, 0, lg, 100);
   static const EdgeInsets sheet = EdgeInsets.fromLTRB(lg, sm, lg, xl);
 }
 
 abstract final class AppRadii {
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 20;
+  static const double sm = 10;
+  static const double md = 14;
+  static const double lg = 20;
+  static const double xl = 28;
   static const double pill = 999;
 
   static BorderRadius get card => BorderRadius.circular(lg);
@@ -25,27 +25,16 @@ abstract final class AppRadii {
 }
 
 abstract final class AppShadows {
-  static List<BoxShadow> card(BuildContext context) => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-        ),
-      ];
+  static List<BoxShadow> card(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+        blurRadius: isDark ? 8 : 20,
+        offset: const Offset(0, 4),
+      ),
+    ];
+  }
 
-  static List<BoxShadow> navBar(BuildContext context) => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ];
-
-  static List<BoxShadow> soft(BuildContext context) => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
+  static List<BoxShadow> soft(BuildContext context) => card(context);
 }

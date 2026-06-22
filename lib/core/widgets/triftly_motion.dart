@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
-/// Press feedback with subtle scale + optional haptic.
+/// Subtle press feedback — no scale gimmicks.
 class Pressable extends StatefulWidget {
   const Pressable({
     required this.child,
     required this.onTap,
-    this.scale = 0.97,
     this.haptic = true,
     super.key,
   });
 
   final Widget child;
   final VoidCallback? onTap;
-  final double scale;
   final bool haptic;
 
   @override
@@ -33,31 +30,15 @@ class _PressableState extends State<Pressable> {
       onTap: widget.onTap == null
           ? null
           : () {
-              if (widget.haptic) HapticFeedback.lightImpact();
+              if (widget.haptic) HapticFeedback.selectionClick();
               widget.onTap!();
             },
       behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? widget.scale : 1,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: _pressed ? 0.72 : 1,
+        duration: const Duration(milliseconds: 100),
         child: widget.child,
       ),
     );
-  }
-}
-
-/// Staggered fade + slide entrance for list items.
-extension TriftlyAnimate on Widget {
-  Widget staggerIn(int index, {double delayStep = 0.05}) {
-    return animate(delay: (index * delayStep * 1000).ms)
-        .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
-        .slideY(begin: 0.08, end: 0, duration: 350.ms, curve: Curves.easeOutCubic);
-  }
-
-  Widget fadeSlideIn({Duration delay = Duration.zero}) {
-    return animate(delay: delay)
-        .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-        .slideY(begin: 0.06, end: 0, duration: 400.ms, curve: Curves.easeOutCubic);
   }
 }

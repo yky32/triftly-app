@@ -9,6 +9,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('My Trips'), findsOneWidget);
+    expect(find.text('Trips'), findsOneWidget);
   });
 }

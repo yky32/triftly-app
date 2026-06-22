@@ -9,6 +9,7 @@ class AppCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.borderRadius,
+    this.color,
     super.key,
   });
 
@@ -17,6 +18,7 @@ class AppCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final BorderRadius? borderRadius;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +27,9 @@ class AppCard extends StatelessWidget {
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.cardBackground(context),
+        color: color ?? AppColors.cardBackground(context),
         borderRadius: radius,
-        boxShadow: AppShadows.soft(context),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.borderDark.withValues(alpha: 0.5)
-              : AppColors.borderLight,
-        ),
+        boxShadow: AppShadows.card(context),
       ),
       child: child,
     );

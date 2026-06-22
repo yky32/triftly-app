@@ -9,21 +9,26 @@ class AppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: brightness,
-      surface: isDark ? AppColors.surfaceDark : AppColors.surface,
-    );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      colorScheme: colorScheme,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: AppColors.primary,
+        onPrimary: Colors.white,
+        secondary: AppColors.primaryDark,
+        onSecondary: Colors.white,
+        surface: isDark ? AppColors.surfaceDark : AppColors.surface,
+        onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+        error: AppColors.error,
+        onError: Colors.white,
+      ),
       fontFamily: 'Satoshi',
       scaffoldBackgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceDim,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceDim,
         foregroundColor: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -31,15 +36,36 @@ class AppTheme {
         systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         titleTextStyle: TextStyle(
           fontFamily: 'Satoshi',
-          fontSize: 22,
+          fontSize: 28,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: isDark ? AppColors.surfaceCardDark : AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? AppColors.primary : AppColors.textTertiary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 22,
+            color: selected ? AppColors.primary : AppColors.textTertiary,
+          );
+        }),
+        height: 64,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       ),
       cardTheme: CardThemeData(
         color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
         elevation: 0,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: RoundedRectangleBorder(borderRadius: AppRadii.card),
         margin: EdgeInsets.zero,
       ),
@@ -52,32 +78,35 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 4,
-        highlightElevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.lg)),
+        elevation: 2,
+        highlightElevation: 4,
+        shape: const CircleBorder(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(52),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.1),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceDim,
+        backgroundColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
         selectedColor: AppColors.primaryMuted,
         labelStyle: TextStyle(
           fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.pill)),
-        side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.border),
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceDim,
+        fillColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: BorderSide.none,
@@ -90,20 +119,23 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
         hintStyle: TextStyle(
           color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-          fontSize: 14,
+          fontSize: 15,
         ),
       ),
       tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.primary,
-        unselectedLabelColor: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-        indicatorColor: AppColors.primary,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: AppColors.textTertiary,
+        indicator: UnderlineTabIndicator(
+          borderSide: const BorderSide(color: AppColors.primary, width: 2.5),
+          borderRadius: BorderRadius.circular(2),
+        ),
         indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+        dividerColor: AppColors.border,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
       ),
       dividerTheme: DividerThemeData(
         color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -112,31 +144,34 @@ class AppTheme {
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          fontSize: 28,
+          fontSize: 32,
           fontWeight: FontWeight.w700,
-          height: 1.3,
+          letterSpacing: -0.8,
+          height: 1.2,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         headlineLarge: TextStyle(
-          fontSize: 22,
+          fontSize: 28,
           fontWeight: FontWeight.w700,
-          height: 1.3,
+          letterSpacing: -0.5,
+          height: 1.25,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         headlineMedium: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          height: 1.4,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          height: 1.3,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         titleMedium: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           height: 1.4,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         bodyLarge: TextStyle(
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: FontWeight.w400,
           height: 1.5,
           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
@@ -148,22 +183,22 @@ class AppTheme {
           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
         ),
         bodySmall: TextStyle(
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: FontWeight.w400,
-          height: 1.5,
+          height: 1.4,
           color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
         ),
         labelLarge: TextStyle(
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
           height: 1.4,
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
         ),
         labelSmall: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
           height: 1.4,
-          letterSpacing: 0.8,
+          letterSpacing: 0.2,
           color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
         ),
       ),
