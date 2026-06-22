@@ -27,9 +27,6 @@ class TripCard extends StatelessWidget {
           color: AppColors.cardBackground(context),
           borderRadius: AppRadii.card,
           boxShadow: AppShadows.card(context),
-          border: phase == TripPhase.inProgress
-              ? Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.2)
-              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
