@@ -27,6 +27,8 @@ class _View extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Trips'),
         actions: [
@@ -43,9 +45,12 @@ class _View extends StatelessWidget {
           return _buildTripList(context, state);
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateTrip(context),
-        child: const Icon(Icons.add_rounded),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.navIslandClearance),
+        child: FloatingActionButton(
+          onPressed: () => _showCreateTrip(context),
+          child: const Icon(Icons.add_rounded),
+        ),
       ),
     );
   }

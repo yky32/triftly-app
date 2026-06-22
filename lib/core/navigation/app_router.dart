@@ -77,6 +77,8 @@ class _SpendPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       body: EmptyState(
         icon: Icons.account_balance_wallet_outlined,
         title: 'Track spending',

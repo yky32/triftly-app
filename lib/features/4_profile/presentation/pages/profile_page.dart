@@ -11,6 +11,8 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Me')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),

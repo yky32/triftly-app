@@ -9,8 +9,11 @@ abstract final class AppSpacing {
   static const double xxl = 32;
   static const double xxxl = 48;
 
-  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, 0, lg, 100);
+  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, 0, lg, 110);
   static const EdgeInsets sheet = EdgeInsets.fromLTRB(lg, sm, lg, xl);
+
+  /// Vertical clearance so content / FAB sit above the floating nav island.
+  static const double navIslandClearance = 80;
 }
 
 abstract final class AppRadii {
@@ -42,14 +45,15 @@ abstract final class AppShadows {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return [
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-        blurRadius: 28,
-        offset: const Offset(0, 10),
+        color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+        blurRadius: 32,
+        spreadRadius: -4,
+        offset: const Offset(0, 14),
       ),
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
-        blurRadius: 8,
-        offset: const Offset(0, 2),
+        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
       ),
     ];
   }

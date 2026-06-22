@@ -6,6 +6,7 @@ import '../theme/app_spacing.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/triftly_motion.dart';
 
+/// Shell with a floating glass nav island overlaid on tab content.
 class ScaffoldWithNavBar extends StatelessWidget {
   const ScaffoldWithNavBar({
     required this.navigationShell,
@@ -14,19 +15,40 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  static const double _islandBottomGap = 18;
+  static const double _islandHorizontalInset = 22;
+
   @override
   Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
+      backgroundColor: AppColors.pageBackground(context),
       extendBody: true,
-      body: navigationShell,
-      bottomNavigationBar: _FloatingGlassNavBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
+      body: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(child: navigationShell),
+          Positioned(
+            left: _islandHorizontalInset,
+            right: _islandHorizontalInset,
+            bottom: bottomSafe + _islandBottomGap,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _FloatingGlassNavBar(
+                  currentIndex: navigationShell.currentIndex,
+                  onTap: (index) {
+                    navigationShell.goBranch(
+                      index,
+                      initialLocation: index == navigationShell.currentIndex,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -43,25 +65,21 @@ class _FloatingGlassNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      minimum: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-        child: GlassSurface(
-          blur: 28,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: AppPage.values.map((page) {
-              final isSelected = page.navBarMemberIndex == currentIndex;
-              return _NavItem(
-                page: page,
-                isSelected: isSelected,
-                onTap: () => onTap(page.navBarMemberIndex),
-              );
-            }).toList(),
-          ),
-        ),
+    return GlassSurface(
+      blur: 32,
+      borderRadius: BorderRadius.circular(AppRadii.pill),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+      child: Row(
+        children: AppPage.values.map((page) {
+          final isSelected = page.navBarMemberIndex == currentIndex;
+          return Expanded(
+            child: _NavItem(
+              page: page,
+              isSelected: isSelected,
+              onTap: () => onTap(page.navBarMemberIndex),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -85,40 +103,32 @@ class _NavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 240),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.14)
+              ? AppColors.primary.withValues(alpha: 0.16)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           border: isSelected
-              ? Border.all(color: AppColors.primary.withValues(alpha: 0.22))
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.25))
               : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: Icon(
-                isSelected ? page.activeIcon : page.icon,
-                key: ValueKey('${page.name}-$isSelected'),
-                size: 22,
-                color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
-              ),
+            Icon(
+              isSelected ? page.activeIcon : page.icon,
+              size: 22,
+              color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
             ),
             const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
+            Text(
+              page.label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
-                letterSpacing: isSelected ? 0.1 : 0,
               ),
-              child: Text(page.label),
             ),
           ],
         ),

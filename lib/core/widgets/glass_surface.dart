@@ -27,39 +27,42 @@ class GlassSurface extends StatelessWidget {
 
     final fill = tint ??
         (isDark
-            ? const Color(0xFF2A2A2C).withValues(alpha: 0.55)
-            : const Color(0xFFFDFCFB).withValues(alpha: 0.78));
+            ? const Color(0xFF2A2A2C).withValues(alpha: 0.62)
+            : const Color(0xFFFFFFFF).withValues(alpha: 0.55));
 
     final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.14)
-        : Colors.white.withValues(alpha: 0.85);
+        ? Colors.white.withValues(alpha: 0.18)
+        : Colors.white.withValues(alpha: 0.9);
 
     final highlight = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.white.withValues(alpha: 0.55);
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.white.withValues(alpha: 0.7);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: AppShadows.navBar(context),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              color: fill,
-              border: Border.all(color: borderColor, width: 1),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [highlight, Colors.transparent],
-                stops: const [0, 0.45],
+    return Material(
+      type: MaterialType.transparency,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: AppShadows.navBar(context),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                color: fill,
+                border: Border.all(color: borderColor, width: 1.2),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [highlight, Colors.transparent],
+                  stops: const [0, 0.5],
+                ),
               ),
+              child: padding != null ? Padding(padding: padding!, child: child) : child,
             ),
-            child: padding != null ? Padding(padding: padding!, child: child) : child,
           ),
         ),
       ),
