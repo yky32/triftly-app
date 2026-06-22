@@ -4,6 +4,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import 'trip_phase_style.dart';
 
 class TripCard extends StatelessWidget {
   final Trip trip;
@@ -18,15 +19,23 @@ class TripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final phase = trip.phase;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = TripPhaseStyle.of(phase);
 
     return Pressable(
       onTap: () => context.go('/plan/${trip.id}'),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground(context),
+          color: style.pill(isDark),
           borderRadius: AppRadii.card,
-          boxShadow: AppShadows.card(context),
+          boxShadow: [
+            BoxShadow(
+              color: style.foreground(isDark).withValues(alpha: isDark ? 0.15 : 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +47,7 @@ class TripCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.tintForDestination(trip.destination),
+                    color: style.badge(isDark),
                     borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
                   child: Center(
@@ -55,7 +64,10 @@ class TripCard extends StatelessWidget {
                     children: [
                       Text(
                         trip.name,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontSize: 18,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                            ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -67,12 +79,12 @@ class TripCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                _StatusBadge(trip: trip),
+                _StatusBadge(trip: trip, style: style),
               ],
             ),
             if (phase == TripPhase.inProgress) ...[
               const SizedBox(height: AppSpacing.md),
-              _InProgressBar(trip: trip),
+              _InProgressBar(trip: trip, style: style),
             ],
             const SizedBox(height: AppSpacing.md),
             Row(
@@ -151,34 +163,31 @@ class _BuddyDots extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.trip});
+  const _StatusBadge({required this.trip, required this.style});
 
   final Trip trip;
+  final TripPhaseStyle style;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = style.foreground(isDark);
+    final bg = style.badge(isDark);
+
     switch (trip.phase) {
       case TripPhase.inProgress:
         final day = trip.currentDayNumber!;
-        return _Badge(
-          label: 'Day $day',
-          background: AppColors.primaryMuted,
-          foreground: AppColors.primaryDark,
-        );
+        return _Badge(label: 'Day $day', background: bg, foreground: fg);
       case TripPhase.upcoming:
         final days = trip.daysUntilStart!;
         if (days > 14) return const SizedBox.shrink();
         return _Badge(
           label: days == 0 ? 'Today' : '${days}d',
-          background: AppColors.primaryMuted,
-          foreground: AppColors.primaryDark,
+          background: bg,
+          foreground: fg,
         );
       case TripPhase.completed:
-        return _Badge(
-          label: 'Done',
-          background: AppColors.borderLight,
-          foreground: AppColors.textTertiary,
-        );
+        return _Badge(label: 'Done', background: bg, foreground: fg);
     }
   }
 }
@@ -211,12 +220,15 @@ class _Badge extends StatelessWidget {
 }
 
 class _InProgressBar extends StatelessWidget {
-  const _InProgressBar({required this.trip});
+  const _InProgressBar({required this.trip, required this.style});
 
   final Trip trip;
+  final TripPhaseStyle style;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = style.foreground(isDark);
     final day = trip.currentDayNumber!;
     final total = trip.numberOfDays;
     final progress = (day / total).clamp(0.0, 1.0);
@@ -230,7 +242,7 @@ class _InProgressBar extends StatelessWidget {
             Text(
               'Day $day of $total',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.primaryDark,
+                    color: accent,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -247,8 +259,8 @@ class _InProgressBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 4,
-            backgroundColor: AppColors.primaryMuted.withValues(alpha: 0.5),
-            color: AppColors.primary,
+            backgroundColor: style.badge(isDark),
+            color: accent,
           ),
         ),
       ],

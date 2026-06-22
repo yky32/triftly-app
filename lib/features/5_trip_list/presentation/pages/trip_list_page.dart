@@ -139,14 +139,7 @@ class _ViewState extends State<_View> {
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
                   itemCount: trips.length,
                   separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-                  itemBuilder: (_, index) {
-                    final trip = trips[index];
-                    final card = TripCard(trip: trip);
-                    if (selected == TripPhase.completed) {
-                      return Opacity(opacity: 0.85, child: card);
-                    }
-                    return card;
-                  },
+                  itemBuilder: (_, index) => TripCard(trip: trips[index]),
                 ),
         ),
       ],
