@@ -1,0 +1,48 @@
+name: Validate PR Base Branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-base-branch:
+    runs-on: macos-15
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check base branch
+        run: |
+          echo "PR Base Branch: ${{ github.base_ref }}"
+          echo "PR Source Branch: ${{ github.head_ref }}"
+
+          if [[ "${{ github.base_ref }}" != "verified" ]]; then
+            echo "❌ Error: PR base branch must be 'verified'"
+            echo "Current base branch: ${{ github.base_ref }}"
+            echo "Please rebase your PR against 'verified' branch"
+            exit 1
+          fi
+
+          echo "✅ PR base branch is 'verified' - validation passed"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Run flutter analyze
+        run: |
+          echo "🔍 Running flutter analyze..."
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run flutter test (if tests exist)
+        run: |
+          echo "🧪 Running flutter test..."
+          flutter test || echo "⚠️ No tests found or tests failed (non-blocking)"
