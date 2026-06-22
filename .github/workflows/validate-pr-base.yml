@@ -1,0 +1,23 @@
+name: Validate PR Base Branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-base-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check base branch
+        run: |
+          echo "PR Base Branch: ${{ github.base_ref }}"
+          echo "PR Source Branch: ${{ github.head_ref }}"
+
+          if [[ "${{ github.base_ref }}" != "verified" ]]; then
+            echo "❌ Error: PR base branch must be 'verified'"
+            echo "Current base branch: ${{ github.base_ref }}"
+            echo "Please rebase your PR against 'verified' branch"
+            exit 1
+          fi
+
+          echo "✅ PR base branch is 'verified' - validation passed"
