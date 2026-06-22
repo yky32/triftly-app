@@ -35,12 +35,12 @@ class TripPhaseStyle {
       badgeDark: Color(0xFF7C2D12),
     ),
     TripPhase.upcoming: TripPhaseStyle(
-      pillLight: Color(0xFFF0FDF4),
-      pillDark: Color(0xFF052E16),
-      accent: Color(0xFF15803D),
-      accentDark: Color(0xFF86EFAC),
-      badgeLight: Color(0xFFDCFCE7),
-      badgeDark: Color(0xFF14532D),
+      pillLight: Color(0xFFF0F9FF),
+      pillDark: Color(0xFF082F49),
+      accent: Color(0xFF0369A1),
+      accentDark: Color(0xFF7DD3FC),
+      badgeLight: Color(0xFFE0F2FE),
+      badgeDark: Color(0xFF0C4A6E),
     ),
     TripPhase.completed: TripPhaseStyle(
       pillLight: Color(0xFFF5F5F4),

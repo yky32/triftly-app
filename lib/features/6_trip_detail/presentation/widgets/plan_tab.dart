@@ -100,6 +100,7 @@ class PlanTab extends StatelessWidget {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
+      showDragHandle: false,
       backgroundColor: Colors.transparent,
       builder: (context) => const AddSpotBottomSheet(),
     );

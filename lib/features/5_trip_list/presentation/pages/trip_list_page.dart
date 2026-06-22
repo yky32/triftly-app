@@ -169,15 +169,22 @@ class _ViewState extends State<_View> {
   }
 
   void _showCreateTrip(BuildContext context) {
-    showModalBottomSheet(
+    final tripListBloc = context.read<TripListBloc>();
+
+    showModalBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
+      showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => const CreateTripBottomSheet(),
-    ).then((_) {
-      if (context.mounted) {
-        context.read<TripListBloc>().add(TripListLoadRequested());
+      builder: (sheetContext) => BlocProvider.value(
+        value: tripListBloc,
+        child: const CreateTripBottomSheet(),
+      ),
+    ).then((created) {
+      if (!context.mounted) return;
+      if (created == true) {
+        tripListBloc.add(TripListLoadRequested());
       }
     });
   }

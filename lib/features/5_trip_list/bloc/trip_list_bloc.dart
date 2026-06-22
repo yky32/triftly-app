@@ -11,14 +11,17 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     on<TripListTripCreated>(_onTripCreated);
   }
 
+  /// Trips created in-session — kept across reload until real persistence ships.
+  final List<Trip> _createdTrips = [];
+
   Future<void> _onLoadRequested(
     TripListLoadRequested event,
     Emitter<TripListState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    // TODO: Load from Supabase + Hive cache
+    // TODO: Load from Supabase + Hive cache, merge with _createdTrips
     await Future.delayed(const Duration(milliseconds: 500));
-    emit(state.copyWith(isLoading: false, trips: _mockTrips()));
+    emit(state.copyWith(isLoading: false, trips: _allTrips()));
   }
 
   Future<void> _onTripCreated(
@@ -26,7 +29,16 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     Emitter<TripListState> emit,
   ) async {
     // TODO: Save to Supabase + Hive cache
-    emit(state.copyWith(trips: [event.trip, ...state.trips]));
+    _createdTrips.removeWhere((t) => t.id == event.trip.id);
+    _createdTrips.insert(0, event.trip);
+    emit(state.copyWith(trips: _allTrips()));
+  }
+
+  List<Trip> _allTrips() {
+    final mock = _mockTrips();
+    final mockIds = mock.map((t) => t.id).toSet();
+    final created = _createdTrips.where((t) => !mockIds.contains(t.id)).toList();
+    return [...created, ...mock];
   }
 
   List<Trip> _mockTrips() {
