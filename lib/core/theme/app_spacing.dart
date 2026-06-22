@@ -37,4 +37,20 @@ abstract final class AppShadows {
   }
 
   static List<BoxShadow> soft(BuildContext context) => card(context);
+
+  static List<BoxShadow> navBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+        blurRadius: 28,
+        offset: const Offset(0, 10),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
+      ),
+    ];
+  }
 }
