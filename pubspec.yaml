@@ -88,3 +88,4 @@ flutter:
     - env/
     - assets/fonts/
     - assets/lottie/
+    - assets/mock/

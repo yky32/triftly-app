@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
 import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/models/trip_models.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -51,18 +53,27 @@ class _View extends StatelessWidget {
   }
 
   Widget _buildLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) => Container(
-        height: 100,
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+    // Mock data for skeletonizer
+    final now = DateTime.now();
+    final mockTrip = Trip(
+      id: 'mock-1',
+      name: 'Loading...',
+      destination: '...',
+      startDate: now,
+      endDate: now.add(const Duration(days: 5)),
+      defaultCurrency: 'USD',
+      createdAt: now,
+    );
+
+    return Skeletonizer(
+      enabled: true,
+      ignoreContainers: false,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 3,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: TripCard(trip: mockTrip),
         ),
       ),
     );

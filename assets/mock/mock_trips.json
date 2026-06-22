@@ -1,0 +1,174 @@
+{
+  "trips": [
+    {
+      "id": "trip-001",
+      "name": "Tokyo Adventure 2025",
+      "destination": "Tokyo, Japan",
+      "start_date": "2025-04-10T00:00:00.000Z",
+      "end_date": "2025-04-15T00:00:00.000Z",
+      "default_currency": "JPY",
+      "buddies": [
+        {
+          "id": "buddy-001",
+          "name": "Wayne",
+          "avatar_color": "FF6B6B"
+        },
+        {
+          "id": "buddy-002",
+          "name": "Alice",
+          "avatar_color": "4ECDC4"
+        }
+      ],
+      "owner_token": "owner-abc123",
+      "share_token": "share-xyz789",
+      "created_at": "2025-01-15T00:00:00.000Z",
+      "days": [
+        {
+          "id": "day-001",
+          "trip_id": "trip-001",
+          "day_number": 1,
+          "title": "Arrival & Shinjuku",
+          "date": "2025-04-10T00:00:00.000Z",
+          "spots": [
+            {
+              "id": "spot-001",
+              "day_id": "day-001",
+              "trip_id": "trip-001",
+              "name": "Shinjuku Station",
+              "address": "3-38-1 Shinjuku, Shinjuku City, Tokyo",
+              "area": "Shinjuku",
+              "category": "transport",
+              "opening_hours": "05:00-23:30",
+              "estimated_duration": "1h",
+              "estimated_cost": "200",
+              "cost_currency": "JPY",
+              "latitude": 35.6895,
+              "longitude": 139.6917,
+              "notes": "Take Narita Express",
+              "order_index": 0
+            },
+            {
+              "id": "spot-002",
+              "day_id": "day-001",
+              "trip_id": "trip-001",
+              "name": "Omoide Yokocho",
+              "address": "1-2-2 Kabukicho, Shinjuku City, Tokyo",
+              "area": "Shinjuku",
+              "category": "food",
+              "opening_hours": "17:00-23:00",
+              "estimated_duration": "2h",
+              "estimated_cost": "3000",
+              "cost_currency": "JPY",
+              "latitude": 35.6944,
+              "longitude": 139.7036,
+              "notes": "Yakitori dinner",
+              "order_index": 1
+            }
+          ],
+          "expenses": [
+            {
+              "id": "expense-001",
+              "trip_id": "trip-001",
+              "day_id": "day-001",
+              "title": "Narita Express",
+              "amount": "3190",
+              "currency": "JPY",
+              "paid_by_id": "buddy-001",
+              "category": "transport",
+              "splits": [
+                {
+                  "id": "split-001",
+                  "expense_id": "expense-001",
+                  "buddy_id": "buddy-001",
+                  "split_type": "equal",
+                  "share_amount": "1595"
+                },
+                {
+                  "id": "split-002",
+                  "expense_id": "expense-001",
+                  "buddy_id": "buddy-002",
+                  "split_type": "equal",
+                  "share_amount": "1595"
+                }
+              ],
+              "created_at": "2025-04-10T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "day-002",
+          "trip_id": "trip-001",
+          "day_number": 2,
+          "title": "Shibuya & Harajuku",
+          "date": "2025-04-11T00:00:00.000Z",
+          "spots": [
+            {
+              "id": "spot-003",
+              "day_id": "day-002",
+              "trip_id": "trip-001",
+              "name": "Meiji Shrine",
+              "address": "1-1 Kamizono-cho, Shibuya City, Tokyo",
+              "area": "Harajuku",
+              "category": "attraction",
+              "opening_hours": "05:00-18:00",
+              "estimated_duration": "2h",
+              "estimated_cost": "500",
+              "cost_currency": "JPY",
+              "latitude": 35.6764,
+              "longitude": 139.6993,
+              "notes": "Morning visit",
+              "order_index": 0
+            },
+            {
+              "id": "spot-004",
+              "day_id": "day-002",
+              "trip_id": "trip-001",
+              "name": "Shibuya Crossing",
+              "address": "2-1 Dogenzaka, Shibuya City, Tokyo",
+              "area": "Shibuya",
+              "category": "attraction",
+              "opening_hours": "00:00-23:59",
+              "estimated_duration": "1h",
+              "estimated_cost": "0",
+              "cost_currency": "JPY",
+              "latitude": 35.6591,
+              "longitude": 139.7006,
+              "notes": "Famous scramble crossing",
+              "order_index": 1
+            }
+          ],
+          "expenses": []
+        }
+      ]
+    },
+    {
+      "id": "trip-002",
+      "name": "Kyoto Cultural Trip",
+      "destination": "Kyoto, Japan",
+      "start_date": "2025-05-20T00:00:00.000Z",
+      "end_date": "2025-05-25T00:00:00.000Z",
+      "default_currency": "JPY",
+      "buddies": [
+        {
+          "id": "buddy-003",
+          "name": "Wayne",
+          "avatar_color": "FF6B6B"
+        },
+        {
+          "id": "buddy-004",
+          "name": "Bob",
+          "avatar_color": "45B7D1"
+        },
+        {
+          "id": "buddy-005",
+          "name": "Carol",
+          "avatar_color": "96CEB4"
+        }
+      ],
+      "owner_token": "owner-def456",
+      "share_token": "share-uvw123",
+      "created_at": "2025-02-01T00:00:00.000Z",
+      "days": []
+    }
+  ]
+}

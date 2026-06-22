@@ -149,6 +149,22 @@ class TripDay extends Equatable {
     return '${months[date.month - 1]} ${date.day}';
   }
 
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'trip_id': tripId,
+        'day_number': dayNumber,
+        'title': title,
+        'date': date.toIso8601String(),
+      };
+
+  factory TripDay.fromMap(Map<String, dynamic> map) => TripDay(
+        id: map['id'] as String,
+        tripId: map['trip_id'] as String,
+        dayNumber: map['day_number'] as int,
+        title: map['title'] as String?,
+        date: DateTime.parse(map['date'] as String),
+      );
+
   @override
   List<Object?> get props => [id, tripId, dayNumber];
 }
@@ -220,6 +236,44 @@ class Spot extends Equatable {
         orderIndex: orderIndex ?? this.orderIndex,
       );
 
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'day_id': dayId,
+        'trip_id': tripId,
+        'name': name,
+        'address': address,
+        'area': area,
+        'category': category,
+        'opening_hours': openingHours,
+        'estimated_duration': estimatedDuration,
+        'estimated_cost': estimatedCost?.toString(),
+        'cost_currency': costCurrency,
+        'latitude': latitude,
+        'longitude': longitude,
+        'notes': notes,
+        'order_index': orderIndex,
+      };
+
+  factory Spot.fromMap(Map<String, dynamic> map) => Spot(
+        id: map['id'] as String,
+        dayId: map['day_id'] as String,
+        tripId: map['trip_id'] as String,
+        name: map['name'] as String,
+        address: map['address'] as String?,
+        area: map['area'] as String?,
+        category: map['category'] as String? ?? 'other',
+        openingHours: map['opening_hours'] as String?,
+        estimatedDuration: map['estimated_duration'] as String?,
+        estimatedCost: map['estimated_cost'] != null
+            ? Decimal.parse(map['estimated_cost'] as String)
+            : null,
+        costCurrency: map['cost_currency'] as String?,
+        latitude: map['latitude'] as double?,
+        longitude: map['longitude'] as double?,
+        notes: map['notes'] as String?,
+        orderIndex: map['order_index'] as int,
+      );
+
   @override
   List<Object?> get props => [id, dayId, name, orderIndex];
 }
@@ -251,6 +305,35 @@ class Expense extends Equatable {
 
   @override
   List<Object?> get props => [id, tripId, title, amount];
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'trip_id': tripId,
+        'day_id': dayId,
+        'title': title,
+        'amount': amount.toString(),
+        'currency': currency,
+        'paid_by_id': paidById,
+        'category': category,
+        'splits': splits.map((s) => s.toMap()).toList(),
+        'created_at': createdAt.toIso8601String(),
+      };
+
+  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
+        id: map['id'] as String,
+        tripId: map['trip_id'] as String,
+        dayId: map['day_id'] as String?,
+        title: map['title'] as String,
+        amount: Decimal.parse(map['amount'] as String),
+        currency: map['currency'] as String,
+        paidById: map['paid_by_id'] as String,
+        category: map['category'] as String? ?? 'other',
+        splits: (map['splits'] as List<dynamic>?)
+                ?.map((s) => ExpenseSplit.fromMap(s as Map<String, dynamic>))
+                .toList() ??
+            [],
+        createdAt: DateTime.parse(map['created_at'] as String),
+      );
 }
 
 class ExpenseSplit extends Equatable {
@@ -270,6 +353,25 @@ class ExpenseSplit extends Equatable {
 
   @override
   List<Object?> get props => [id, expenseId, buddyId];
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'expense_id': expenseId,
+        'buddy_id': buddyId,
+        'split_type': splitType.name,
+        'share_amount': shareAmount.toString(),
+      };
+
+  factory ExpenseSplit.fromMap(Map<String, dynamic> map) => ExpenseSplit(
+        id: map['id'] as String,
+        expenseId: map['expense_id'] as String,
+        buddyId: map['buddy_id'] as String,
+        splitType: SplitType.values.firstWhere(
+          (e) => e.name == map['split_type'],
+          orElse: () => SplitType.equal,
+        ),
+        shareAmount: Decimal.parse(map['share_amount'] as String),
+      );
 }
 
 enum SplitType { equal, percent, amount, share }
