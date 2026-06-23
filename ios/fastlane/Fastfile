@@ -462,7 +462,7 @@ platform :ios do
       end
     end
 
-    xcargs = "-allowProvisioningUpdates"
+    xcargs = "-allowProvisioningUpdates COMPILER_INDEX_STORE_ENABLE=NO"
     api_key_params = app_store_connect_api_key_params
     if api_key_params
       key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
