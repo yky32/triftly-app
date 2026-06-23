@@ -1,6 +1,5 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/constants/currency_options.dart';
 import '../../../../core/models/spend_overview_models.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -41,9 +40,9 @@ class SpendWalletTripRow extends StatelessWidget {
     return Pressable(
       onTap: () => SpendNavigation.openTripSpend(context, trip.id),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SpendCountryFlag(destination: trip.destination),
             const SizedBox(width: AppSpacing.sm),
@@ -51,49 +50,23 @@ class SpendWalletTripRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          trip.name,
-                          style: spendItemText(
-                            Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (trip.isInProgress) ...[
-                        const SizedBox(width: 8),
-                        const SpendInlineChip(label: 'Active'),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
                   Text(
-                    trip.destination,
+                    trip.name,
                     style: spendItemText(
-                      Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                      Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      SpendCurrencyIcon(currency: snapshot.currency),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$symbol${CurrencyUtils.formatDecimal(snapshot.tripTotal)} spent',
-                        style: spendItemText(
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: muted,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Your share $symbol${CurrencyUtils.formatDecimal(snapshot.myShare)}',
+                    style: spendItemText(
+                      Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -136,35 +109,6 @@ class SpendCountryFlag extends StatelessWidget {
   }
 }
 
-/// Small boxed currency flag shown before spent amount.
-class SpendCurrencyIcon extends StatelessWidget {
-  const SpendCurrencyIcon({required this.currency, super.key});
-
-  final String currency;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
-
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: border.withValues(alpha: 0.7)),
-      ),
-      child: Center(
-        child: Text(
-          CurrencyOptions.flagFor(currency),
-          style: const TextStyle(fontSize: 13, height: 1),
-        ),
-      ),
-    );
-  }
-}
-
 /// Trips section — grouped list card.
 class SpendWalletTrips extends StatelessWidget {
   const SpendWalletTrips({
@@ -180,27 +124,21 @@ class SpendWalletTrips extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SpendSectionTitle(title: 'Trips', count: snapshots.length),
-        SpendListCard(
-          child: Column(
-            children: [
-              for (var i = 0; i < snapshots.length; i++) ...[
-                if (i > 0)
-                  Divider(
-                    height: 1,
-                    indent: AppSpacing.md,
-                    endIndent: AppSpacing.md,
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  ),
-                SpendWalletTripRow(snapshot: snapshots[i]),
-              ],
-            ],
-          ),
-        ),
-      ],
+    return SpendListCard(
+      child: Column(
+        children: [
+          for (var i = 0; i < snapshots.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 1,
+                indent: AppSpacing.md,
+                endIndent: AppSpacing.md,
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
+            SpendWalletTripRow(snapshot: snapshots[i]),
+          ],
+        ],
+      ),
     );
   }
 }

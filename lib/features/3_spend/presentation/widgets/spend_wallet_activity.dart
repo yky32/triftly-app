@@ -1,22 +1,28 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/models/spend_overview_models.dart';
-import '../../../../core/navigation/spend_navigation.dart';
+import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import '../../../spend_shared/bottom_sheets/spend_expense_detail_sheet.dart';
 import 'spend_wallet_accent.dart';
 
 class SpendWalletActivity extends StatelessWidget {
   const SpendWalletActivity({
     required this.transactions,
     this.maxItems = 8,
+    this.totalCount,
+    this.onSeeAll,
     super.key,
   });
 
   final List<SpendTransactionLine> transactions;
   final int maxItems;
+  final int? totalCount;
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +30,21 @@ class SpendWalletActivity extends StatelessWidget {
 
     final items = transactions.take(maxItems).toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final countLabel = totalCount ?? transactions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SpendSectionTitle(title: 'Recent', count: items.length),
+        Row(
+          children: [
+            Expanded(child: SpendSectionTitle(title: 'Recent', count: countLabel)),
+            if (onSeeAll != null && (totalCount ?? transactions.length) > maxItems)
+              TextButton(
+                onPressed: onSeeAll,
+                child: const Text('See all'),
+              ),
+          ],
+        ),
         SpendListCard(
           child: Column(
             children: [
@@ -40,10 +56,7 @@ class SpendWalletActivity extends StatelessWidget {
                     endIndent: AppSpacing.md,
                     color: isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
-                _ActivityRow(
-                  line: items[i],
-                  onTap: () => SpendNavigation.openTripSpend(context, items[i].trip.id),
-                ),
+                _ActivityRow(line: items[i]),
               ],
             ],
           ),
@@ -53,14 +66,29 @@ class SpendWalletActivity extends StatelessWidget {
   }
 }
 
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({
-    required this.line,
-    required this.onTap,
-  });
+/// Single recent expense row on the global Spend page.
+class SpendActivityRow extends StatelessWidget {
+  const SpendActivityRow({required this.line, super.key});
 
   final SpendTransactionLine line;
-  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => _ActivityBody(line: line);
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.line});
+
+  final SpendTransactionLine line;
+
+  @override
+  Widget build(BuildContext context) => _ActivityBody(line: line);
+}
+
+class _ActivityBody extends StatelessWidget {
+  const _ActivityBody({required this.line});
+
+  final SpendTransactionLine line;
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +101,35 @@ class _ActivityRow extends StatelessWidget {
       orElse: () => SpotCategory.other,
     );
     final accent = AppColors.categoryColor(category);
-    final amountLabel = '−${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}';
+    final symbol = CurrencyUtils.symbolFor(line.currency);
+    final myShare = line.myShare;
+    final iPaid = line.iPaid;
+
+    final payer = trip.buddies.firstWhere(
+      (b) => b.id == expense.paidById,
+      orElse: () => const Buddy(id: '', name: 'Someone'),
+    );
+
+    final (amountLabel, amountColor, subtitle) = switch (true) {
+      _ when iPaid => (
+          '$symbol${CurrencyUtils.formatDecimal(expense.amount)}',
+          AppColors.primaryDark,
+          'You paid · ${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
+        ),
+      _ when myShare > Decimal.zero => (
+          '$symbol${CurrencyUtils.formatDecimal(myShare)}',
+          AppColors.error,
+          '${payer.name} paid · your share · ${DateFormatters.shortDate(expense.createdAt)}',
+        ),
+      _ => (
+          '$symbol${CurrencyUtils.formatDecimal(expense.amount)}',
+          muted,
+          '${payer.name} paid · ${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
+        ),
+    };
 
     return Pressable(
-      onTap: onTap,
+      onTap: () => SpendExpenseDetailSheet.show(context, line: line),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -103,7 +156,7 @@ class _ActivityRow extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
+                            subtitle,
                             style: spendItemText(
                               Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
                             ),
@@ -116,7 +169,7 @@ class _ActivityRow extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: isDark ? 0.16 : 0.08),
+                        color: amountColor.withValues(alpha: isDark ? 0.16 : 0.08),
                         borderRadius: BorderRadius.circular(AppRadii.sm),
                       ),
                       child: Text(
@@ -124,7 +177,7 @@ class _ActivityRow extends StatelessWidget {
                         style: spendItemText(
                           Theme.of(context).textTheme.labelMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.error,
+                                color: amountColor,
                                 letterSpacing: -0.2,
                               ),
                         ),

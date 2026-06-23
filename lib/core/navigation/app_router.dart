@@ -6,6 +6,7 @@ import '../../features/1_explore/presentation/pages/explore_page.dart';
 import '../../features/2_tools/presentation/pages/tools_page.dart';
 import '../../features/4_profile/presentation/pages/profile_page.dart';
 import '../../features/3_spend/presentation/pages/spend_page.dart';
+import '../../features/3_spend/presentation/pages/spend_recent_all_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/6_trip_detail/presentation/pages/shared_trip_view_page.dart';
@@ -68,6 +69,13 @@ final appRouter = GoRouter(
               path: AppPage.spend.path,
               name: AppPage.spend.name,
               builder: (context, state) => const SpendPage(),
+              routes: [
+                GoRoute(
+                  path: 'recent',
+                  name: 'spend_recent',
+                  builder: (context, state) => const SpendRecentAllPage(),
+                ),
+              ],
             ),
           ],
         ),

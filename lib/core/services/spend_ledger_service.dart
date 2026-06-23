@@ -27,22 +27,26 @@ class SpendLedgerService {
     String meName = SpendMeIdentity.defaultName,
   }) async {
     final trips = _store.allTrips();
+    final details = await Future.wait(trips.map((trip) => _store.loadDetail(trip.id)));
+
     final snapshots = <TripSpendSnapshot>[];
     final recent = <SpendTransactionLine>[];
 
-    for (final trip in trips) {
-      final detail = await _store.loadDetail(trip.id);
+    for (var i = 0; i < trips.length; i++) {
+      final trip = trips[i];
+      final detail = details[i];
       if (detail == null) continue;
 
+      final me = SpendMeIdentity.buddyForTrip(trip, name: meName);
       final snapshot = _snapshotForTrip(
         trip: trip,
         expenses: detail.expenses,
-        meName: meName,
+        me: me,
       );
       snapshots.add(snapshot);
 
       for (final expense in detail.expenses) {
-        recent.add(SpendTransactionLine(expense: expense, trip: trip));
+        recent.add(SpendTransactionLine(expense: expense, trip: trip, meBuddy: me));
       }
     }
 
@@ -50,22 +54,22 @@ class SpendLedgerService {
 
     return GlobalSpendOverview(
       tripSnapshots: snapshots,
-      recentTransactions: recent.take(20).toList(),
+      recentTransactions: recent,
       meDisplayName: meName,
     );
   }
 
   TripSpendSnapshot snapshotForTrip(Trip trip, List<Expense> expenses, {String meName = SpendMeIdentity.defaultName}) {
-    return _snapshotForTrip(trip: trip, expenses: expenses, meName: meName);
+    final me = SpendMeIdentity.buddyForTrip(trip, name: meName);
+    return _snapshotForTrip(trip: trip, expenses: expenses, me: me);
   }
 
   TripSpendSnapshot _snapshotForTrip({
     required Trip trip,
     required List<Expense> expenses,
-    required String meName,
+    required Buddy? me,
   }) {
     final currency = trip.defaultCurrency;
-    final me = SpendMeIdentity.buddyForTrip(trip, name: meName);
 
     final tripTotal = expenses.fold<Decimal>(
       Decimal.zero,

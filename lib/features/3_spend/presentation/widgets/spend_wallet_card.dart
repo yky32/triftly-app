@@ -22,7 +22,7 @@ class SpendWalletCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final radius = BorderRadius.circular(AppRadii.lg);
 
-    final heroAmount = summary.isSettled ? summary.myShare : summary.net.abs();
+    final heroAmount = summary.isSettled ? Decimal.zero : summary.net.abs();
     final sign = summary.isSettled
         ? SpendSign.neutral
         : summary.net > Decimal.zero
@@ -133,14 +133,27 @@ class SpendWalletCard extends StatelessWidget {
                         child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        'Wallet',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Wallet',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
+                            Text(
+                              'As ${summary.meDisplayName}',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                    fontSize: 10,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
                       _GlassChip(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         child: Text(
@@ -155,6 +168,14 @@ class SpendWalletCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
+                  Text(
+                    '${summary.activeTripCount} active · ${summary.expenseCount} expenses',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
                   _HeroStatusBadge(label: heroBadgeLabel, sign: sign),
                   const SizedBox(height: 10),
                   Text(
@@ -184,6 +205,31 @@ class SpendWalletCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _OweStat(
+                            icon: Icons.payments_outlined,
+                            label: 'You paid',
+                            amount: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myPaid)}',
+                            tint: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                        Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.2)),
+                        Expanded(
+                          child: _OweStat(
+                            icon: Icons.receipt_long_outlined,
+                            label: 'Your share',
+                            amount: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myShare)}',
+                            tint: Colors.white.withValues(alpha: 0.9),
+                            alignEnd: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _GlassInset(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _OweStat(
                             icon: Icons.add_circle_outline_rounded,
                             label: 'Owed to you',
                             amount: '+${summary.symbol}${CurrencyUtils.formatDecimal(summary.owedToMe)}',
@@ -203,6 +249,47 @@ class SpendWalletCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (summary.isMultiCurrency) ...[
+                    const SizedBox(height: 10),
+                    _GlassInset(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Other currencies',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Colors.white60,
+                                  fontSize: 11,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          ...summary.otherCurrencies.map(
+                            (bucket) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                '${bucket.currency} · net ${bucket.net > Decimal.zero ? '+' : bucket.net < Decimal.zero ? '−' : ''}'
+                                '${bucket.symbol}${CurrencyUtils.formatDecimal(bucket.net.abs())}',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          if (summary.hkdEquivalentNet != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              summary.hkdEquivalentNet!,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
