@@ -52,6 +52,7 @@ Two sheet types share the same chrome:
 | `SheetIconFieldRow` | Icon tile + inline field |
 | `SheetCurrencyChipPicker` | Flag + symbol chips only |
 | `SheetChoiceChipRow` | 2–3 mode segments |
+| `SheetNumericHeroField` | Large amount / result with symbol affix |
 | `SheetPrimaryButton` | Utility sheet CTA |
 | `SheetResultBanner` | Converted / lookup result |
 
@@ -78,3 +79,6 @@ Two sheet types share the same chrome:
 - Nav label **Tools**; page title **Tools** (title-only AppBar).
 - Sections: Travel kits → Essentials → Japan → More.
 - Working tools open utility sheets following pattern B above.
+- **Live** tools: Currency, Units, Time zones, Mapcode (`ToolsPage.isLive`).
+- **Coming soon** tiles: `opacity 0.38`, `Pressable(onTap: null)`, **Soon** badge — no snackbar.
+- Converter amounts: `SheetNumericHeroField` (large tabular figures + affix).

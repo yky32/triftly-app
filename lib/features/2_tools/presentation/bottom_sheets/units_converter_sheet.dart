@@ -75,39 +75,29 @@ class _UnitsConverterSheetState extends State<UnitsConverterSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  switch (_kind) {
-                    _UnitKind.distance => 'Kilometers → Miles',
-                    _UnitKind.temperature => 'Celsius → Fahrenheit',
-                    _UnitKind.weight => 'Kilograms → Pounds',
+                SheetNumericHeroField(
+                  label: switch (_kind) {
+                    _UnitKind.distance => 'Kilometers',
+                    _UnitKind.temperature => 'Celsius',
+                    _UnitKind.weight => 'Kilograms',
                   },
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                  trailingAffix: conversion.from,
+                  controller: _inputController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  onChanged: () => setState(() {}),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: SheetInlineField(
-                        controller: _inputController,
-                        hint: 'Value',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                        onChanged: () => setState(() {}),
-                        textInputAction: TextInputAction.done,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      conversion.from,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: AppSpacing.lg),
+                const SheetSoftDivider(),
                 const SizedBox(height: AppSpacing.md),
-                SheetResultBanner(
-                  text: conversion.result == null
-                      ? 'Enter a value'
-                      : '${conversion.result} ${conversion.to}',
+                SheetNumericHeroField(
+                  label: switch (_kind) {
+                    _UnitKind.distance => 'Miles',
+                    _UnitKind.temperature => 'Fahrenheit',
+                    _UnitKind.weight => 'Pounds',
+                  },
+                  trailingAffix: conversion.to,
+                  readOnly: true,
+                  value: conversion.result ?? '—',
                 ),
               ],
             ),

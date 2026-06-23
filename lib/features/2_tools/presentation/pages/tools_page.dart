@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/section_header.dart';
@@ -23,6 +24,15 @@ enum TravelToolId {
 
 class ToolsPage extends StatelessWidget {
   const ToolsPage({super.key});
+
+  static const _liveTools = {
+    TravelToolId.currency,
+    TravelToolId.units,
+    TravelToolId.timeZone,
+    TravelToolId.mapcode,
+  };
+
+  static bool isLive(TravelToolId id) => _liveTools.contains(id);
 
   static const _kits = [
     _TravelKit(
@@ -124,6 +134,8 @@ class ToolsPage extends StatelessWidget {
   ];
 
   static void openTool(BuildContext context, TravelToolId id) {
+    if (!isLive(id)) return;
+
     switch (id) {
       case TravelToolId.currency:
         CurrencyConverterSheet.show(context);
@@ -138,12 +150,7 @@ class ToolsPage extends StatelessWidget {
       case TravelToolId.phraseBook:
       case TravelToolId.documents:
       case TravelToolId.tipCalculator:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Coming soon'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        break;
     }
   }
 
@@ -214,6 +221,8 @@ class _TravelTool {
   final String title;
   final String subtitle;
   final Color tint;
+
+  bool get isLive => ToolsPage.isLive(id);
 }
 
 class _ToolGrid extends StatelessWidget {
@@ -238,6 +247,33 @@ class _ToolGrid extends StatelessWidget {
   }
 }
 
+class _SoonBadge extends StatelessWidget {
+  const _SoonBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+      ),
+      child: Text(
+        'Soon',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+        ),
+      ),
+    );
+  }
+}
+
 class _KitCard extends StatelessWidget {
   const _KitCard({required this.kit});
 
@@ -247,40 +283,43 @@ class _KitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Pressable(
-      onTap: () {},
-      child: SizedBox(
-        width: 168,
-        child: AppCard(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: kit.tint.withValues(alpha: isDark ? 0.22 : 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
+    return _DimmedWhenDisabled(
+      enabled: false,
+      child: Pressable(
+        onTap: null,
+        child: SizedBox(
+          width: 168,
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: kit.tint.withValues(alpha: isDark ? 0.22 : 0.12),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(kit.emoji, style: const TextStyle(fontSize: 22)),
                 ),
-                alignment: Alignment.center,
-                child: Text(kit.emoji, style: const TextStyle(fontSize: 22)),
-              ),
-              const Spacer(),
-              Text(
-                kit.title,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                kit.subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const Spacer(),
+                Text(
+                  kit.title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  kit.subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -296,38 +335,72 @@ class _ToolTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final enabled = tool.isLive;
 
-    return Pressable(
-      onTap: () => ToolsPage.openTool(context, tool.id),
-      child: AppCard(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: tool.tint.withValues(alpha: isDark ? 0.22 : 0.12),
-                borderRadius: BorderRadius.circular(AppRadii.sm),
+    return _DimmedWhenDisabled(
+      enabled: enabled,
+      child: Pressable(
+        onTap: enabled ? () => ToolsPage.openTool(context, tool.id) : null,
+        child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: tool.tint.withValues(alpha: isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                ),
+                child: Icon(tool.icon, size: 20, color: tool.tint),
               ),
-              child: Icon(tool.icon, size: 20, color: tool.tint),
-            ),
-            const Spacer(),
-            Text(
-              tool.title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              tool.subtitle,
-              style: Theme.of(context).textTheme.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const Spacer(),
+              Text(
+                tool.title,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                tool.subtitle,
+                style: Theme.of(context).textTheme.bodySmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _DimmedWhenDisabled extends StatelessWidget {
+  const _DimmedWhenDisabled({
+    required this.enabled,
+    required this.child,
+  });
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: enabled ? 1 : 0.38,
+          child: child,
+        ),
+        if (!enabled)
+          const Positioned(
+            top: 6,
+            right: 6,
+            child: _SoonBadge(),
+          ),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/currency_options.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_rates.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
@@ -43,10 +44,25 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
         _to = temp;
       });
 
+  String _formatResult(double value) {
+    if (value >= 1000) {
+      final whole = value.round().toString();
+      final buffer = StringBuffer();
+      for (var i = 0; i < whole.length; i++) {
+        if (i > 0 && (whole.length - i) % 3 == 0) buffer.write(',');
+        buffer.write(whole[i]);
+      }
+      return buffer.toString();
+    }
+    return value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final fromOption = CurrencyOptions.find(_from)!;
     final toOption = CurrencyOptions.find(_to)!;
     final result = _result;
+    final rate = CurrencyRates.convert(amount: 1, from: _from, to: _to);
 
     return SheetScaffold(
       showCloseButton: false,
@@ -59,47 +75,30 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('From', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: AppSpacing.sm),
                 SheetCurrencyChipPicker(
                   selected: _from,
                   onSelected: (code) => setState(() => _from = code),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                SheetInlineField(
+                SheetNumericHeroField(
+                  label: 'You pay',
+                  leadingAffix: fromOption.symbol,
                   controller: _amountController,
-                  hint: 'Amount',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: () => setState(() {}),
-                  textInputAction: TextInputAction.done,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Center(
-                  child: Pressable(
-                    onTap: _swap,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.swap_vert_rounded, size: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text('To', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.lg),
+                _SwapRow(onSwap: _swap, rateLabel: '1 ${fromOption.code} ≈ ${_formatResult(rate)} ${toOption.code}'),
+                const SizedBox(height: AppSpacing.lg),
                 SheetCurrencyChipPicker(
                   selected: _to,
                   onSelected: (code) => setState(() => _to = code),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                SheetResultBanner(
-                  text: result == null
-                      ? 'Enter an amount'
-                      : '${toOption.symbol} ${result.toStringAsFixed(result >= 100 ? 0 : 2)}',
+                SheetNumericHeroField(
+                  label: 'You get',
+                  leadingAffix: toOption.symbol,
+                  readOnly: true,
+                  value: result == null ? '—' : _formatResult(result),
                 ),
               ],
             ),
@@ -112,6 +111,51 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SwapRow extends StatelessWidget {
+  const _SwapRow({required this.onSwap, required this.rateLabel});
+
+  final VoidCallback onSwap;
+  final String rateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Expanded(child: Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          child: Column(
+            children: [
+              Pressable(
+                onTap: onSwap,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryMuted.withValues(alpha: isDark ? 0.35 : 0.55),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.swap_vert_rounded, size: 18, color: AppColors.primaryDark),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                rateLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
+      ],
     );
   }
 }

@@ -148,6 +148,106 @@ class SheetHeroField extends StatelessWidget {
   }
 }
 
+class SheetNumericHeroField extends StatelessWidget {
+  const SheetNumericHeroField({
+    this.label,
+    this.leadingAffix,
+    this.trailingAffix,
+    this.controller,
+    this.value,
+    this.onChanged,
+    this.readOnly = false,
+    this.keyboardType,
+    super.key,
+  }) : assert(controller != null || value != null, 'Provide controller or value');
+
+  final String? label;
+  final String? leadingAffix;
+  final String? trailingAffix;
+  final TextEditingController? controller;
+  final String? value;
+  final VoidCallback? onChanged;
+  final bool readOnly;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    final textStyle = TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -1.2,
+      height: 1.05,
+      color: readOnly ? muted : primary,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    final affixStyle = TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.4,
+      color: readOnly ? tertiary : AppColors.primaryDark,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(
+            label!,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: tertiary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            if (leadingAffix != null) ...[
+              Text(leadingAffix!, style: affixStyle),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: readOnly
+                  ? Text(value ?? '—', style: textStyle, maxLines: 1, overflow: TextOverflow.ellipsis)
+                  : TextField(
+                      controller: controller,
+                      onChanged: onChanged == null ? null : (_) => onChanged!(),
+                      keyboardType: keyboardType ?? const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.done,
+                      style: textStyle,
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        hintStyle: textStyle.copyWith(color: tertiary.withValues(alpha: 0.45)),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+            ),
+            if (trailingAffix != null) ...[
+              const SizedBox(width: 8),
+              Text(trailingAffix!, style: affixStyle.copyWith(fontSize: 18)),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class SheetIconFieldRow extends StatelessWidget {
   const SheetIconFieldRow({
     required this.icon,
