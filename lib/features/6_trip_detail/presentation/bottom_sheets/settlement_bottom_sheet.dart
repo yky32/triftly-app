@@ -4,6 +4,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/split_calculator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
@@ -34,10 +35,20 @@ class SettlementBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final currency = trip.defaultCurrency;
     final symbol = CurrencyUtils.symbolFor(currency);
-    final total = expenses.fold<Decimal>(Decimal.zero, (sum, e) => sum + e.amount);
+    final total = expenses.fold<Decimal>(
+      Decimal.zero,
+      (sum, e) =>
+          sum +
+          CurrencyConversion.toTripCurrency(
+            amount: e.amount,
+            currency: e.currency,
+            tripCurrency: currency,
+          ),
+    );
     final transactions = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: trip.buddies,
+      settleCurrency: currency,
     );
     final balances = _buddyBalances(expenses);
     final allSettled = transactions.isEmpty;
@@ -206,7 +217,8 @@ class SettlementBottomSheet extends StatelessWidget {
     for (final buddy in trip.buddies) {
       balances[buddy.id] = Decimal.zero;
     }
-    for (final expense in expenses) {
+    for (final raw in expenses) {
+      final expense = SplitCalculator.normalizeExpense(raw, trip.defaultCurrency);
       balances[expense.paidById] =
           (balances[expense.paidById] ?? Decimal.zero) + expense.amount;
       for (final split in expense.splits) {
