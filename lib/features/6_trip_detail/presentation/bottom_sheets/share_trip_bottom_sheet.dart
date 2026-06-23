@@ -9,7 +9,6 @@ import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
-import '../../../../core/widgets/triftly_motion.dart';
 
 class ShareTripBottomSheet extends StatelessWidget {
   const ShareTripBottomSheet({required this.trip, super.key});
@@ -25,6 +24,25 @@ class ShareTripBottomSheet extends StatelessWidget {
 
   String get _link => ShareLink.forTrip(trip);
 
+  void _copyLink(BuildContext context) {
+    HapticFeedback.lightImpact();
+    Clipboard.setData(ClipboardData(text: _link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link copied'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _shareLink() {
+    HapticFeedback.lightImpact();
+    Share.share(
+      'Join my trip "${trip.name}" on Triftly\n$_link',
+      subject: trip.name,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -36,51 +54,36 @@ class ShareTripBottomSheet extends StatelessWidget {
         children: [
           const SheetSectionHeader(title: 'Share trip', caption: 'View-only link'),
           const SizedBox(height: AppSpacing.md),
-          SheetSoftCard(
+          SheetGradientHero(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  _link,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
+                    const SheetIconTile(icon: Icons.link_rounded),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _ShareActionChip(
-                        icon: Icons.copy_rounded,
-                        label: 'Copy link',
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: _link));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Link copied'),
-                              behavior: SnackBarBehavior.floating,
+                      child: Text(
+                        'Share link',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                          );
-                        },
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: _ShareActionChip(
-                        icon: Icons.ios_share_outlined,
-                        label: 'Share',
-                        onTap: () => Share.share(
-                          'Join my trip "${trip.name}" on Triftly\n$_link',
-                          subject: trip.name,
-                        ),
-                      ),
+                    IconButton(
+                      tooltip: 'Copy link',
+                      icon: const Icon(Icons.copy_rounded, size: 20),
+                      onPressed: () => _copyLink(context),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                SheetResultBanner(text: _link, caption: trip.name),
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          SheetPrimaryButton(label: 'Share link', onPressed: _shareLink),
           const SizedBox(height: AppSpacing.md),
           Text(
             'Anyone with this link can view your itinerary and expenses.',
@@ -90,7 +93,7 @@ class ShareTripBottomSheet extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),
-          const SheetSectionHeader(title: 'QR code'),
+          const SheetSectionHeader(title: 'QR code', caption: 'Scan to open'),
           const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -111,45 +114,6 @@ class ShareTripBottomSheet extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ShareActionChip extends StatelessWidget {
-  const _ShareActionChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
       ),
     );
   }
