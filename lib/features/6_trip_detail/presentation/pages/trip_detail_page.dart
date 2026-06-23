@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/today_plan_utils.dart';
+import '../../../../core/widgets/glass_icon_button.dart';
+import '../../../../core/widgets/glass_toggle.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
@@ -74,6 +78,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
     setState(() => _summaryExpanded = false);
   }
 
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/plan');
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TripDetailBloc, TripDetailState>(
@@ -90,20 +102,51 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
 
         return Scaffold(
           appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leadingWidth: 52,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Center(
+                child: GlassToolbarCluster(
+                  children: [
+                    GlassIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      tooltip: 'Back',
+                      bare: true,
+                      size: 30,
+                      onPressed: () => _handleBack(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             title: TriftlyAppBarTitle(title: trip.name, subtitle: trip.destination),
             actions: [
-              IconButton(
-                icon: Icon(
-                  _summaryExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Center(
+                  child: GlassToolbarCluster(
+                    children: [
+                      Semantics(
+                        label: _summaryExpanded ? 'Hide trip details' : 'Show trip details',
+                        child: GlassToggle(
+                          value: _summaryExpanded,
+                          bare: true,
+                          onChanged: (value) => setState(() => _summaryExpanded = value),
+                        ),
+                      ),
+                      if (!widget.readOnly)
+                        GlassIconButton(
+                          icon: Icons.ios_share_rounded,
+                          tooltip: 'Share trip',
+                          bare: true,
+                          size: 30,
+                          onPressed: () => ShareTripBottomSheet.show(context, trip),
+                        ),
+                    ],
+                  ),
                 ),
-                tooltip: _summaryExpanded ? 'Hide trip details' : 'View trip details',
-                onPressed: () => setState(() => _summaryExpanded = !_summaryExpanded),
               ),
-              if (!widget.readOnly)
-                IconButton(
-                  icon: const Icon(Icons.ios_share_outlined),
-                  onPressed: () => ShareTripBottomSheet.show(context, trip),
-                ),
             ],
           ),
           body: NotificationListener<ScrollNotification>(
@@ -162,6 +205,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                               child: PlanDayChipsBar(
                                 days: state.days,
                                 selectedIndex: state.selectedDayIndex,
+                                todayIndex: TodayPlanUtils.todayDayIndex(trip, state.days),
                                 onDaySelected: (index) => context
                                     .read<TripDetailBloc>()
                                     .add(TripDetailDaySelected(index: index)),

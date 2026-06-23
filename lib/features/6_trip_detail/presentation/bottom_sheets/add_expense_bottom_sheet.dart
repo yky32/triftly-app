@@ -10,9 +10,16 @@ import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../bloc/trip_detail_bloc.dart';
 
 class AddExpenseBottomSheet extends StatefulWidget {
-  const AddExpenseBottomSheet({required this.trip, super.key});
+  const AddExpenseBottomSheet({
+    required this.trip,
+    this.prefillTitle,
+    this.prefillCategory,
+    super.key,
+  });
 
   final Trip trip;
+  final String? prefillTitle;
+  final String? prefillCategory;
 
   @override
   State<AddExpenseBottomSheet> createState() => _AddExpenseBottomSheetState();
@@ -28,6 +35,12 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
   @override
   void initState() {
     super.initState();
+    if (widget.prefillTitle != null) {
+      _titleController.text = widget.prefillTitle!;
+    }
+    if (widget.prefillCategory != null) {
+      _category = widget.prefillCategory!;
+    }
     if (widget.trip.buddies.isNotEmpty) {
       _paidById = widget.trip.buddies.first.id;
       _splitBuddyIds.addAll(widget.trip.buddies.map((b) => b.id));

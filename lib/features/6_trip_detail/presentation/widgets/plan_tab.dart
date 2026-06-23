@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_formatters.dart';
+import '../../../../core/utils/maps_launcher.dart';
+import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
+import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
+import 'plan_day_empty_state.dart';
+import 'today_now_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class PlanTab extends StatelessWidget {
@@ -40,19 +45,31 @@ class PlanTab extends StatelessWidget {
         final departureFlight =
             selectedDay != null ? _departureFlightForDay(selectedDay, trip, days) : null;
         final hasPlanContent = daySpots.isNotEmpty || arrivalFlight != null || departureFlight != null;
-        final timelineCount =
-            (arrivalFlight != null ? 1 : 0) +
-            daySpots.length +
-            (departureFlight != null ? 1 : 0) +
-            (readOnly ? 0 : 1);
+        final isToday = TodayPlanUtils.isSelectedDayToday(trip, days, state.selectedDayIndex);
+        final nextSpot = isToday ? TodayPlanUtils.nextSpotNow(daySpots) : null;
 
         return TripDetailTabScroll(
           key: key,
           slivers: [
-            if (selectedDay != null)
+            if (nextSpot != null)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  child: TodayNowCard(
+                    spot: nextSpot,
+                    defaultCurrency: trip.defaultCurrency,
+                  ),
+                ),
+              ),
+            if (selectedDay != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    nextSpot != null ? AppSpacing.md : AppSpacing.sm,
+                    AppSpacing.lg,
+                    0,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -62,7 +79,9 @@ class PlanTab extends StatelessWidget {
                           children: [
                             Text(
                               selectedDay.displayTitleLine,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -84,16 +103,29 @@ class PlanTab extends StatelessWidget {
                   ),
                 ),
               ),
-            if (!hasPlanContent)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: EmptyState(
-                  icon: Icons.place_outlined,
-                  title: 'Nothing planned',
-                  subtitle: readOnly ? 'No spots on this day yet' : 'Add spots for this day',
-                  action: readOnly ? null : () => _showAddSpot(context),
-                  actionLabel: readOnly ? null : 'Add spot',
+            if (!hasPlanContent && selectedDay != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: PlanDayEmptyState(
+                    day: selectedDay,
+                    readOnly: readOnly,
+                    onAddSpot: readOnly ? null : () => _showAddSpot(context),
+                    onAddSuggestion: readOnly
+                        ? null
+                        : (category) => _showAddSpot(context, initialCategory: category),
+                  ),
                 ),
+              )
+            else if (!hasPlanContent)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: SizedBox.shrink(),
               )
             else
               TripDetailTabScroll.listBottomPadding(
@@ -105,44 +137,35 @@ class PlanTab extends StatelessWidget {
                     AppSpacing.lg,
                     AppSpacing.md,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: timelineCount,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      var cursor = index;
-
-                      if (arrivalFlight != null) {
-                        if (cursor == 0) {
-                          return FlightLegCard(
-                            isOutbound: arrivalFlight.isOutbound,
-                            leg: arrivalFlight.leg,
-                          );
-                        }
-                        cursor--;
-                      }
-
-                      if (cursor < daySpots.length) {
-                        return _SpotCard(
-                          spot: daySpots[cursor],
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      if (arrivalFlight != null) ...[
+                        FlightLegCard(
+                          isOutbound: arrivalFlight.isOutbound,
+                          leg: arrivalFlight.leg,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                      if (daySpots.isNotEmpty)
+                        _SpotList(
+                          trip: trip,
+                          dayId: selectedDay!.id,
+                          spots: daySpots,
                           defaultCurrency: trip.defaultCurrency,
-                        );
-                      }
-                      cursor -= daySpots.length;
-
-                      if (departureFlight != null) {
-                        if (cursor == 0) {
-                          return FlightLegCard(
-                            isOutbound: departureFlight.isOutbound,
-                            leg: departureFlight.leg,
-                          );
-                        }
-                        cursor--;
-                      }
-
-                      if (readOnly) return const SizedBox.shrink();
-
-                      return _AddSpotButton(onTap: () => _showAddSpot(context));
-                    },
+                          readOnly: readOnly,
+                        ),
+                      if (departureFlight != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        FlightLegCard(
+                          isOutbound: departureFlight.isOutbound,
+                          leg: departureFlight.leg,
+                        ),
+                      ],
+                      if (!readOnly) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _AddSpotButton(onTap: () => _showAddSpot(context)),
+                      ],
+                    ]),
                   ),
                 ),
               ),
@@ -167,7 +190,7 @@ class PlanTab extends StatelessWidget {
     return _DayFlight(isOutbound: false, leg: leg);
   }
 
-  void _showAddSpot(BuildContext context) {
+  void _showAddSpot(BuildContext context, {Spot? editSpot, String? initialCategory}) {
     if (readOnly) return;
     final tripDetailBloc = context.read<TripDetailBloc>();
 
@@ -179,8 +202,72 @@ class PlanTab extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: tripDetailBloc,
-        child: const AddSpotBottomSheet(),
+        child: AddSpotBottomSheet(editSpot: editSpot, initialCategory: initialCategory),
       ),
+    );
+  }
+}
+
+class _SpotList extends StatelessWidget {
+  const _SpotList({
+    required this.trip,
+    required this.dayId,
+    required this.spots,
+    required this.defaultCurrency,
+    required this.readOnly,
+  });
+
+  final Trip trip;
+  final String dayId;
+  final List<Spot> spots;
+  final String defaultCurrency;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    if (readOnly) {
+      return Column(
+        children: [
+          for (final spot in spots) ...[
+            _SpotCard(
+              spot: spot,
+              defaultCurrency: defaultCurrency,
+              trip: trip,
+              readOnly: true,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ],
+      );
+    }
+
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: spots.length,
+      onReorder: (oldIndex, newIndex) {
+        HapticFeedback.lightImpact();
+        context.read<TripDetailBloc>().add(
+              TripDetailSpotsReordered(dayId: dayId, oldIndex: oldIndex, newIndex: newIndex),
+            );
+      },
+      itemBuilder: (context, index) {
+        final spot = spots[index];
+        return ReorderableDelayedDragStartListener(
+          key: ValueKey(spot.id),
+          index: index,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _SpotCard(
+              spot: spot,
+              defaultCurrency: defaultCurrency,
+              trip: trip,
+              readOnly: false,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -222,10 +309,17 @@ class _AddSpotButton extends StatelessWidget {
 }
 
 class _SpotCard extends StatelessWidget {
-  const _SpotCard({required this.spot, required this.defaultCurrency});
+  const _SpotCard({
+    required this.spot,
+    required this.defaultCurrency,
+    required this.trip,
+    required this.readOnly,
+  });
 
   final Spot spot;
   final String defaultCurrency;
+  final Trip trip;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -235,50 +329,80 @@ class _SpotCard extends StatelessWidget {
     );
     final categoryColor = AppColors.categoryColor(category);
 
-    return AppCard(
+    final card = AppCard(
       padding: EdgeInsets.zero,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 4,
-              color: categoryColor,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(category.emoji, style: const TextStyle(fontSize: 22)),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            spot.name,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          if (_meta(spot).isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
+      child: Opacity(
+        opacity: spot.visited ? 0.55 : 1,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                color: spot.visited ? AppColors.textTertiary : categoryColor,
+              ),
+              if (!readOnly)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Icon(Icons.drag_handle_rounded, color: AppColors.textTertiary, size: 20),
+                  ),
+                ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(category.emoji, style: const TextStyle(fontSize: 22)),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    spot.name,
+                                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          decoration: spot.visited ? TextDecoration.lineThrough : null,
+                                        ),
+                                  ),
+                                ),
+                                if (spot.visited)
+                                  const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
+                              ],
+                            ),
+                            if (_meta(spot).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
+                            ],
+                            if (spot.area != null) ...[
+                              const SizedBox(height: 2),
+                              Text('📍 ${spot.area!}', style: Theme.of(context).textTheme.bodySmall),
+                            ],
                           ],
-                          if (spot.area != null) ...[
-                            const SizedBox(height: 2),
-                            Text('📍 ${spot.area!}', style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      if (!readOnly) _SpotActionsMenu(spot: spot, trip: trip),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+
+    if (readOnly) return card;
+
+    return GestureDetector(
+      onLongPress: () => _showQuickExpense(context),
+      child: card,
     );
   }
 
@@ -289,4 +413,90 @@ class _SpotCard extends StatelessWidget {
       if (spot.estimatedCost != null) '$defaultCurrency ${spot.estimatedCost}',
     ].join(' · ');
   }
+
+  void _showQuickExpense(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    final bloc = context.read<TripDetailBloc>();
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => BlocProvider.value(
+        value: bloc,
+        child: AddExpenseBottomSheet(
+          trip: trip,
+          prefillTitle: spot.name,
+          prefillCategory: spot.category,
+        ),
+      ),
+    );
+  }
 }
+
+class _SpotActionsMenu extends StatelessWidget {
+  const _SpotActionsMenu({required this.spot, required this.trip});
+
+  final Spot spot;
+  final Trip trip;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_SpotAction>(
+      icon: const Icon(Icons.more_vert_rounded, size: 20),
+      onSelected: (action) => _handleAction(context, action),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: _SpotAction.maps, child: Text('Open in Maps')),
+        PopupMenuItem(
+          value: _SpotAction.visited,
+          child: Text(spot.visited ? 'Mark not visited' : 'Mark visited'),
+        ),
+        const PopupMenuItem(value: _SpotAction.expense, child: Text('Add expense')),
+        const PopupMenuItem(value: _SpotAction.edit, child: Text('Edit spot')),
+      ],
+    );
+  }
+
+  void _handleAction(BuildContext context, _SpotAction action) {
+    final bloc = context.read<TripDetailBloc>();
+    switch (action) {
+      case _SpotAction.maps:
+        HapticFeedback.lightImpact();
+        MapsLauncher.openSpot(spot);
+      case _SpotAction.visited:
+        HapticFeedback.selectionClick();
+        bloc.add(TripDetailSpotVisitedToggled(spotId: spot.id));
+      case _SpotAction.expense:
+        showModalBottomSheet(
+          context: context,
+          useRootNavigator: true,
+          isScrollControlled: true,
+          showDragHandle: false,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) => BlocProvider.value(
+            value: bloc,
+            child: AddExpenseBottomSheet(
+              trip: trip,
+              prefillTitle: spot.name,
+              prefillCategory: spot.category,
+            ),
+          ),
+        );
+      case _SpotAction.edit:
+        showModalBottomSheet(
+          context: context,
+          useRootNavigator: true,
+          isScrollControlled: true,
+          showDragHandle: false,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) => BlocProvider.value(
+            value: bloc,
+            child: AddSpotBottomSheet(editSpot: spot),
+          ),
+        );
+    }
+  }
+}
+
+enum _SpotAction { maps, visited, expense, edit }

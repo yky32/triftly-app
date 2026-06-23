@@ -9,12 +9,14 @@ class PlanDayChipsBar extends StatelessWidget {
     required this.days,
     required this.selectedIndex,
     required this.onDaySelected,
+    this.todayIndex,
     super.key,
   });
 
   final List<TripDay> days;
   final int selectedIndex;
   final ValueChanged<int> onDaySelected;
+  final int? todayIndex;
 
   static const _padBottom = AppSpacing.sm * 0.85;
 
@@ -48,6 +50,7 @@ class PlanDayChipsBar extends StatelessWidget {
                         PlanDayChip(
                           day: days[i],
                           isSelected: i == selectedIndex,
+                          isToday: todayIndex == i,
                           onSelected: () => onDaySelected(i),
                         ),
                       ],
@@ -68,11 +71,13 @@ class PlanDayChip extends StatelessWidget {
     required this.day,
     required this.isSelected,
     required this.onSelected,
+    this.isToday = false,
     super.key,
   });
 
   final TripDay day;
   final bool isSelected;
+  final bool isToday;
   final VoidCallback onSelected;
 
   IconData? get _icon => switch (day.title) {
@@ -101,7 +106,23 @@ class PlanDayChip extends StatelessWidget {
     }
 
     return FilterChip(
-      label: Text(day.displayTitle),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isToday) ...[
+            Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: const BoxDecoration(
+                color: AppColors.warning,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+          Text(day.displayTitle),
+        ],
+      ),
       selected: isSelected,
       onSelected: (_) => onSelected(),
       showCheckmark: false,
