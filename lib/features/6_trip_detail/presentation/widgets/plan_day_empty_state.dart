@@ -8,14 +8,12 @@ class PlanDayEmptyState extends StatelessWidget {
   const PlanDayEmptyState({
     required this.day,
     this.readOnly = false,
-    this.onAddSpot,
     this.onAddSuggestion,
     super.key,
   });
 
   final TripDay day;
   final bool readOnly;
-  final VoidCallback? onAddSpot;
   final ValueChanged<String>? onAddSuggestion;
 
   static const _suggestions = [
@@ -35,17 +33,11 @@ class PlanDayEmptyState extends StatelessWidget {
           : '${day.displayTitleLine} · ${DateFormatters.weekdayDate(day.date)}',
       readOnly: readOnly,
       suggestions: _suggestions,
-      onSuggestionTap: readOnly
+      onSuggestionTap: readOnly || onAddSuggestion == null
           ? null
           : (value) {
-              if (value != null && onAddSuggestion != null) {
-                onAddSuggestion!(value);
-              } else {
-                onAddSpot?.call();
-              }
+              if (value != null) onAddSuggestion!(value);
             },
-      actionLabel: readOnly ? null : 'Add spot',
-      onAction: readOnly ? null : onAddSpot,
     );
   }
 }
