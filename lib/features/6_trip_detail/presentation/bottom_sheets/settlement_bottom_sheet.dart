@@ -5,7 +5,9 @@ import '../../../../core/services/split_calculator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
 class SettlementBottomSheet extends StatelessWidget {
   const SettlementBottomSheet({
@@ -22,13 +24,9 @@ class SettlementBottomSheet extends StatelessWidget {
     required Trip trip,
     required List<Expense> expenses,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SettlementBottomSheet(trip: trip, expenses: expenses),
+    return TriftlyBottomSheet.show(
+      context,
+      child: SettlementBottomSheet(trip: trip, expenses: expenses),
     );
   }
 
@@ -42,10 +40,12 @@ class SettlementBottomSheet extends StatelessWidget {
     final balances = _buddyBalances(expenses);
 
     return SheetScaffold(
-      title: 'Settlement',
+      showCloseButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SheetSectionHeader(title: 'Settlement'),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Total: ${trip.defaultCurrency} ${CurrencyUtils.formatDecimal(total)}',
             style: Theme.of(context).textTheme.titleMedium,

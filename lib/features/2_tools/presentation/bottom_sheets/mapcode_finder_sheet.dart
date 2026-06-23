@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/mapcode_lookup.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 
 enum _MapcodeMode { addressToCode, codeToAddress }
@@ -13,13 +14,7 @@ class MapcodeFinderSheet extends StatefulWidget {
   const MapcodeFinderSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const MapcodeFinderSheet(),
-    );
+    return TriftlyBottomSheet.show(context, child: const MapcodeFinderSheet());
   }
 
   @override
@@ -50,7 +45,8 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
     FocusScope.of(context).unfocus();
   }
 
-  void _setMode(_MapcodeMode mode) {
+  void _setMode(int index) {
+    final mode = index == 0 ? _MapcodeMode.addressToCode : _MapcodeMode.codeToAddress;
     if (_mode == mode) return;
     setState(() {
       _mode = mode;
@@ -65,13 +61,17 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SheetScaffold(
-      title: 'Mapcode finder',
-      subtitle: 'Japan car-nav short codes',
-      onClose: () => Navigator.of(context).pop(),
+      showCloseButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ModePicker(mode: _mode, onChanged: _setMode),
+          const SheetSectionHeader(title: 'Mapcode finder', caption: 'Japan car-nav short codes'),
+          const SizedBox(height: AppSpacing.md),
+          SheetChoiceChipRow(
+            options: const ['Address → Mapcode', 'Mapcode → Address'],
+            selectedIndex: _mode == _MapcodeMode.addressToCode ? 0 : 1,
+            onSelected: _setMode,
+          ),
           const SizedBox(height: AppSpacing.lg),
           SheetSoftCard(
             child: Column(
@@ -82,23 +82,19 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                TextField(
-                  controller: _queryController,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _search(),
-                  decoration: InputDecoration(
-                    hintText: _mode == _MapcodeMode.addressToCode
+                SheetIconFieldRow(
+                  icon: Icons.pin_drop_outlined,
+                  field: SheetInlineField(
+                    controller: _queryController,
+                    hint: _mode == _MapcodeMode.addressToCode
                         ? 'e.g. Tokyo Tower, Shibuya'
                         : 'e.g. 349 246 831*52',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-                    isDense: true,
+                    textInputAction: TextInputAction.search,
+                    onChanged: () => setState(() {}),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                FilledButton(
-                  onPressed: _search,
-                  child: const Text('Look up'),
-                ),
+                SheetPrimaryButton(label: 'Look up', onPressed: _search),
               ],
             ),
           ),
@@ -144,85 +140,6 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
             }).toList(),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ModePicker extends StatelessWidget {
-  const _ModePicker({required this.mode, required this.onChanged});
-
-  final _MapcodeMode mode;
-  final ValueChanged<_MapcodeMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _ModeChip(
-            label: 'Address → Mapcode',
-            selected: mode == _MapcodeMode.addressToCode,
-            onTap: () => onChanged(_MapcodeMode.addressToCode),
-            isDark: isDark,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _ModeChip(
-            label: 'Mapcode → Address',
-            selected: mode == _MapcodeMode.codeToAddress,
-            onTap: () => onChanged(_MapcodeMode.codeToAddress),
-            isDark: isDark,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    return Pressable(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
-              : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border.all(
-            color: selected ? AppColors.primary : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.primaryDark : AppColors.textSecondary,
-          ),
-        ),
       ),
     );
   }

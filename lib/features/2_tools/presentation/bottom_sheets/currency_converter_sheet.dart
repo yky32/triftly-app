@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/currency_options.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_rates.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
+import '../../../../core/widgets/triftly_motion.dart';
 
 class CurrencyConverterSheet extends StatefulWidget {
   const CurrencyConverterSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const CurrencyConverterSheet(),
-    );
+    return TriftlyBottomSheet.show(context, child: const CurrencyConverterSheet());
   }
 
   @override
@@ -50,68 +45,61 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final fromOption = CurrencyOptions.find(_from)!;
     final toOption = CurrencyOptions.find(_to)!;
     final result = _result;
 
     return SheetScaffold(
-      title: 'Currency',
-      subtitle: 'Offline demo rates',
-      onClose: () => Navigator.of(context).pop(),
+      showCloseButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SheetSectionHeader(title: 'Currency', caption: 'Offline demo rates'),
+          const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _CurrencyRow(
-                  label: 'From',
-                  code: _from,
-                  option: fromOption,
+                Text('From', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: AppSpacing.sm),
+                SheetCurrencyChipPicker(
+                  selected: _from,
                   onSelected: (code) => setState(() => _from = code),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                TextField(
+                SheetInlineField(
                   controller: _amountController,
+                  hint: 'Amount',
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Amount',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-                    isDense: true,
-                  ),
+                  onChanged: () => setState(() {}),
+                  textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Center(
-                  child: IconButton.filledTonal(
-                    onPressed: _swap,
-                    icon: const Icon(Icons.swap_vert_rounded),
-                    tooltip: 'Swap currencies',
+                  child: Pressable(
+                    onTap: _swap,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.swap_vert_rounded, size: 20),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _CurrencyRow(
-                  label: 'To',
-                  code: _to,
-                  option: toOption,
+                Text('To', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: AppSpacing.sm),
+                SheetCurrencyChipPicker(
+                  selected: _to,
                   onSelected: (code) => setState(() => _to = code),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryMuted.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                  ),
-                  child: Text(
-                    result == null
-                        ? 'Enter an amount'
-                        : '${toOption.symbol} ${result.toStringAsFixed(result >= 100 ? 0 : 2)}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center,
-                  ),
+                SheetResultBanner(
+                  text: result == null
+                      ? 'Enter an amount'
+                      : '${toOption.symbol} ${result.toStringAsFixed(result >= 100 ? 0 : 2)}',
                 ),
               ],
             ),
@@ -124,50 +112,6 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CurrencyRow extends StatelessWidget {
-  const _CurrencyRow({
-    required this.label,
-    required this.code,
-    required this.option,
-    required this.onSelected,
-  });
-
-  final String label;
-  final String code;
-  final CurrencyOption option;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: AppSpacing.sm),
-        DropdownButtonFormField<String>(
-          value: code,
-          isExpanded: true,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-            isDense: true,
-          ),
-          items: CurrencyOptions.all
-              .map(
-                (c) => DropdownMenuItem(
-                  value: c.code,
-                  child: Text('${c.flag} ${c.code} (${c.symbol})'),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) onSelected(value);
-          },
-        ),
-      ],
     );
   }
 }

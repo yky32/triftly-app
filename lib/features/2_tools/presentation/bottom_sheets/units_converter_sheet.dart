@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
 enum _UnitKind { distance, temperature, weight }
 
@@ -10,13 +10,7 @@ class UnitsConverterSheet extends StatefulWidget {
   const UnitsConverterSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const UnitsConverterSheet(),
-    );
+    return TriftlyBottomSheet.show(context, child: const UnitsConverterSheet());
   }
 
   @override
@@ -27,11 +21,15 @@ class _UnitsConverterSheetState extends State<UnitsConverterSheet> {
   _UnitKind _kind = _UnitKind.distance;
   final _inputController = TextEditingController(text: '10');
 
+  static const _kindLabels = ['Distance', 'Temp', 'Weight'];
+
   @override
   void dispose() {
     _inputController.dispose();
     super.dispose();
   }
+
+  int get _kindIndex => _UnitKind.values.indexOf(_kind);
 
   ({String from, String to, String? result}) get _conversion {
     final value = double.tryParse(_inputController.text.trim());
@@ -61,20 +59,16 @@ class _UnitsConverterSheetState extends State<UnitsConverterSheet> {
     final conversion = _conversion;
 
     return SheetScaffold(
-      title: 'Units',
-      subtitle: 'Common travel conversions',
-      onClose: () => Navigator.of(context).pop(),
+      showCloseButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SegmentedButton<_UnitKind>(
-            segments: const [
-              ButtonSegment(value: _UnitKind.distance, label: Text('Distance'), icon: Icon(Icons.straighten_rounded)),
-              ButtonSegment(value: _UnitKind.temperature, label: Text('Temp'), icon: Icon(Icons.thermostat_rounded)),
-              ButtonSegment(value: _UnitKind.weight, label: Text('Weight'), icon: Icon(Icons.fitness_center_rounded)),
-            ],
-            selected: {_kind},
-            onSelectionChanged: (set) => setState(() => _kind = set.first),
+          const SheetSectionHeader(title: 'Units', caption: 'Common travel conversions'),
+          const SizedBox(height: AppSpacing.md),
+          SheetChoiceChipRow(
+            options: _kindLabels,
+            selectedIndex: _kindIndex,
+            onSelected: (index) => setState(() => _kind = _UnitKind.values[index]),
           ),
           const SizedBox(height: AppSpacing.lg),
           SheetSoftCard(
@@ -90,31 +84,30 @@ class _UnitsConverterSheetState extends State<UnitsConverterSheet> {
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                TextField(
-                  controller: _inputController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    suffixText: conversion.from,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-                    isDense: true,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: SheetInlineField(
+                        controller: _inputController,
+                        hint: 'Value',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        onChanged: () => setState(() {}),
+                        textInputAction: TextInputAction.done,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      conversion.from,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryMuted.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                  ),
-                  child: Text(
-                    conversion.result == null
-                        ? 'Enter a value'
-                        : '${conversion.result} ${conversion.to}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center,
-                  ),
+                SheetResultBanner(
+                  text: conversion.result == null
+                      ? 'Enter a value'
+                      : '${conversion.result} ${conversion.to}',
                 ),
               ],
             ),

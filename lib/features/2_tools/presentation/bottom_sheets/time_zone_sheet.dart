@@ -6,18 +6,14 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/time_zone_options.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
+import '../../../../core/widgets/triftly_motion.dart';
 
 class TimeZoneSheet extends StatefulWidget {
   const TimeZoneSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const TimeZoneSheet(),
-    );
+    return TriftlyBottomSheet.show(context, child: const TimeZoneSheet());
   }
 
   @override
@@ -68,22 +64,22 @@ class _TimeZoneSheetState extends State<TimeZoneSheet> {
         : '${diffHours.abs().toStringAsFixed(diffHours == diffHours.roundToDouble() ? 0 : 1)}h ${diffHours > 0 ? 'ahead' : 'behind'}';
 
     return SheetScaffold(
-      title: 'Time zones',
-      subtitle: 'Home vs destination',
-      onClose: () => Navigator.of(context).pop(),
+      showCloseButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ZonePicker(
-            label: 'Home',
-            value: _homeId,
-            onChanged: (id) => setState(() => _homeId = id),
-          ),
+          const SheetSectionHeader(title: 'Time zones', caption: 'Home vs destination'),
           const SizedBox(height: AppSpacing.md),
-          _ZonePicker(
+          _ZonePickerCard(
+            label: 'Home',
+            selectedId: _homeId,
+            onSelected: (id) => setState(() => _homeId = id),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _ZonePickerCard(
             label: 'Destination',
-            value: _awayId,
-            onChanged: (id) => setState(() => _awayId = id),
+            selectedId: _awayId,
+            onSelected: (id) => setState(() => _awayId = id),
           ),
           const SizedBox(height: AppSpacing.lg),
           Row(
@@ -113,39 +109,61 @@ class _TimeZoneSheetState extends State<TimeZoneSheet> {
   }
 }
 
-class _ZonePicker extends StatelessWidget {
-  const _ZonePicker({
+class _ZonePickerCard extends StatelessWidget {
+  const _ZonePickerCard({
     required this.label,
-    required this.value,
-    required this.onChanged,
+    required this.selectedId,
+    required this.onSelected,
   });
 
   final String label;
-  final String value;
-  final ValueChanged<String> onChanged;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: AppSpacing.sm),
-        DropdownButtonFormField<String>(
-          value: value,
-          isExpanded: true,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
-            isDense: true,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SheetSoftCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: TimeZoneOptions.all.map((zone) {
+              final selected = zone.id == selectedId;
+              return Pressable(
+                onTap: () => onSelected(zone.id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+                        : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    border: Border.all(
+                      color: selected ? AppColors.primary : Colors.transparent,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    zone.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-          items: TimeZoneOptions.all
-              .map((z) => DropdownMenuItem(value: z.id, child: Text('${z.label} (${z.city})')))
-              .toList(),
-          onChanged: (id) {
-            if (id != null) onChanged(id);
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
