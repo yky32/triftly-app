@@ -3,16 +3,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/constants/app_page.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../bloc/spend_overview_bloc.dart';
-import '../widgets/spend_me_hero_card.dart';
-import '../widgets/spend_recent_transactions.dart';
-import '../widgets/spend_trip_balance_card.dart';
+import '../spend_wallet_summary.dart';
+import '../widgets/spend_wallet_activity.dart';
+import '../widgets/spend_wallet_balance_strip.dart';
+import '../widgets/spend_wallet_card.dart';
+import '../widgets/spend_wallet_trip_row.dart';
 
-/// Global Spend page — personal view across all trips.
+/// Global Spend page — personal wallet across all trips.
 class SpendPage extends StatelessWidget {
   const SpendPage({super.key});
 
@@ -39,12 +41,12 @@ class _View extends StatelessWidget {
       body: BlocBuilder<SpendOverviewBloc, SpendOverviewState>(
         builder: (context, state) {
           if (state.isLoading && state.overview == null) {
-            return _buildLoading();
+            return _buildLoading(context);
           }
           if (state.errorMessage != null) {
             return EmptyState(
               icon: Icons.error_outline_rounded,
-              title: 'Could not load spending',
+              title: 'Could not load wallet',
               subtitle: state.errorMessage!,
               action: () => context.read<SpendOverviewBloc>().add(const SpendOverviewReloadRequested()),
               actionLabel: 'Retry',
@@ -55,13 +57,14 @@ class _View extends StatelessWidget {
           if (overview == null || overview.isEmpty) {
             return EmptyState(
               icon: Icons.account_balance_wallet_outlined,
-              title: 'No spending yet',
-              subtitle: 'Open a trip and log expenses — they will show up here across all your travels.',
+              title: 'Your wallet is empty',
+              subtitle: 'Log expenses in a trip and they will appear here.',
               action: () => context.go(AppPage.plan.path),
               actionLabel: 'Go to Trips',
             );
           }
 
+          final summary = SpendWalletSummary.from(overview);
           final trips = overview.tripsWithSpending;
 
           return RefreshIndicator(
@@ -72,25 +75,45 @@ class _View extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.md,
+                AppSpacing.sm,
                 AppSpacing.lg,
                 AppSpacing.listBottomInset(context),
               ),
               children: [
-                SpendMeHeroCard(overview: overview),
-                const SizedBox(height: AppSpacing.lg),
-                const SectionHeader(title: 'By trip'),
-                const SizedBox(height: AppSpacing.sm),
-                ...trips.map(
-                  (snap) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: SpendTripBalanceCard(snapshot: snap),
-                  ),
-                ),
+                SpendWalletCard(summary: summary, ownerName: overview.meDisplayName),
                 const SizedBox(height: AppSpacing.md),
-                SpendRecentTransactions(transactions: overview.recentTransactions),
-                const SizedBox(height: AppSpacing.lg),
-                _FutureIdeasCard(),
+                SpendWalletBalanceStrip(summary: summary),
+                if (trips.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'Trip wallets',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground(context),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < trips.length; i++) ...[
+                          if (i > 0)
+                            Divider(
+                              height: 1,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight,
+                            ),
+                          SpendWalletTripRow(snapshot: trips[i]),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.xl),
+                SpendWalletActivity(transactions: overview.recentTransactions),
               ],
             ),
           );
@@ -99,68 +122,27 @@ class _View extends StatelessWidget {
     );
   }
 
-  Widget _buildLoading() {
+  Widget _buildLoading(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Skeletonizer(
       child: ListView(
         padding: AppSpacing.page,
-        children: List.generate(
-          4,
-          (_) => Container(
-            height: 120,
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        children: [
+          Container(
+            height: 196,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FutureIdeasCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Coming next',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
+            ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          const _IdeaRow(icon: Icons.receipt_long_outlined, label: 'Expense detail sheet (tap → read → edit)'),
-          const _IdeaRow(icon: Icons.people_outline_rounded, label: 'Per-buddy paid / owed breakdown'),
-          const _IdeaRow(icon: Icons.filter_list_rounded, label: 'Search & filter transactions'),
-          const _IdeaRow(icon: Icons.notifications_outlined, label: 'Settlement reminders'),
-        ],
-      ),
-    );
-  }
-}
-
-class _IdeaRow extends StatelessWidget {
-  const _IdeaRow({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
     );
