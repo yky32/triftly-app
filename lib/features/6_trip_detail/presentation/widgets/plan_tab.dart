@@ -14,8 +14,7 @@ import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
 import 'plan_day_empty_state.dart';
-import 'today_now_card.dart';
-import 'today_spend_card.dart';
+import 'today_plan_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class PlanTab extends StatelessWidget {
@@ -54,28 +53,19 @@ class PlanTab extends StatelessWidget {
         return TripDetailTabScroll(
           key: key,
           slivers: [
-            if (nextSpot != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
-                  child: TodayNowCard(
-                    spot: nextSpot,
-                    defaultCurrency: trip.defaultCurrency,
-                  ),
-                ),
-              ),
             if (isToday && selectedDay != null)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
-                    nextSpot != null ? AppSpacing.md : AppSpacing.sm,
+                    AppSpacing.sm,
                     AppSpacing.lg,
                     0,
                   ),
-                  child: TodaySpendCard(
+                  child: TodayPlanCard(
                     trip: trip,
                     todayDay: selectedDay,
+                    nextSpot: nextSpot,
                     todayTotal: TodayPlanUtils.todaySpendingTotal(
                       trip: trip,
                       days: days,
@@ -98,7 +88,7 @@ class PlanTab extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
-                    (nextSpot != null || isToday) ? AppSpacing.md : AppSpacing.sm,
+                    isToday ? AppSpacing.md : AppSpacing.sm,
                     AppSpacing.lg,
                     0,
                   ),
