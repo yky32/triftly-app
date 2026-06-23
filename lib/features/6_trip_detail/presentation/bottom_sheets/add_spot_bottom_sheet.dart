@@ -13,9 +13,10 @@ import '../../../../core/widgets/trip_time_picker_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 
 class AddSpotBottomSheet extends StatefulWidget {
-  const AddSpotBottomSheet({this.editSpot, super.key});
+  const AddSpotBottomSheet({this.editSpot, this.initialCategory, super.key});
 
   final Spot? editSpot;
+  final String? initialCategory;
 
   @override
   State<AddSpotBottomSheet> createState() => _AddSpotBottomSheetState();
@@ -39,18 +40,23 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
   void initState() {
     super.initState();
     final spot = widget.editSpot;
-    if (spot == null) return;
+    if (spot != null) {
+      _nameController.text = spot.name;
+      _addressController.text = spot.address ?? '';
+      _notesController.text = spot.notes ?? '';
+      _category = spot.category;
+      _duration = spot.estimatedDuration;
+      _startTime = SpotTimeUtils.parseStartTime(spot.openingHours);
+      final endMatch = RegExp(r'-(\d{1,2}:\d{2})$').firstMatch(spot.openingHours ?? '');
+      if (endMatch != null) {
+        final parts = endMatch.group(1)!.split(':');
+        _endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      }
+      return;
+    }
 
-    _nameController.text = spot.name;
-    _addressController.text = spot.address ?? '';
-    _notesController.text = spot.notes ?? '';
-    _category = spot.category;
-    _duration = spot.estimatedDuration;
-    _startTime = SpotTimeUtils.parseStartTime(spot.openingHours);
-    final endMatch = RegExp(r'-(\d{1,2}:\d{2})$').firstMatch(spot.openingHours ?? '');
-    if (endMatch != null) {
-      final parts = endMatch.group(1)!.split(':');
-      _endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    if (widget.initialCategory != null) {
+      _category = widget.initialCategory!;
     }
   }
 

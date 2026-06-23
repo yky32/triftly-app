@@ -8,12 +8,12 @@ import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
+import 'plan_day_empty_state.dart';
 import 'today_now_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
@@ -103,16 +103,29 @@ class PlanTab extends StatelessWidget {
                   ),
                 ),
               ),
-            if (!hasPlanContent)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: EmptyState(
-                  icon: Icons.place_outlined,
-                  title: 'Nothing planned',
-                  subtitle: readOnly ? 'No spots on this day yet' : 'Add spots for this day',
-                  action: readOnly ? null : () => _showAddSpot(context),
-                  actionLabel: readOnly ? null : 'Add spot',
+            if (!hasPlanContent && selectedDay != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: PlanDayEmptyState(
+                    day: selectedDay,
+                    readOnly: readOnly,
+                    onAddSpot: readOnly ? null : () => _showAddSpot(context),
+                    onAddSuggestion: readOnly
+                        ? null
+                        : (category) => _showAddSpot(context, initialCategory: category),
+                  ),
                 ),
+              )
+            else if (!hasPlanContent)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: SizedBox.shrink(),
               )
             else
               TripDetailTabScroll.listBottomPadding(
@@ -177,7 +190,7 @@ class PlanTab extends StatelessWidget {
     return _DayFlight(isOutbound: false, leg: leg);
   }
 
-  void _showAddSpot(BuildContext context, {Spot? editSpot}) {
+  void _showAddSpot(BuildContext context, {Spot? editSpot, String? initialCategory}) {
     if (readOnly) return;
     final tripDetailBloc = context.read<TripDetailBloc>();
 
@@ -189,7 +202,7 @@ class PlanTab extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: tripDetailBloc,
-        child: AddSpotBottomSheet(editSpot: editSpot),
+        child: AddSpotBottomSheet(editSpot: editSpot, initialCategory: initialCategory),
       ),
     );
   }
