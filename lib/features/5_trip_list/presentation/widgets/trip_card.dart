@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/destination_flags.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
 
@@ -45,7 +46,7 @@ class TripCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      _destinationEmoji(trip.destination),
+                      DestinationFlags.forDestination(trip.destination),
                       style: const TextStyle(fontSize: 24),
                     ),
                   ),
@@ -138,20 +139,6 @@ class TripCard extends StatelessWidget {
   String _formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}';
-  }
-
-  String _destinationEmoji(String dest) {
-    final lower = dest.toLowerCase();
-    if (lower.contains('tokyo')) return '🗼';
-    if (lower.contains('seoul')) return '🏔️';
-    if (lower.contains('bangkok')) return '🌴';
-    if (lower.contains('osaka')) return '🏯';
-    if (lower.contains('bali')) return '🏝️';
-    if (lower.contains('london')) return '🇬🇧';
-    if (lower.contains('paris')) return '🇫🇷';
-    if (lower.contains('taipei')) return '🇹🇼';
-    if (lower.contains('hong kong')) return '🇭🇰';
-    return '✈️';
   }
 }
 

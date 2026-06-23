@@ -20,6 +20,7 @@ abstract final class CurrencyOptions {
     CurrencyOption(code: 'TWD', flag: '🇹🇼', symbol: 'NT\$', label: 'Taiwan'),
     CurrencyOption(code: 'KRW', flag: '🇰🇷', symbol: '₩', label: 'Korea'),
     CurrencyOption(code: 'THB', flag: '🇹🇭', symbol: '฿', label: 'Thailand'),
+    CurrencyOption(code: 'IDR', flag: '🇮🇩', symbol: 'Rp', label: 'Indonesia'),
     CurrencyOption(code: 'SGD', flag: '🇸🇬', symbol: 'S\$', label: 'Singapore'),
     CurrencyOption(code: 'CNY', flag: '🇨🇳', symbol: '¥', label: 'China'),
     CurrencyOption(code: 'USD', flag: '🇺🇸', symbol: '\$', label: 'United States'),
@@ -33,4 +34,6 @@ abstract final class CurrencyOptions {
     }
     return null;
   }
+
+  static String flagFor(String code) => find(code)?.flag ?? '🌐';
 }

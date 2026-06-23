@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:decimal/decimal.dart';
 import 'package:uuid/uuid.dart';
 import '../models/trip_models.dart';
@@ -45,10 +46,12 @@ class TripDetailData {
       );
 }
 
-class TripStore {
+class TripStore extends ChangeNotifier {
   TripStore._();
 
   static final TripStore instance = TripStore._();
+
+  void _notifyLedgerChanged() => notifyListeners();
 
   final List<Trip> _createdTrips = [];
   final Map<String, TripDetailData> _sessionDetails = {};
@@ -113,6 +116,7 @@ class TripStore {
     final detail = _sessionDetails[tripId];
     if (detail == null) return;
     _sessionDetails[tripId] = detail.copyWith(expenses: [...detail.expenses, expense]);
+    _notifyLedgerChanged();
   }
 
   void updateExpense(String tripId, Expense expense) {
@@ -120,6 +124,7 @@ class TripStore {
     if (detail == null) return;
     final expenses = detail.expenses.map((e) => e.id == expense.id ? expense : e).toList();
     _sessionDetails[tripId] = detail.copyWith(expenses: expenses);
+    _notifyLedgerChanged();
   }
 
   void removeExpense(String tripId, String expenseId) {
@@ -128,6 +133,7 @@ class TripStore {
     _sessionDetails[tripId] = detail.copyWith(
       expenses: detail.expenses.where((e) => e.id != expenseId).toList(),
     );
+    _notifyLedgerChanged();
   }
 
   void updateSpot(String tripId, Spot spot) {

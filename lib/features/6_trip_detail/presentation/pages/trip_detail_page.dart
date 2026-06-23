@@ -21,10 +21,12 @@ import '../widgets/trip_detail_summary.dart';
 class TripDetailPage extends StatelessWidget {
   final String tripId;
   final bool readOnly;
+  final int initialTabIndex;
 
   const TripDetailPage({
     required this.tripId,
     this.readOnly = false,
+    this.initialTabIndex = 0,
     super.key,
   });
 
@@ -32,15 +34,16 @@ class TripDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => TripDetailBloc(tripId: tripId)..add(TripDetailLoadRequested()),
-      child: _View(readOnly: readOnly),
+      child: _View(readOnly: readOnly, initialTabIndex: initialTabIndex),
     );
   }
 }
 
 class _View extends StatefulWidget {
-  const _View({this.readOnly = false});
+  const _View({this.readOnly = false, this.initialTabIndex = 0});
 
   final bool readOnly;
+  final int initialTabIndex;
 
   @override
   State<_View> createState() => _ViewState();
@@ -53,7 +56,11 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, 2),
+    );
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) setState(() {});
     });

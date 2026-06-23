@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/navigation/app_router.dart';
+import 'features/3_spend/bloc/spend_overview_bloc.dart';
 
 class TripApp extends StatelessWidget {
   const TripApp({required this.themeController, super.key});
@@ -15,13 +17,16 @@ class TripApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: themeController,
         builder: (context, _) {
-          return MaterialApp.router(
-            title: 'Triftly',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeController.themeMode,
-            routerConfig: appRouter,
+          return BlocProvider(
+            create: (_) => SpendOverviewBloc()..add(const SpendOverviewLoadRequested()),
+            child: MaterialApp.router(
+              title: 'Triftly',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: themeController.themeMode,
+              routerConfig: appRouter,
+            ),
           );
         },
       ),
