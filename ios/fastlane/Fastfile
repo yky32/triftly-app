@@ -223,7 +223,7 @@ def prune_certificates_of_type(type, keep:, revoked_ids:)
   revoke_list = sorted[0...(sorted.length - keep)]
   revoke_list.each do |cert|
     UI.message("Revoking #{type} certificate #{cert.display_name} (#{cert.id})")
-    Spaceship::ConnectAPI::Certificate.delete(certificate_id: cert.id)
+    cert.delete!
     revoked_ids << cert.id
   end
 end
