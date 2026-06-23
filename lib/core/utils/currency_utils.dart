@@ -32,7 +32,10 @@ abstract final class CurrencyUtils {
     final rate = _ratesToHkd[currency];
     if (rate == null) return null;
     final hkd = amount * Decimal.parse(rate.toString());
-    final symbol = CurrencyOptions.find('HKD')?.symbol ?? 'HK\$';
+    final symbol = symbolFor('HKD');
     return '≈ $symbol${formatDecimal(hkd)}';
   }
+
+  static String symbolFor(String currency) =>
+      CurrencyOptions.find(currency)?.symbol ?? currency;
 }
