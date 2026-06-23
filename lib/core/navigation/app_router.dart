@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/app_page.dart';
 import 'scaffold_with_nav_bar.dart';
@@ -6,11 +5,10 @@ import 'page_transitions.dart';
 import '../../features/1_explore/presentation/pages/explore_page.dart';
 import '../../features/2_tools/presentation/pages/tools_page.dart';
 import '../../features/4_profile/presentation/pages/profile_page.dart';
+import '../../features/3_spend/presentation/pages/spend_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/6_trip_detail/presentation/pages/shared_trip_view_page.dart';
-import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/triftly_app_bar_title.dart';
 
 final appRouter = GoRouter(
   initialLocation: AppPage.plan.path,
@@ -45,9 +43,18 @@ final appRouter = GoRouter(
                   name: 'trip_detail',
                   pageBuilder: (context, state) {
                     final tripId = state.pathParameters['tripId']!;
+                    final tab = state.uri.queryParameters['tab'];
+                    final initialTabIndex = switch (tab) {
+                      'spend' => 1,
+                      'map' => 2,
+                      _ => 0,
+                    };
                     return triftlyPage(
                       state: state,
-                      child: TripDetailPage(tripId: tripId),
+                      child: TripDetailPage(
+                        tripId: tripId,
+                        initialTabIndex: initialTabIndex,
+                      ),
                     );
                   },
                 ),
@@ -60,7 +67,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: AppPage.spend.path,
               name: AppPage.spend.name,
-              builder: (context, state) => const _SpendPlaceholder(),
+              builder: (context, state) => const SpendPage(),
             ),
           ],
         ),
@@ -87,22 +94,3 @@ final appRouter = GoRouter(
   ],
 );
 
-class _SpendPlaceholder extends StatelessWidget {
-  const _SpendPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Spend')),
-      body: EmptyState(
-        icon: Icons.account_balance_wallet_outlined,
-        title: 'Track spending',
-        subtitle: 'Open a trip from Plan to view expenses and settlements',
-        action: () => context.go(AppPage.plan.path),
-        actionLabel: 'Go to Plan',
-      ),
-    );
-  }
-}
