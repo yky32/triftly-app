@@ -36,6 +36,20 @@ final class TripDetailExpenseAdded extends TripDetailEvent {
   List<Object?> get props => [expense];
 }
 
+final class TripDetailExpenseUpdated extends TripDetailEvent {
+  final Expense expense;
+  const TripDetailExpenseUpdated({required this.expense});
+  @override
+  List<Object?> get props => [expense];
+}
+
+final class TripDetailExpenseRemoved extends TripDetailEvent {
+  final String expenseId;
+  const TripDetailExpenseRemoved({required this.expenseId});
+  @override
+  List<Object?> get props => [expenseId];
+}
+
 final class TripDetailDaySelected extends TripDetailEvent {
   final int index;
   const TripDetailDaySelected({required this.index});

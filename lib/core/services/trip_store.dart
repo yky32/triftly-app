@@ -115,6 +115,21 @@ class TripStore {
     _sessionDetails[tripId] = detail.copyWith(expenses: [...detail.expenses, expense]);
   }
 
+  void updateExpense(String tripId, Expense expense) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+    final expenses = detail.expenses.map((e) => e.id == expense.id ? expense : e).toList();
+    _sessionDetails[tripId] = detail.copyWith(expenses: expenses);
+  }
+
+  void removeExpense(String tripId, String expenseId) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+    _sessionDetails[tripId] = detail.copyWith(
+      expenses: detail.expenses.where((e) => e.id != expenseId).toList(),
+    );
+  }
+
   void updateSpot(String tripId, Spot spot) {
     final detail = _sessionDetails[tripId];
     if (detail == null) return;
