@@ -49,7 +49,7 @@ class _LiquidNavIslandState extends State<LiquidNavIsland> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final pages = AppPage.values;
+    final pages = AppPage.navBarPages;
 
     return GlassSurface(
       blur: 36,
@@ -88,7 +88,7 @@ class _LiquidNavIslandState extends State<LiquidNavIsland> with SingleTickerProv
                 ),
                 Row(
                   children: pages.map((page) {
-                    final index = page.navBarMemberIndex;
+                    final index = page.shellBranchIndex!;
                     final selected = index == widget.currentIndex;
                     return Expanded(
                       child: _NavSlot(

@@ -8,6 +8,7 @@ import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/triftly_app_bar_title.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -54,7 +55,7 @@ class _ViewState extends State<_View> {
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Trips'),
+        title: const TriftlyAppBarTitle(title: 'Trips'),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
