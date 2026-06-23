@@ -4,146 +4,103 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../spend_wallet_summary.dart';
+import 'spend_wallet_chrome.dart';
 
-/// Top wallet card — balance-first, credit-card feel.
+/// Modern wallet hero — light surface, bold type, soft status chips.
 class SpendWalletCard extends StatelessWidget {
   const SpendWalletCard({
     required this.summary,
-    required this.ownerName,
     super.key,
   });
 
   final SpendWalletSummary summary;
-  final String ownerName;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: isDark
-          ? [const Color(0xFF134E4A), const Color(0xFF0F172A)]
-          : [AppColors.primaryDark, const Color(0xFF115E59)],
-    );
-
     final heroAmount = summary.isSettled ? summary.myShare : summary.net.abs();
     final heroLabel = summary.isSettled
         ? 'All settled'
         : summary.net > Decimal.zero
             ? 'You\'re owed'
             : 'You owe';
+    final statusTone = summary.isSettled
+        ? SpendWalletStatusTone.neutral
+        : summary.net > Decimal.zero
+            ? SpendWalletStatusTone.positive
+            : SpendWalletStatusTone.negative;
 
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: gradient,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: isDark ? 0.35 : 0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      decoration: SpendWalletChrome.surfaceCard(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Positioned(
-              right: -24,
-              top: -24,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.06),
-                ),
-              ),
-            ),
-            Positioned(
-              left: -16,
-              bottom: -32,
-              child: Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
-              ),
-            ),
+            Container(height: 3, color: AppColors.primary),
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.account_balance_wallet_rounded, size: 18, color: Colors.white.withValues(alpha: 0.85)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$ownerName\'s wallet',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NET BALANCE',
+                              style: SpendWalletChrome.sectionLabel(context),
                             ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '${summary.symbol}${CurrencyUtils.formatDecimal(heroAmount)}',
+                              style: SpendWalletChrome.moneyHero(context),
+                            ),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(AppRadii.sm),
                         ),
                         child: Text(
                           summary.currency,
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
+                                letterSpacing: 0.5,
                               ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 28),
-                  Text(
-                    heroLabel,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.72),
-                          letterSpacing: 0.2,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${summary.symbol}${CurrencyUtils.formatDecimal(heroAmount)}',
-                    style: const TextStyle(
-                      fontSize: 40,
-                      height: 1.05,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: -1.2,
-                    ),
-                  ),
+                  const SizedBox(height: 12),
+                  SpendWalletStatusPill(label: heroLabel, tone: statusTone),
                   const SizedBox(height: 20),
-                  Divider(height: 1, color: Colors.white.withValues(alpha: 0.16)),
-                  const SizedBox(height: 14),
+                  _InsetMetrics(summary: summary),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
-                      _Metric(
-                        label: 'Your share',
-                        value: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myShare)}',
+                      Expanded(
+                        child: _BalanceChip(
+                          label: 'Owed to you',
+                          amount: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.owedToMe)}',
+                          color: AppColors.success,
+                          isDark: isDark,
+                        ),
                       ),
-                      _Metric(
-                        label: 'You paid',
-                        value: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myPaid)}',
-                      ),
-                      _Metric(
-                        label: 'Trips',
-                        value: '${summary.activeTripCount}',
-                        alignEnd: true,
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _BalanceChip(
+                          label: 'You owe',
+                          amount: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.iOwe)}',
+                          color: AppColors.error,
+                          isDark: isDark,
+                        ),
                       ),
                     ],
                   ),
@@ -152,6 +109,43 @@ class SpendWalletCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InsetMetrics extends StatelessWidget {
+  const _InsetMetrics({required this.summary});
+
+  final SpendWalletSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceDim;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+      ),
+      child: Row(
+        children: [
+          _Metric(
+            label: 'Your share',
+            value: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myShare)}',
+          ),
+          _Metric(
+            label: 'You paid',
+            value: '${summary.symbol}${CurrencyUtils.formatDecimal(summary.myPaid)}',
+          ),
+          _Metric(
+            label: 'Trips',
+            value: '${summary.activeTripCount}',
+            alignEnd: true,
+          ),
+        ],
       ),
     );
   }
@@ -174,20 +168,48 @@ class _Metric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 11,
-                ),
-          ),
-          const SizedBox(height: 2),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: 3),
           Text(
             value,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+            style: SpendWalletChrome.moneyBody(context, size: 15),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BalanceChip extends StatelessWidget {
+  const _BalanceChip({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String label;
+  final String amount;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: 4),
+          Text(
+            amount,
+            style: SpendWalletChrome.moneyBody(context, color: color, size: 17),
           ),
         ],
       ),

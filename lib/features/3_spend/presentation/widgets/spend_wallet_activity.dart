@@ -5,8 +5,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
+import '../../../../core/widgets/triftly_motion.dart';
+import 'spend_wallet_chrome.dart';
 
-/// Ledger-style activity feed for the wallet page.
+/// Ledger activity — airy rows, tabular amounts.
 class SpendWalletActivity extends StatelessWidget {
   const SpendWalletActivity({
     required this.transactions,
@@ -27,25 +29,20 @@ class SpendWalletActivity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: Text(
-            'Activity',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
+        SpendWalletSectionHeader(
+          title: 'Activity',
+          trailing: '${items.length} recent',
         ),
         Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-          ),
+          decoration: SpendWalletChrome.surfaceCard(context),
           child: Column(
             children: [
               for (var i = 0; i < items.length; i++) ...[
                 if (i > 0)
                   Divider(
                     height: 1,
-                    indent: 56,
+                    indent: 68,
+                    endIndent: 16,
                     color: isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
                 _ActivityRow(
@@ -79,54 +76,53 @@ class _ActivityRow extends StatelessWidget {
       orElse: () => SpotCategory.other,
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = AppColors.categoryColor(category);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.categoryColor(category).withValues(alpha: isDark ? 0.22 : 0.12),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(category.emoji, style: const TextStyle(fontSize: 16)),
+    return Pressable(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: accent.withValues(alpha: 0.2)),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      expense.title,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+              alignment: Alignment.center,
+              child: Text(category.emoji, style: const TextStyle(fontSize: 18)),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    expense.title,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '-${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
+              style: SpendWalletChrome.moneyBody(context, size: 15),
+            ),
+          ],
         ),
       ),
     );

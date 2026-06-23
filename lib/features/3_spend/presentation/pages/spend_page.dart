@@ -10,8 +10,8 @@ import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../bloc/spend_overview_bloc.dart';
 import '../spend_wallet_summary.dart';
 import '../widgets/spend_wallet_activity.dart';
-import '../widgets/spend_wallet_balance_strip.dart';
 import '../widgets/spend_wallet_card.dart';
+import '../widgets/spend_wallet_chrome.dart';
 import '../widgets/spend_wallet_trip_row.dart';
 
 /// Global Spend page — personal wallet across all trips.
@@ -36,7 +36,10 @@ class _View extends StatelessWidget {
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const TriftlyAppBarTitle(title: 'Spend'),
+        title: const TriftlyAppBarTitle(
+          title: 'Spend',
+          subtitle: 'Your wallet',
+        ),
       ),
       body: BlocBuilder<SpendOverviewBloc, SpendOverviewState>(
         builder: (context, state) {
@@ -75,44 +78,21 @@ class _View extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.sm,
+                AppSpacing.xs,
                 AppSpacing.lg,
                 AppSpacing.listBottomInset(context),
               ),
               children: [
-                SpendWalletCard(summary: summary, ownerName: overview.meDisplayName),
-                const SizedBox(height: AppSpacing.md),
-                SpendWalletBalanceStrip(summary: summary),
+                SpendWalletCard(summary: summary),
                 if (trips.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Trip wallets',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  SpendWalletSectionHeader(
+                    title: 'Trip wallets',
+                    trailing: '${trips.length}',
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground(context),
-                      borderRadius: BorderRadius.circular(AppRadii.md),
-                    ),
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < trips.length; i++) ...[
-                          if (i > 0)
-                            Divider(
-                              height: 1,
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? AppColors.borderDark
-                                  : AppColors.borderLight,
-                            ),
-                          SpendWalletTripRow(snapshot: trips[i]),
-                        ],
-                      ],
-                    ),
-                  ),
+                  ...trips.map((snap) => SpendWalletTripRow(snapshot: snap)),
                 ],
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.lg),
                 SpendWalletActivity(transactions: overview.recentTransactions),
               ],
             ),
@@ -123,25 +103,24 @@ class _View extends StatelessWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Skeletonizer(
       child: ListView(
         padding: AppSpacing.page,
         children: [
           Container(
-            height: 196,
+            height: 248,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
+              color: AppColors.cardBackground(context),
               borderRadius: BorderRadius.circular(AppRadii.lg),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Container(height: 64, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
-            ],
+          Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground(context),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
           ),
         ],
       ),
