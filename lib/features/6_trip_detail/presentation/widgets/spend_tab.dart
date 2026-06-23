@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -12,6 +13,7 @@ import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/services/split_calculator.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
+import '../../bloc/trip_detail_bloc.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class SpendTab extends StatelessWidget {
@@ -39,7 +41,7 @@ class SpendTab extends StatelessWidget {
               icon: Icons.receipt_long_outlined,
               title: 'No expenses yet',
               subtitle: readOnly ? 'No spending recorded yet' : 'Track spending and split with your group',
-              action: readOnly ? null : () => _showAddExpense(context),
+              action: readOnly ? null : () => _showExpenseSheet(context),
               actionLabel: readOnly ? null : 'Add expense',
             ),
           ),
@@ -76,7 +78,13 @@ class SpendTab extends StatelessWidget {
                   ...dayExpenses.map(
                     (expense) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _ExpenseItem(expense: expense, buddies: trip.buddies),
+                      child: _ExpenseItem(
+                        expense: expense,
+                        buddies: trip.buddies,
+                        onTap: readOnly
+                            ? null
+                            : () => _showExpenseSheet(context, editExpense: expense),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -88,7 +96,7 @@ class SpendTab extends StatelessWidget {
               ),
               if (!readOnly) ...[
                 const SizedBox(height: AppSpacing.md),
-                _AddExpenseButton(onTap: () => _showAddExpense(context)),
+                _AddExpenseButton(onTap: () => _showExpenseSheet(context)),
               ],
             ]),
           ),
@@ -97,15 +105,13 @@ class SpendTab extends StatelessWidget {
     );
   }
 
-  void _showAddExpense(BuildContext context) {
+  void _showExpenseSheet(BuildContext context, {Expense? editExpense}) {
     if (readOnly) return;
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddExpenseBottomSheet(trip: trip),
+    AddExpenseBottomSheet.show(
+      context,
+      trip: trip,
+      bloc: context.read<TripDetailBloc>(),
+      editExpense: editExpense,
     );
   }
 
@@ -239,10 +245,15 @@ class _CategoryBreakdown extends StatelessWidget {
 }
 
 class _ExpenseItem extends StatelessWidget {
-  const _ExpenseItem({required this.expense, required this.buddies});
+  const _ExpenseItem({
+    required this.expense,
+    required this.buddies,
+    this.onTap,
+  });
 
   final Expense expense;
   final List<Buddy> buddies;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +269,7 @@ class _ExpenseItem extends StatelessWidget {
 
     return AppCard(
       padding: EdgeInsets.zero,
+      onTap: onTap,
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,

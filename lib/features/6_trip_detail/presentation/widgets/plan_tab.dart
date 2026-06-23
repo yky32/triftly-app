@@ -409,20 +409,12 @@ class _SpotCard extends StatelessWidget {
   void _showQuickExpense(BuildContext context) {
     HapticFeedback.mediumImpact();
     final bloc = context.read<TripDetailBloc>();
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => BlocProvider.value(
-        value: bloc,
-        child: AddExpenseBottomSheet(
-          trip: trip,
-          prefillTitle: spot.name,
-          prefillCategory: spot.category,
-        ),
-      ),
+    AddExpenseBottomSheet.show(
+      context,
+      trip: trip,
+      bloc: bloc,
+      prefillTitle: spot.name,
+      prefillCategory: spot.category,
     );
   }
 }
@@ -460,20 +452,12 @@ class _SpotActionsMenu extends StatelessWidget {
         HapticFeedback.selectionClick();
         bloc.add(TripDetailSpotVisitedToggled(spotId: spot.id));
       case _SpotAction.expense:
-        showModalBottomSheet(
-          context: context,
-          useRootNavigator: true,
-          isScrollControlled: true,
-          showDragHandle: false,
-          backgroundColor: Colors.transparent,
-          builder: (sheetContext) => BlocProvider.value(
-            value: bloc,
-            child: AddExpenseBottomSheet(
-              trip: trip,
-              prefillTitle: spot.name,
-              prefillCategory: spot.category,
-            ),
-          ),
+        AddExpenseBottomSheet.show(
+          context,
+          trip: trip,
+          bloc: bloc,
+          prefillTitle: spot.name,
+          prefillCategory: spot.category,
         );
       case _SpotAction.edit:
         showModalBottomSheet(
