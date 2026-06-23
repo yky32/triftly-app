@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../constants/currency_options.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'triftly_motion.dart';
 
 /// Shared form chrome for trip sheets (create trip, add spot, etc.).
 class SheetSectionHeader extends StatelessWidget {
@@ -68,6 +70,38 @@ class SheetSoftCard extends StatelessWidget {
   }
 }
 
+/// Teal gradient shell shared by form hero fields and converter inputs.
+class SheetGradientHero extends StatelessWidget {
+  const SheetGradientHero({
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+    super.key,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF134E4A), const Color(0xFF1E1E20)]
+              : [AppColors.primaryMuted, const Color(0xFFF7F5F2)],
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 class SheetHeroField extends StatelessWidget {
   const SheetHeroField({
     required this.label,
@@ -89,18 +123,7 @@ class SheetHeroField extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF134E4A), const Color(0xFF1E1E20)]
-              : [AppColors.primaryMuted, const Color(0xFFF7F5F2)],
-        ),
-      ),
+    return SheetGradientHero(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -142,6 +165,106 @@ class SheetHeroField extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class SheetNumericHeroField extends StatelessWidget {
+  const SheetNumericHeroField({
+    this.label,
+    this.leadingAffix,
+    this.trailingAffix,
+    this.controller,
+    this.value,
+    this.onChanged,
+    this.readOnly = false,
+    this.keyboardType,
+    super.key,
+  }) : assert(controller != null || value != null, 'Provide controller or value');
+
+  final String? label;
+  final String? leadingAffix;
+  final String? trailingAffix;
+  final TextEditingController? controller;
+  final String? value;
+  final VoidCallback? onChanged;
+  final bool readOnly;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    final textStyle = TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -1.2,
+      height: 1.05,
+      color: readOnly ? muted : primary,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    final affixStyle = TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.4,
+      color: readOnly ? tertiary : AppColors.primaryDark,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(
+            label!,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: tertiary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            if (leadingAffix != null) ...[
+              Text(leadingAffix!, style: affixStyle),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: readOnly
+                  ? Text(value ?? '—', style: textStyle, maxLines: 1, overflow: TextOverflow.ellipsis)
+                  : TextField(
+                      controller: controller,
+                      onChanged: onChanged == null ? null : (_) => onChanged!(),
+                      keyboardType: keyboardType ?? const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.done,
+                      style: textStyle,
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        hintStyle: textStyle.copyWith(color: tertiary.withValues(alpha: 0.45)),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+            ),
+            if (trailingAffix != null) ...[
+              const SizedBox(width: 8),
+              Text(trailingAffix!, style: affixStyle.copyWith(fontSize: 18)),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }
@@ -201,6 +324,7 @@ class SheetInlineField extends StatelessWidget {
     required this.hint,
     this.onChanged,
     this.textInputAction,
+    this.keyboardType,
     this.maxLines = 1,
     super.key,
   });
@@ -209,6 +333,7 @@ class SheetInlineField extends StatelessWidget {
   final String hint;
   final VoidCallback? onChanged;
   final TextInputAction? textInputAction;
+  final TextInputType? keyboardType;
   final int maxLines;
 
   @override
@@ -220,6 +345,7 @@ class SheetInlineField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged == null ? null : (_) => onChanged!(),
       textInputAction: textInputAction,
+      keyboardType: keyboardType,
       maxLines: maxLines,
       textAlignVertical: maxLines > 1 ? TextAlignVertical.top : TextAlignVertical.center,
       style: TextStyle(
@@ -265,6 +391,242 @@ class SheetSoftDivider extends StatelessWidget {
         height: 1,
         color: isDark ? AppColors.borderDark : AppColors.borderLight,
       ),
+    );
+  }
+}
+
+/// Full-width primary action for utility sheets (lookup, apply, etc.).
+class SheetPrimaryButton extends StatelessWidget {
+  const SheetPrimaryButton({
+    required this.label,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Teal result banner used in converter / lookup tool sheets.
+class SheetResultBanner extends StatelessWidget {
+  const SheetResultBanner({
+    required this.text,
+    this.caption,
+    super.key,
+  });
+
+  final String text;
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.primaryMuted.withValues(alpha: isDark ? 0.22 : 0.35),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+      ),
+      child: Column(
+        children: [
+          if (caption != null) ...[
+            Text(
+              caption!,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            text,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Horizontal currency chips — flag + symbol only (see `currency_options.dart`).
+class SheetCurrencyChipPicker extends StatelessWidget {
+  const SheetCurrencyChipPicker({
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
+
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: CurrencyOptions.all.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final option = CurrencyOptions.all[index];
+          return _SheetCurrencyChip(
+            option: option,
+            isSelected: option.code == selected,
+            onTap: () => onSelected(option.code),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SheetCurrencyChip extends StatelessWidget {
+  const _SheetCurrencyChip({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final CurrencyOption option;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Pressable(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+              : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(option.flag, style: const TextStyle(fontSize: 20, height: 1)),
+            const SizedBox(height: 2),
+            Text(
+              option.symbol,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? AppColors.primary
+                    : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Two-option segment chips (e.g. Address → Mapcode / reverse).
+class SheetChoiceChipRow extends StatelessWidget {
+  const SheetChoiceChipRow({
+    required this.options,
+    required this.selectedIndex,
+    required this.onSelected,
+    super.key,
+  });
+
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: options.asMap().entries.map((entry) {
+        final index = entry.key;
+        final label = entry.value;
+        final selected = index == selectedIndex;
+
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : AppSpacing.sm / 2,
+              right: index == options.length - 1 ? 0 : AppSpacing.sm / 2,
+            ),
+            child: Pressable(
+              onTap: () => onSelected(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+                      : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(
+                    color: selected ? AppColors.primary : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

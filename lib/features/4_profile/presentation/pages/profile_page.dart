@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import '../bottom_sheets/appearance_bottom_sheet.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeScope.of(context);
+
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Me')),
+      appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Me')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.listBottomInset(context),
+        ),
         children: [
           AppCard(
             child: Row(
@@ -41,11 +51,20 @@ class ProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader(title: 'Preferences'),
-          _SettingsGroup(children: [
-            _SettingsTile(title: 'Currency', value: 'HKD', onTap: () {}),
-            _SettingsTile(title: 'Appearance', value: 'System', onTap: () {}),
-            _SettingsTile(title: 'Language', value: 'English', onTap: () {}),
-          ]),
+          ListenableBuilder(
+            listenable: themeController,
+            builder: (context, _) {
+              return _SettingsGroup(children: [
+                _SettingsTile(title: 'Currency', value: 'HKD', onTap: () {}),
+                _SettingsTile(
+                  title: 'Appearance',
+                  value: themeController.label,
+                  onTap: () => AppearanceBottomSheet.show(context),
+                ),
+                _SettingsTile(title: 'Language', value: 'English', onTap: () {}),
+              ]);
+            },
+          ),
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader(title: 'Data'),
           _SettingsGroup(children: [
@@ -71,6 +90,8 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -78,7 +99,11 @@ class _SettingsGroup extends StatelessWidget {
           for (var i = 0; i < children.length; i++) ...[
             children[i],
             if (i < children.length - 1)
-              Divider(height: 1, indent: AppSpacing.lg, color: AppColors.borderLight),
+              Divider(
+                height: 1,
+                indent: AppSpacing.lg,
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
           ],
         ],
       ),

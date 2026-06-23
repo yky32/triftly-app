@@ -6,6 +6,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../bloc/trip_detail_bloc.dart';
+import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
 import '../widgets/trip_detail_tab_segment.dart';
@@ -83,21 +84,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
 
         return Scaffold(
           appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  trip.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  trip.destination,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+            title: TriftlyAppBarTitle(title: trip.name, subtitle: trip.destination),
             actions: [
               IconButton(
                 icon: Icon(

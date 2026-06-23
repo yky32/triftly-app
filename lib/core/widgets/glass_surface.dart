@@ -11,6 +11,7 @@ class GlassSurface extends StatelessWidget {
     this.padding,
     this.blur = 28,
     this.tint,
+    this.bordered = true,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class GlassSurface extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double blur;
   final Color? tint;
+  final bool bordered;
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +44,14 @@ class GlassSurface extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: radius,
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.white.withValues(alpha: 0.75),
-                width: 0.8,
-              ),
+              border: bordered
+                  ? Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.white.withValues(alpha: 0.75),
+                      width: 0.8,
+                    )
+                  : null,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

@@ -7,7 +7,8 @@ enum AppPage {
     icon: Icons.explore_outlined,
     activeIcon: Icons.explore,
     label: 'Explore',
-    navBarMemberIndex: 0,
+    showInNavBar: false,
+    shellBranchIndex: null,
   ),
   plan(
     name: 'plan',
@@ -15,7 +16,8 @@ enum AppPage {
     icon: Icons.calendar_today_outlined,
     activeIcon: Icons.calendar_today,
     label: 'Plan',
-    navBarMemberIndex: 1,
+    showInNavBar: true,
+    shellBranchIndex: 0,
   ),
   spend(
     name: 'spend',
@@ -23,7 +25,17 @@ enum AppPage {
     icon: Icons.account_balance_wallet_outlined,
     activeIcon: Icons.account_balance_wallet,
     label: 'Spend',
-    navBarMemberIndex: 2,
+    showInNavBar: true,
+    shellBranchIndex: 1,
+  ),
+  tools(
+    name: 'tools',
+    path: '/tools',
+    icon: Icons.widgets_outlined,
+    activeIcon: Icons.widgets_rounded,
+    label: 'Tools',
+    showInNavBar: true,
+    shellBranchIndex: 2,
   ),
   profile(
     name: 'profile',
@@ -31,7 +43,8 @@ enum AppPage {
     icon: Icons.person_outline,
     activeIcon: Icons.person,
     label: 'Me',
-    navBarMemberIndex: 3,
+    showInNavBar: true,
+    shellBranchIndex: 3,
   );
 
   final String name;
@@ -39,7 +52,8 @@ enum AppPage {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final int navBarMemberIndex;
+  final bool showInNavBar;
+  final int? shellBranchIndex;
 
   const AppPage({
     required this.name,
@@ -47,13 +61,16 @@ enum AppPage {
     required this.icon,
     required this.activeIcon,
     required this.label,
-    required this.navBarMemberIndex,
+    required this.showInNavBar,
+    required this.shellBranchIndex,
   });
 
-  static AppPage fromIndex(int index) {
-    return AppPage.values.firstWhere(
-      (page) => page.navBarMemberIndex == index,
-      orElse: () => AppPage.explore,
+  static List<AppPage> get navBarPages => values.where((page) => page.showInNavBar).toList();
+
+  static AppPage fromShellIndex(int index) {
+    return values.firstWhere(
+      (page) => page.shellBranchIndex == index,
+      orElse: () => AppPage.plan,
     );
   }
 }

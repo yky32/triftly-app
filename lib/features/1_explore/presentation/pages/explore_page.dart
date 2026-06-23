@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/section_header.dart';
 
 class ExplorePage extends StatelessWidget {
@@ -21,7 +22,7 @@ class ExplorePage extends StatelessWidget {
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Explore')),
+      appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Explore')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
         children: [
