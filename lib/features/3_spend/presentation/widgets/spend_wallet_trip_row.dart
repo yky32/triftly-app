@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/spend_overview_models.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import 'spend_wallet_accent.dart';
 
@@ -39,38 +38,28 @@ class SpendWalletTripRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            SpendIconAvatar(
-              child: Text(
-                tripDestinationEmoji(trip.destination),
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     trip.name,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    style: spendListText(
+                      Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (trip.isInProgress)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, size: 6, color: AppColors.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Active',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppColors.primaryDark,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
+                      child: Text(
+                        'Active',
+                        style: spendListText(
+                          Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
                       ),
                     ),
                 ],

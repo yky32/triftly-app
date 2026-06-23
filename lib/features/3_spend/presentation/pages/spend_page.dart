@@ -84,7 +84,6 @@ class _View extends StatelessWidget {
                 if (trips.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
                   SpendSectionTitle(
-                    icon: Icons.luggage_rounded,
                     title: 'Trips',
                     count: trips.length,
                   ),
