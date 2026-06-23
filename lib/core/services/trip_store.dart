@@ -53,6 +53,13 @@ class TripStore {
   final List<Trip> _createdTrips = [];
   final Map<String, TripDetailData> _sessionDetails = {};
 
+  static const _mockTripIds = {
+    'trip-tokyo',
+    'trip-taipei',
+    'trip-bangkok',
+    'trip-osaka',
+  };
+
   List<Trip> allTrips() {
     final mock = _mockTrips();
     final mockIds = mock.map((t) => t.id).toSet();
@@ -78,7 +85,12 @@ class TripStore {
     final trip = tripById(tripId);
     if (trip == null) return null;
 
-    _sessionDetails.putIfAbsent(tripId, () => _seedDetail(trip));
+    final seeded = _seedDetail(trip);
+    if (_mockTripIds.contains(tripId)) {
+      _sessionDetails[tripId] = seeded;
+    } else {
+      _sessionDetails.putIfAbsent(tripId, () => seeded);
+    }
     return _sessionDetails[tripId];
   }
 
@@ -122,6 +134,36 @@ class TripStore {
       );
     });
   }
+
+  Spot _spot({
+    required String id,
+    required String dayId,
+    required Trip trip,
+    required String name,
+    required String category,
+    required int orderIndex,
+    String? area,
+    String? openingHours,
+    String? duration,
+    String? cost,
+    double? lat,
+    double? lng,
+  }) =>
+      Spot(
+        id: id,
+        dayId: dayId,
+        tripId: trip.id,
+        name: name,
+        area: area,
+        category: category,
+        openingHours: openingHours,
+        estimatedDuration: duration,
+        estimatedCost: cost != null ? Decimal.parse(cost) : null,
+        costCurrency: trip.defaultCurrency,
+        latitude: lat,
+        longitude: lng,
+        orderIndex: orderIndex,
+      );
 
   TripDetailData _tokyoDetail(Trip trip) {
     final days = _daysForTrip(trip);
@@ -224,38 +266,144 @@ class TripStore {
     final d1 = days[0].id;
     final buddyIds = trip.buddies.map((b) => b.id).toList();
 
+    final spots = [
+      _spot(
+        id: 'tp-s1',
+        dayId: d1,
+        trip: trip,
+        name: 'Din Tai Fung',
+        category: 'food',
+        area: 'Xinyi',
+        orderIndex: 0,
+        openingHours: '10:00-21:30',
+        duration: '1.5h',
+        cost: '800',
+        lat: 25.033,
+        lng: 121.5654,
+      ),
+      _spot(
+        id: 'tp-s2',
+        dayId: d1,
+        trip: trip,
+        name: 'Taipei 101 Observatory',
+        category: 'attraction',
+        area: 'Xinyi',
+        orderIndex: 1,
+        openingHours: '09:00-22:00',
+        duration: '2h',
+        cost: '600',
+        lat: 25.0340,
+        lng: 121.5645,
+      ),
+      _spot(
+        id: 'tp-s3',
+        dayId: d1,
+        trip: trip,
+        name: 'Yongkang Street',
+        category: 'food',
+        area: 'Da\'an',
+        orderIndex: 2,
+        duration: '2h',
+        lat: 25.0329,
+        lng: 121.5298,
+      ),
+      _spot(
+        id: 'tp-s4',
+        dayId: d1,
+        trip: trip,
+        name: 'CKS Memorial Hall',
+        category: 'attraction',
+        area: 'Zhongzheng',
+        orderIndex: 3,
+        openingHours: '09:00-18:00',
+        duration: '1.5h',
+        lat: 25.0361,
+        lng: 121.5200,
+      ),
+      _spot(
+        id: 'tp-s5',
+        dayId: d1,
+        trip: trip,
+        name: 'Elephant Mountain',
+        category: 'attraction',
+        area: 'Xinyi',
+        orderIndex: 4,
+        duration: '1h',
+        lat: 25.0275,
+        lng: 121.5705,
+      ),
+      _spot(
+        id: 'tp-s6',
+        dayId: d1,
+        trip: trip,
+        name: 'Shilin Night Market',
+        category: 'food',
+        area: 'Shilin',
+        orderIndex: 5,
+        openingHours: '17:00-00:00',
+        duration: '3h',
+        lat: 25.0880,
+        lng: 121.5240,
+      ),
+      _spot(
+        id: 'tp-s7',
+        dayId: d1,
+        trip: trip,
+        name: 'Raohe Night Market',
+        category: 'food',
+        area: 'Songshan',
+        orderIndex: 6,
+        openingHours: '17:00-00:00',
+        duration: '2.5h',
+        lat: 25.0505,
+        lng: 121.5772,
+      ),
+      _spot(
+        id: 'tp-s8',
+        dayId: d1,
+        trip: trip,
+        name: 'Ximending Walk',
+        category: 'shopping',
+        area: 'Wanhua',
+        orderIndex: 7,
+        openingHours: '11:00-22:00',
+        duration: '2h',
+        lat: 25.0447,
+        lng: 121.5070,
+      ),
+      _spot(
+        id: 'tp-s9',
+        dayId: d1,
+        trip: trip,
+        name: 'National Palace Museum',
+        category: 'attraction',
+        area: 'Shilin',
+        orderIndex: 8,
+        openingHours: '09:00-17:00',
+        duration: '3h',
+        cost: '350',
+        lat: 25.1024,
+        lng: 121.5485,
+      ),
+      _spot(
+        id: 'tp-s10',
+        dayId: d1,
+        trip: trip,
+        name: 'Beitou Hot Spring',
+        category: 'activity',
+        area: 'Beitou',
+        orderIndex: 9,
+        openingHours: '10:00-21:00',
+        duration: '2h',
+        cost: '1200',
+        lat: 25.1365,
+        lng: 121.5085,
+      ),
+    ];
+
     return TripDetailData(
       days: days,
-      spots: [
-        Spot(
-          id: 'tp-s1',
-          dayId: d1,
-          tripId: trip.id,
-          name: 'Din Tai Fung',
-          area: 'Xinyi',
-          category: 'food',
-          openingHours: '10:00-21:30',
-          estimatedDuration: '1.5h',
-          estimatedCost: Decimal.parse('800'),
-          costCurrency: 'TWD',
-          latitude: 25.033,
-          longitude: 121.5654,
-          orderIndex: 0,
-        ),
-        Spot(
-          id: 'tp-s2',
-          dayId: d1,
-          tripId: trip.id,
-          name: 'Taipei 101',
-          area: 'Xinyi',
-          category: 'attraction',
-          openingHours: '09:00-22:00',
-          estimatedDuration: '2h',
-          latitude: 25.0340,
-          longitude: 121.5645,
-          orderIndex: 1,
-        ),
-      ],
+      spots: spots,
       expenses: [
         Expense(
           id: 'tp-e1',

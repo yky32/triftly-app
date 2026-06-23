@@ -2,17 +2,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Pinned Plan · Spend · Map bar with frosted glass when scrolled.
-class TripDetailStickyTabDelegate extends SliverPersistentHeaderDelegate {
-  TripDetailStickyTabDelegate({
+/// Pinned bar with frosted glass when content scrolls underneath.
+class TripDetailStickyBarDelegate extends SliverPersistentHeaderDelegate {
+  TripDetailStickyBarDelegate({
     required this.child,
-    required this.isScrolled,
+    required this.extent,
+    this.isScrolled = false,
   });
 
   final Widget child;
+  final double extent;
   final bool isScrolled;
-
-  static const extent = 68.0;
 
   @override
   double get minExtent => extent;
@@ -53,14 +53,26 @@ class TripDetailStickyTabDelegate extends SliverPersistentHeaderDelegate {
                   ]
                 : null,
           ),
-          child: child,
+          child: SizedBox(height: extent, child: child),
         ),
       ),
     );
   }
 
   @override
-  bool shouldRebuild(covariant TripDetailStickyTabDelegate oldDelegate) {
-    return oldDelegate.isScrolled != isScrolled || oldDelegate.child != child;
+  bool shouldRebuild(covariant TripDetailStickyBarDelegate oldDelegate) {
+    return oldDelegate.isScrolled != isScrolled ||
+        oldDelegate.extent != extent ||
+        oldDelegate.child != child;
   }
+}
+
+/// Pinned Plan · Spend · Map bar.
+class TripDetailStickyTabDelegate extends TripDetailStickyBarDelegate {
+  TripDetailStickyTabDelegate({
+    required super.child,
+    required super.isScrolled,
+  }) : super(extent: tabExtent);
+
+  static const tabExtent = 68.0;
 }

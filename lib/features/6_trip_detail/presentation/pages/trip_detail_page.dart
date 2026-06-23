@@ -6,6 +6,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../bloc/trip_detail_bloc.dart';
+import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
 import '../widgets/trip_detail_tab_segment.dart';
 import '../widgets/map_tab.dart';
@@ -36,6 +37,7 @@ class _View extends StatefulWidget {
 
 class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  bool _summaryExpanded = true;
 
   @override
   void initState() {
@@ -50,6 +52,19 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _collapseSummaryOnScroll(ScrollNotification notification) {
+    if (!_summaryExpanded) return;
+    if (notification.metrics.axis != Axis.vertical) return;
+    if (notification is! ScrollUpdateNotification && notification is! OverscrollNotification) {
+      return;
+    }
+    if (notification is ScrollUpdateNotification &&
+        (notification.scrollDelta ?? 0).abs() < 0.5) {
+      return;
+    }
+    setState(() => _summaryExpanded = false);
   }
 
   @override
@@ -85,24 +100,38 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
             ),
             actions: [
               IconButton(
+                icon: Icon(
+                  _summaryExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                ),
+                tooltip: _summaryExpanded ? 'Hide trip details' : 'View trip details',
+                onPressed: () => setState(() => _summaryExpanded = !_summaryExpanded),
+              ),
+              IconButton(
                 icon: const Icon(Icons.ios_share_outlined),
                 onPressed: () => _shareTrip(trip),
               ),
             ],
           ),
-          body: NestedScrollView(
+          body: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              _collapseSummaryOnScroll(notification);
+              return false;
+            },
+            child: NestedScrollView(
             floatHeaderSlivers: true,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
+              final isPlanTab = _tabController.index == 0;
+              final showDayChips = isPlanTab && state.days.isNotEmpty;
+              final headerExtent = TripDetailStickyTabDelegate.tabExtent +
+                  (showDayChips ? PlanDayChipsBar.chipsExtent : 0);
+
               return [
                 SliverToBoxAdapter(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    opacity: innerBoxIsScrolled ? 0.92 : 1,
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
-                      scale: innerBoxIsScrolled ? 0.98 : 1,
+                  child: ClipRect(
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      heightFactor: _summaryExpanded ? 1 : 0,
                       alignment: Alignment.topCenter,
                       child: TripDetailSummary(trip: trip),
                     ),
@@ -112,19 +141,39 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
                   sliver: SliverPersistentHeader(
                     pinned: true,
-                    delegate: TripDetailStickyTabDelegate(
+                    delegate: TripDetailStickyBarDelegate(
+                      extent: headerExtent,
                       isScrolled: innerBoxIsScrolled,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.sm,
-                          AppSpacing.lg,
-                          AppSpacing.md,
-                        ),
-                        child: TripDetailTabSegment(
-                          selectedIndex: _tabController.index,
-                          onChanged: (index) => _tabController.animateTo(index),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            height: TripDetailStickyTabDelegate.tabExtent,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.lg,
+                                AppSpacing.sm,
+                                AppSpacing.lg,
+                                AppSpacing.md,
+                              ),
+                              child: TripDetailTabSegment(
+                                selectedIndex: _tabController.index,
+                                onChanged: (index) => _tabController.animateTo(index),
+                              ),
+                            ),
+                          ),
+                          if (showDayChips)
+                            SizedBox(
+                              height: PlanDayChipsBar.chipsExtent,
+                              child: PlanDayChipsBar(
+                                days: state.days,
+                                selectedIndex: state.selectedDayIndex,
+                                onDaySelected: (index) => context
+                                    .read<TripDetailBloc>()
+                                    .add(TripDetailDaySelected(index: index)),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -154,6 +203,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

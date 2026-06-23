@@ -44,37 +44,6 @@ class PlanTab extends StatelessWidget {
         return TripDetailTabScroll(
           key: key,
           slivers: [
-            if (days.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (var i = 0; i < days.length; i++) ...[
-                                if (i > 0) const SizedBox(width: AppSpacing.sm),
-                                _PlanDayChip(
-                                  day: days[i],
-                                  isSelected: i == state.selectedDayIndex,
-                                  onSelected: () => context
-                                      .read<TripDetailBloc>()
-                                      .add(TripDetailDaySelected(index: i)),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
             if (selectedDay != null)
               SliverToBoxAdapter(
                 child: Padding(
@@ -124,7 +93,12 @@ class PlanTab extends StatelessWidget {
               TripDetailTabScroll.listBottomPadding(
                 context,
                 sliver: SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
                   sliver: SliverList.separated(
                     itemCount: timelineCount,
                     separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
@@ -207,53 +181,6 @@ class _DayFlight {
 
   final bool isOutbound;
   final FlightLeg leg;
-}
-
-class _PlanDayChip extends StatelessWidget {
-  const _PlanDayChip({
-    required this.day,
-    required this.isSelected,
-    required this.onSelected,
-  });
-
-  final TripDay day;
-  final bool isSelected;
-  final VoidCallback onSelected;
-
-  IconData? get _icon => switch (day.title) {
-        'Arrival' => Icons.flight_land_rounded,
-        'Departure' => Icons.flight_takeoff_rounded,
-        _ => null,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = _icon;
-    final fg = isSelected ? AppColors.primaryDark : AppColors.textSecondary;
-
-    if (icon != null) {
-      return FilterChip(
-        label: Icon(icon, size: 18, color: fg),
-        selected: isSelected,
-        onSelected: (_) => onSelected(),
-        showCheckmark: false,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        labelPadding: EdgeInsets.zero,
-        labelStyle: TextStyle(color: fg),
-      );
-    }
-
-    return FilterChip(
-      label: Text(day.displayTitle),
-      selected: isSelected,
-      onSelected: (_) => onSelected(),
-      showCheckmark: false,
-      labelStyle: TextStyle(
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-        color: fg,
-      ),
-    );
-  }
 }
 
 class _AddSpotButton extends StatelessWidget {
