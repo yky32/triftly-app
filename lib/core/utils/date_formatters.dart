@@ -13,4 +13,11 @@ abstract final class DateFormatters {
   static String dateRange(DateTime start, DateTime end) {
     return '${shortDate(start)} – ${shortDate(end)}';
   }
+
+  /// `23/06` style for compact flight labels.
+  static String ddMm(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    return '$d/$m';
+  }
 }

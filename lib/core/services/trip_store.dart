@@ -3,6 +3,24 @@ import 'package:uuid/uuid.dart';
 import '../models/trip_models.dart';
 import 'split_calculator.dart';
 
+DateTime _flightAt(DateTime day, int hour, int minute) =>
+    DateTime(day.year, day.month, day.day, hour, minute);
+
+FlightLeg _flightLeg({
+  required String number,
+  required DateTime day,
+  required int hour,
+  required int minute,
+  required String from,
+  required String to,
+}) =>
+    FlightLeg(
+      flightNumber: number,
+      departAt: _flightAt(day, hour, minute),
+      fromAirport: from,
+      toAirport: to,
+    );
+
 /// In-memory trip data until Supabase + Hive persistence ships.
 class TripDetailData {
   const TripDetailData({
@@ -338,27 +356,79 @@ class TripStore {
     final now = DateTime.now();
     final today = Trip.today;
 
+    final taipeiStart = today.subtract(const Duration(days: 2));
+    final taipeiEnd = today.add(const Duration(days: 3));
+    final bangkokStart = today;
+    final bangkokEnd = today.add(const Duration(days: 4));
+    final tokyoStart = today.add(const Duration(days: 12));
+    final tokyoEnd = today.add(const Duration(days: 18));
+    final seoulStart = today.add(const Duration(days: 28));
+    final seoulEnd = today.add(const Duration(days: 31));
+    final baliStart = today.add(const Duration(days: 45));
+    final baliEnd = today.add(const Duration(days: 52));
+    final parisStart = today.add(const Duration(days: 90));
+    final parisEnd = today.add(const Duration(days: 97));
+    final osakaStart = today.subtract(const Duration(days: 21));
+    final osakaEnd = today.subtract(const Duration(days: 16));
+    final londonStart = today.subtract(const Duration(days: 75));
+    final londonEnd = today.subtract(const Duration(days: 68));
+    final hkStart = today.subtract(const Duration(days: 200));
+    final hkEnd = today.subtract(const Duration(days: 195));
+
     return [
       Trip(
         id: 'trip-taipei',
         name: 'Taipei Food Run',
         destination: 'Taipei, Taiwan',
-        startDate: today.subtract(const Duration(days: 2)),
-        endDate: today.add(const Duration(days: 3)),
+        startDate: taipeiStart,
+        endDate: taipeiEnd,
         defaultCurrency: 'TWD',
+        outboundFlight: _flightLeg(
+          number: 'CX408',
+          day: taipeiStart,
+          hour: 8,
+          minute: 15,
+          from: 'HKG',
+          to: 'TPE',
+        ),
+        returnFlight: _flightLeg(
+          number: 'CX409',
+          day: taipeiEnd,
+          hour: 21,
+          minute: 40,
+          from: 'TPE',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Mia'),
         ],
+        shareToken: 'taipei-food',
         createdAt: now.subtract(const Duration(days: 30)),
       ),
       Trip(
         id: 'trip-bangkok',
         name: 'Bangkok Sprint',
         destination: 'Bangkok, Thailand',
-        startDate: today,
-        endDate: today.add(const Duration(days: 4)),
+        startDate: bangkokStart,
+        endDate: bangkokEnd,
         defaultCurrency: 'THB',
+        outboundFlight: _flightLeg(
+          number: 'TG601',
+          day: bangkokStart,
+          hour: 10,
+          minute: 20,
+          from: 'HKG',
+          to: 'BKK',
+        ),
+        returnFlight: _flightLeg(
+          number: 'TG602',
+          day: bangkokEnd,
+          hour: 14,
+          minute: 55,
+          from: 'BKK',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Ken'),
@@ -370,9 +440,25 @@ class TripStore {
         id: 'trip-tokyo',
         name: 'Tokyo 2026',
         destination: 'Tokyo, Japan',
-        startDate: today.add(const Duration(days: 12)),
-        endDate: today.add(const Duration(days: 18)),
+        startDate: tokyoStart,
+        endDate: tokyoEnd,
         defaultCurrency: 'JPY',
+        outboundFlight: _flightLeg(
+          number: 'JL026',
+          day: tokyoStart,
+          hour: 9,
+          minute: 5,
+          from: 'HKG',
+          to: 'HND',
+        ),
+        returnFlight: _flightLeg(
+          number: 'NH860',
+          day: tokyoEnd,
+          hour: 18,
+          minute: 30,
+          from: 'HND',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Alice'),
@@ -386,9 +472,25 @@ class TripStore {
         id: 'trip-seoul',
         name: 'Seoul Weekend',
         destination: 'Seoul, Korea',
-        startDate: today.add(const Duration(days: 28)),
-        endDate: today.add(const Duration(days: 31)),
+        startDate: seoulStart,
+        endDate: seoulEnd,
         defaultCurrency: 'KRW',
+        outboundFlight: _flightLeg(
+          number: 'KE172',
+          day: seoulStart,
+          hour: 11,
+          minute: 30,
+          from: 'HKG',
+          to: 'ICN',
+        ),
+        returnFlight: _flightLeg(
+          number: 'KE173',
+          day: seoulEnd,
+          hour: 16,
+          minute: 45,
+          from: 'ICN',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Alice'),
@@ -399,9 +501,25 @@ class TripStore {
         id: 'trip-bali',
         name: 'Bali Reset',
         destination: 'Bali, Indonesia',
-        startDate: today.add(const Duration(days: 45)),
-        endDate: today.add(const Duration(days: 52)),
+        startDate: baliStart,
+        endDate: baliEnd,
         defaultCurrency: 'IDR',
+        outboundFlight: _flightLeg(
+          number: 'CX785',
+          day: baliStart,
+          hour: 14,
+          minute: 10,
+          from: 'HKG',
+          to: 'DPS',
+        ),
+        returnFlight: _flightLeg(
+          number: 'CX786',
+          day: baliEnd,
+          hour: 9,
+          minute: 50,
+          from: 'DPS',
+          to: 'HKG',
+        ),
         buddies: [Buddy.create(name: 'Wayne')],
         createdAt: now,
       ),
@@ -409,22 +527,55 @@ class TripStore {
         id: 'trip-paris',
         name: 'Paris in Autumn',
         destination: 'Paris, France',
-        startDate: today.add(const Duration(days: 90)),
-        endDate: today.add(const Duration(days: 97)),
+        startDate: parisStart,
+        endDate: parisEnd,
         defaultCurrency: 'EUR',
+        outboundFlight: _flightLeg(
+          number: 'AF188',
+          day: parisStart,
+          hour: 23,
+          minute: 15,
+          from: 'HKG',
+          to: 'CDG',
+        ),
+        returnFlight: _flightLeg(
+          number: 'AF185',
+          day: parisEnd,
+          hour: 13,
+          minute: 20,
+          from: 'CDG',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Sophie'),
         ],
+        shareToken: 'paris-autumn',
         createdAt: now,
       ),
       Trip(
         id: 'trip-osaka',
         name: 'Osaka Ramen Tour',
         destination: 'Osaka, Japan',
-        startDate: today.subtract(const Duration(days: 21)),
-        endDate: today.subtract(const Duration(days: 16)),
+        startDate: osakaStart,
+        endDate: osakaEnd,
         defaultCurrency: 'JPY',
+        outboundFlight: _flightLeg(
+          number: 'CX502',
+          day: osakaStart,
+          hour: 8,
+          minute: 50,
+          from: 'HKG',
+          to: 'KIX',
+        ),
+        returnFlight: _flightLeg(
+          number: 'CX503',
+          day: osakaEnd,
+          hour: 20,
+          minute: 15,
+          from: 'KIX',
+          to: 'HKG',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Yuki'),
@@ -435,9 +586,25 @@ class TripStore {
         id: 'trip-london',
         name: 'London Workation',
         destination: 'London, UK',
-        startDate: today.subtract(const Duration(days: 75)),
-        endDate: today.subtract(const Duration(days: 68)),
+        startDate: londonStart,
+        endDate: londonEnd,
         defaultCurrency: 'GBP',
+        outboundFlight: _flightLeg(
+          number: 'BA28',
+          day: londonStart,
+          hour: 22,
+          minute: 45,
+          from: 'HKG',
+          to: 'LHR',
+        ),
+        returnFlight: _flightLeg(
+          number: 'BA31',
+          day: londonEnd,
+          hour: 15,
+          minute: 10,
+          from: 'LHR',
+          to: 'HKG',
+        ),
         buddies: [Buddy.create(name: 'Wayne')],
         createdAt: now.subtract(const Duration(days: 120)),
       ),
@@ -445,9 +612,25 @@ class TripStore {
         id: 'trip-hk',
         name: 'Hong Kong Home',
         destination: 'Hong Kong',
-        startDate: today.subtract(const Duration(days: 200)),
-        endDate: today.subtract(const Duration(days: 195)),
+        startDate: hkStart,
+        endDate: hkEnd,
         defaultCurrency: 'HKD',
+        outboundFlight: _flightLeg(
+          number: 'UO628',
+          day: hkStart,
+          hour: 7,
+          minute: 30,
+          from: 'TPE',
+          to: 'HKG',
+        ),
+        returnFlight: _flightLeg(
+          number: 'UO629',
+          day: hkEnd,
+          hour: 19,
+          minute: 0,
+          from: 'HKG',
+          to: 'TPE',
+        ),
         buddies: [
           Buddy.create(name: 'Wayne'),
           Buddy.create(name: 'Chris'),

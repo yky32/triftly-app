@@ -34,7 +34,7 @@ class TripDetailSummary extends StatelessWidget {
               if (trip.buddies.isNotEmpty)
                 _InfoChip(
                   icon: Icons.people_outline_rounded,
-                  label: '${trip.buddies.length} ${trip.buddies.length == 1 ? 'buddy' : 'buddies'}',
+                  label: '${trip.buddies.length}',
                 ),
               _PhaseChip(trip: trip, style: style, isDark: isDark),
             ],
@@ -45,7 +45,10 @@ class TripDetailSummary extends StatelessWidget {
           ],
           if (_hasFlightInfo) ...[
             const SizedBox(height: AppSpacing.sm),
-            ..._flightRows(),
+            FlightSummaryPairRow(
+              outbound: trip.outboundFlight,
+              returnLeg: trip.returnFlight,
+            ),
           ],
         ],
       ),
@@ -55,19 +58,6 @@ class TripDetailSummary extends StatelessWidget {
   bool get _hasFlightInfo =>
       (trip.outboundFlight != null && !trip.outboundFlight!.isEmpty) ||
       (trip.returnFlight != null && !trip.returnFlight!.isEmpty);
-
-  List<Widget> _flightRows() {
-    final rows = <Widget>[];
-    final outbound = trip.outboundFlight;
-    if (outbound != null && !outbound.isEmpty) {
-      rows.add(FlightLegSummaryRow(isOutbound: true, leg: outbound));
-    }
-    final returnLeg = trip.returnFlight;
-    if (returnLeg != null && !returnLeg.isEmpty) {
-      rows.add(FlightLegSummaryRow(isOutbound: false, leg: returnLeg));
-    }
-    return rows;
-  }
 }
 
 class _InfoChip extends StatelessWidget {

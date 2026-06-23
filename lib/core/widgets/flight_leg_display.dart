@@ -136,7 +136,159 @@ class FlightLegCard extends StatelessWidget {
   }
 }
 
-/// Compact flight row for Trip Detail summary.
+/// `[icon][flight][from]→[to][dd/mm] ··· [dd/mm][from]→[to][flight][icon]`
+class FlightSummaryPairRow extends StatelessWidget {
+  const FlightSummaryPairRow({
+    this.outbound,
+    this.returnLeg,
+    super.key,
+  });
+
+  final FlightLeg? outbound;
+  final FlightLeg? returnLeg;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasOutbound = outbound != null && !outbound!.isEmpty;
+    final hasReturn = returnLeg != null && !returnLeg!.isEmpty;
+    if (!hasOutbound && !hasReturn) return const SizedBox.shrink();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dotColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (hasOutbound)
+          Flexible(
+            fit: hasReturn ? FlexFit.tight : FlexFit.loose,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FlightLegSummaryCompact(isOutbound: true, leg: outbound!),
+            ),
+          ),
+        if (hasOutbound && hasReturn)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Text(
+              '···',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 3,
+                color: dotColor.withValues(alpha: 0.55),
+                height: 1,
+              ),
+            ),
+          ),
+        if (hasReturn)
+          Flexible(
+            fit: hasOutbound ? FlexFit.tight : FlexFit.loose,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FlightLegSummaryCompact(isOutbound: false, leg: returnLeg!),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// `[icon][flight][from]→[to][dd/mm]` left · `[dd/mm][from]→[to][flight][icon]` right.
+class FlightLegSummaryCompact extends StatelessWidget {
+  const FlightLegSummaryCompact({
+    required this.isOutbound,
+    required this.leg,
+    super.key,
+  });
+
+  final bool isOutbound;
+  final FlightLeg leg;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = FlightDirectionBadge.accentFor(isOutbound, isDark);
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+          color: accent,
+          height: 1.25,
+        );
+    final icon = Icon(
+      isOutbound ? Icons.flight_takeoff_rounded : Icons.flight_land_rounded,
+      size: 14,
+      color: accent,
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: isOutbound
+          ? [
+              icon,
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  flightLegOutboundLabel(leg),
+                  style: textStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ]
+          : [
+              Flexible(
+                child: Text(
+                  flightLegReturnLabel(leg),
+                  style: textStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              const SizedBox(width: 4),
+              icon,
+            ],
+    );
+  }
+}
+
+String flightLegOutboundLabel(FlightLeg leg) {
+  final parts = <String>[];
+  if (leg.flightNumber != null && leg.flightNumber!.isNotEmpty) {
+    parts.add(leg.flightNumber!);
+  }
+  final route = _flightRouteLabel(leg);
+  if (route != null) parts.add(route);
+  if (leg.departAt != null) parts.add(DateFormatters.ddMm(leg.departAt!));
+  return parts.join(' ');
+}
+
+String flightLegReturnLabel(FlightLeg leg) {
+  final parts = <String>[];
+  if (leg.departAt != null) parts.add(DateFormatters.ddMm(leg.departAt!));
+  final route = _flightRouteLabel(leg);
+  if (route != null) parts.add(route);
+  if (leg.flightNumber != null && leg.flightNumber!.isNotEmpty) {
+    parts.add(leg.flightNumber!);
+  }
+  return parts.join(' ');
+}
+
+String? _flightRouteLabel(FlightLeg leg) {
+  if (leg.fromAirport != null &&
+      leg.fromAirport!.isNotEmpty &&
+      leg.toAirport != null &&
+      leg.toAirport!.isNotEmpty) {
+    return '${leg.fromAirport}→${leg.toAirport}';
+  }
+  return null;
+}
+
+String flightLegInlineLabel(FlightLeg leg) => flightLegOutboundLabel(leg);
+
+/// Compact flight row for Trip Detail summary (legacy stacked layout).
 class FlightLegSummaryRow extends StatelessWidget {
   const FlightLegSummaryRow({
     required this.isOutbound,

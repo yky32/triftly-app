@@ -34,29 +34,44 @@ class PlanTab extends StatelessWidget {
           daySpots = spots.where((s) => s.dayId == selectedDay.id).toList()
             ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
         }
-        final dayFlight = selectedDay != null ? _flightForDay(selectedDay, trip) : null;
+        final arrivalFlight = selectedDay != null ? _arrivalFlightForDay(selectedDay, trip) : null;
+        final departureFlight =
+            selectedDay != null ? _departureFlightForDay(selectedDay, trip, days) : null;
+        final hasPlanContent = daySpots.isNotEmpty || arrivalFlight != null || departureFlight != null;
+        final timelineCount =
+            (arrivalFlight != null ? 1 : 0) + daySpots.length + (departureFlight != null ? 1 : 0) + 1;
 
         return TripDetailTabScroll(
           key: key,
           slivers: [
             if (days.isNotEmpty)
               SliverToBoxAdapter(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
-                  child: Row(
-                    children: days.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final day = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.sm),
-                        child: _PlanDayChip(
-                          day: day,
-                          isSelected: index == state.selectedDayIndex,
-                          onSelected: () => context.read<TripDetailBloc>().add(TripDetailDaySelected(index: index)),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < days.length; i++) ...[
+                                if (i > 0) const SizedBox(width: AppSpacing.sm),
+                                _PlanDayChip(
+                                  day: days[i],
+                                  isSelected: i == state.selectedDayIndex,
+                                  onSelected: () => context
+                                      .read<TripDetailBloc>()
+                                      .add(TripDetailDaySelected(index: i)),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       );
-                    }).toList(),
+                    },
                   ),
                 ),
               ),
@@ -94,17 +109,7 @@ class PlanTab extends StatelessWidget {
                   ),
                 ),
               ),
-            if (dayFlight != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
-                  child: FlightLegCard(
-                    isOutbound: dayFlight.isOutbound,
-                    leg: dayFlight.leg,
-                  ),
-                ),
-              ),
-            if (daySpots.isEmpty && dayFlight == null)
+            if (!hasPlanContent)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyState(
@@ -121,16 +126,40 @@ class PlanTab extends StatelessWidget {
                 sliver: SliverPadding(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
                   sliver: SliverList.separated(
-                    itemCount: daySpots.length + 1,
+                    itemCount: timelineCount,
                     separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
-                      if (index == daySpots.length) {
-                        return _AddSpotButton(onTap: () => _showAddSpot(context));
+                      var cursor = index;
+
+                      if (arrivalFlight != null) {
+                        if (cursor == 0) {
+                          return FlightLegCard(
+                            isOutbound: arrivalFlight.isOutbound,
+                            leg: arrivalFlight.leg,
+                          );
+                        }
+                        cursor--;
                       }
-                      return _SpotCard(
-                        spot: daySpots[index],
-                        defaultCurrency: trip.defaultCurrency,
-                      );
+
+                      if (cursor < daySpots.length) {
+                        return _SpotCard(
+                          spot: daySpots[cursor],
+                          defaultCurrency: trip.defaultCurrency,
+                        );
+                      }
+                      cursor -= daySpots.length;
+
+                      if (departureFlight != null) {
+                        if (cursor == 0) {
+                          return FlightLegCard(
+                            isOutbound: departureFlight.isOutbound,
+                            leg: departureFlight.leg,
+                          );
+                        }
+                        cursor--;
+                      }
+
+                      return _AddSpotButton(onTap: () => _showAddSpot(context));
                     },
                   ),
                 ),
@@ -141,14 +170,19 @@ class PlanTab extends StatelessWidget {
     );
   }
 
-  _DayFlight? _flightForDay(TripDay day, Trip trip) {
-    return switch (day.title) {
-      'Arrival' when trip.outboundFlight != null && !trip.outboundFlight!.isEmpty =>
-        _DayFlight(isOutbound: true, leg: trip.outboundFlight!),
-      'Departure' when trip.returnFlight != null && !trip.returnFlight!.isEmpty =>
-        _DayFlight(isOutbound: false, leg: trip.returnFlight!),
-      _ => null,
-    };
+  _DayFlight? _arrivalFlightForDay(TripDay day, Trip trip) {
+    if (day.dayNumber != 1) return null;
+    final leg = trip.outboundFlight;
+    if (leg == null || leg.isEmpty) return null;
+    return _DayFlight(isOutbound: true, leg: leg);
+  }
+
+  _DayFlight? _departureFlightForDay(TripDay day, Trip trip, List<TripDay> days) {
+    final lastDayNumber = days.isNotEmpty ? days.last.dayNumber : trip.numberOfDays;
+    if (day.dayNumber != lastDayNumber) return null;
+    final leg = trip.returnFlight;
+    if (leg == null || leg.isEmpty) return null;
+    return _DayFlight(isOutbound: false, leg: leg);
   }
 
   void _showAddSpot(BuildContext context) {
