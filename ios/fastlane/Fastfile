@@ -236,6 +236,46 @@ def persist_ci_signing_env!
   end
 end
 
+def write_ci_export_options_plist!
+  profile_name = ENV["SIGH_NAME"]
+  UI.user_error!("SIGH_NAME is required to export the App Store IPA on CI.") unless profile_name
+
+  plist_path = File.join(IOS_DIR, "ExportOptions.ci.plist")
+  plist_content = <<~PLIST
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>method</key>
+      <string>app-store</string>
+      <key>signingStyle</key>
+      <string>manual</string>
+      <key>teamID</key>
+      <string>3G34999H3A</string>
+      <key>provisioningProfiles</key>
+      <dict>
+        <key>com.triftly</key>
+        <string>#{profile_name}</string>
+      </dict>
+    </dict>
+    </plist>
+  PLIST
+
+  File.write(plist_path, plist_content)
+  plist_path
+end
+
+def ensure_runner_ipa_path!
+  runner_ipa = File.join(PROJECT_ROOT, "build/ios/ipa/Runner.ipa")
+  return runner_ipa if File.exist?(runner_ipa)
+
+  ipa_files = Dir.glob(File.join(PROJECT_ROOT, "build/ios/ipa/*.ipa"))
+  UI.user_error!("No IPA found under build/ios/ipa after export.") if ipa_files.empty?
+
+  FileUtils.cp(ipa_files.first, runner_ipa)
+  runner_ipa
+end
+
 default_platform(:ios)
 
 # Helper function to increment build number in pubspec.yaml
@@ -435,13 +475,6 @@ platform :ios do
     
     # Run pod install (bundle exec or system pod)
     bundle_pod_ok = run_pod_install
-    
-    # Step 1: Build Flutter artifacts (no codesign — gym handles signing)
-    UI.message("🔧 Step 1/2: Building Flutter artifacts (ENV=#{env_value})...")
-    sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign --dart-define=ENV=#{env_value}")
-    
-    # Step 2: Archive + export IPA using gym with xcodebuild auth flags
-    UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")
 
     if ENV["CI"] && export_method == "app-store"
       UI.message("🔧 CI: applying App Store signing to Xcode project...")
@@ -460,42 +493,52 @@ platform :ios do
           "SIGH_NAME is not set. Run the Prepare App Store signing workflow step first."
         )
       end
-    end
 
-    xcargs = "-allowProvisioningUpdates COMPILER_INDEX_STORE_ENABLE=NO"
-    api_key_params = app_store_connect_api_key_params
-    if api_key_params
-      key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
-      if File.exist?(key_path)
-        xcargs += " -authenticationKeyID #{api_key_params[:key_id]}"
-        xcargs += " -authenticationKeyIssuerID #{api_key_params[:issuer_id]}"
-        xcargs += " -authenticationKeyPath #{key_path}"
-        UI.message("🔑 Using App Store Connect API key for xcodebuild auth")
+      export_plist = write_ci_export_options_plist!
+      UI.message("📦 Building IPA via flutter build ipa (ENV=#{env_value})...")
+      sh("cd #{PROJECT_ROOT} && flutter build ipa --release --dart-define=ENV=#{env_value} --export-options-plist=#{export_plist}")
+      ensure_runner_ipa_path!
+    else
+      # Step 1: Build Flutter artifacts (no codesign — gym handles signing)
+      UI.message("🔧 Step 1/2: Building Flutter artifacts (ENV=#{env_value})...")
+      sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign --dart-define=ENV=#{env_value}")
+
+      # Step 2: Archive + export IPA using gym with xcodebuild auth flags
+      UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")
+
+      xcargs = "-allowProvisioningUpdates COMPILER_INDEX_STORE_ENABLE=NO"
+      api_key_params = app_store_connect_api_key_params
+      if api_key_params
+        key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
+        if File.exist?(key_path)
+          xcargs += " -authenticationKeyID #{api_key_params[:key_id]}"
+          xcargs += " -authenticationKeyIssuerID #{api_key_params[:issuer_id]}"
+          xcargs += " -authenticationKeyPath #{key_path}"
+          UI.message("🔑 Using App Store Connect API key for xcodebuild auth")
+        end
       end
+
+      build_app(
+        workspace: "#{IOS_DIR}/Runner.xcworkspace",
+        scheme: "Runner",
+        configuration: "Release",
+        export_method: export_method,
+        output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
+        export_options: {
+          method: export_method,
+          signingStyle: "manual",
+          teamID: "3G34999H3A",
+          provisioningProfiles: {
+            "com.triftly" => ENV["SIGH_NAME"]
+          }.compact
+        },
+        export_team_id: "3G34999H3A",
+        xcargs: xcargs,
+        clean: false,
+        include_bitcode: false,
+      )
     end
 
-    # Let Xcode automatic signing pick the right cert for app-store export.
-    # Do NOT set codesigning_identity or CODE_SIGN_IDENTITY — that conflicts with automatic signing.
-    build_app(
-      workspace: "#{IOS_DIR}/Runner.xcworkspace",
-      scheme: "Runner",
-      configuration: "Release",
-      export_method: export_method,
-      output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
-      export_options: {
-        method: export_method,
-        signingStyle: "manual",
-        teamID: "3G34999H3A",
-        provisioningProfiles: {
-          "com.triftly" => ENV["SIGH_NAME"]
-        }.compact
-      },
-      export_team_id: "3G34999H3A",
-      xcargs: xcargs,
-      clean: false,
-      include_bitcode: false,
-    )
-    
     UI.success("✅ IPA created successfully!")
     UI.message("📦 IPA location: #{PROJECT_ROOT}/build/ios/ipa/")
   end
