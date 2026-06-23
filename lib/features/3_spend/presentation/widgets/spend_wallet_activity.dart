@@ -4,15 +4,11 @@ import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
-import '../../../../core/utils/date_formatters.dart';
-import '../../../../core/widgets/triftly_motion.dart';
-import 'spend_wallet_chrome.dart';
 
-/// Ledger activity — airy rows, tabular amounts.
 class SpendWalletActivity extends StatelessWidget {
   const SpendWalletActivity({
     required this.transactions,
-    this.maxItems = 12,
+    this.maxItems = 8,
     super.key,
   });
 
@@ -29,19 +25,23 @@ class SpendWalletActivity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SpendWalletSectionHeader(
-          title: 'Activity',
-          trailing: '${items.length} recent',
+        Text(
+          'Recent',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
+        const SizedBox(height: AppSpacing.sm),
         Container(
-          decoration: SpendWalletChrome.surfaceCard(context),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
           child: Column(
             children: [
               for (var i = 0; i < items.length; i++) ...[
                 if (i > 0)
                   Divider(
                     height: 1,
-                    indent: 68,
+                    indent: 16,
                     endIndent: 16,
                     color: isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
@@ -71,46 +71,24 @@ class _ActivityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final expense = line.expense;
     final trip = line.trip;
-    final category = SpotCategory.values.firstWhere(
-      (c) => c.value == expense.category,
-      orElse: () => SpotCategory.other,
-    );
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = AppColors.categoryColor(category);
 
-    return Pressable(
+    return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: accent.withValues(alpha: 0.2)),
-              ),
-              alignment: Alignment.center,
-              child: Text(category.emoji, style: const TextStyle(fontSize: 18)),
-            ),
-            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     expense.title,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
                   Text(
-                    '${trip.name} · ${DateFormatters.shortDate(expense.createdAt)}',
+                    trip.name,
                     style: Theme.of(context).textTheme.bodySmall,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -119,8 +97,8 @@ class _ActivityRow extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '-${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
-              style: SpendWalletChrome.moneyBody(context, size: 15),
+              '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),

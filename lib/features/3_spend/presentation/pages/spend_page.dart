@@ -11,7 +11,6 @@ import '../../bloc/spend_overview_bloc.dart';
 import '../spend_wallet_summary.dart';
 import '../widgets/spend_wallet_activity.dart';
 import '../widgets/spend_wallet_card.dart';
-import '../widgets/spend_wallet_chrome.dart';
 import '../widgets/spend_wallet_trip_row.dart';
 
 /// Global Spend page — personal wallet across all trips.
@@ -36,10 +35,7 @@ class _View extends StatelessWidget {
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const TriftlyAppBarTitle(
-          title: 'Spend',
-          subtitle: 'Your wallet',
-        ),
+        title: const TriftlyAppBarTitle(title: 'Spend'),
       ),
       body: BlocBuilder<SpendOverviewBloc, SpendOverviewState>(
         builder: (context, state) {
@@ -78,7 +74,7 @@ class _View extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.xs,
+                AppSpacing.sm,
                 AppSpacing.lg,
                 AppSpacing.listBottomInset(context),
               ),
@@ -86,13 +82,34 @@ class _View extends StatelessWidget {
                 SpendWalletCard(summary: summary),
                 if (trips.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  SpendWalletSectionHeader(
-                    title: 'Trip wallets',
-                    trailing: '${trips.length}',
+                  Text(
+                    'Trips',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  ...trips.map((snap) => SpendWalletTripRow(snapshot: snap)),
+                  const SizedBox(height: AppSpacing.xs),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground(context),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < trips.length; i++) ...[
+                          if (i > 0)
+                            Divider(
+                              height: 1,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.borderDark
+                                  : AppColors.borderLight,
+                            ),
+                          SpendWalletTripRow(snapshot: trips[i]),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xl),
                 SpendWalletActivity(transactions: overview.recentTransactions),
               ],
             ),
@@ -103,22 +120,15 @@ class _View extends StatelessWidget {
   }
 
   Widget _buildLoading(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Skeletonizer(
       child: ListView(
         padding: AppSpacing.page,
         children: [
           Container(
-            height: 248,
+            height: 168,
             decoration: BoxDecoration(
-              color: AppColors.cardBackground(context),
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground(context),
+              color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadii.lg),
             ),
           ),
