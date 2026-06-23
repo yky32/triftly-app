@@ -21,11 +21,13 @@ class PlanTab extends StatelessWidget {
   final Trip trip;
   final List<TripDay> days;
   final List<Spot> spots;
+  final bool readOnly;
 
   const PlanTab({
     required this.trip,
     required this.days,
     required this.spots,
+    this.readOnly = false,
     super.key,
   });
 
@@ -89,13 +91,14 @@ class PlanTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => _showAddSpot(context),
-                        icon: const Icon(Icons.add_rounded),
-                        color: AppColors.primary,
-                        tooltip: 'Add spot',
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      if (!readOnly)
+                        IconButton(
+                          onPressed: () => _showAddSpot(context),
+                          icon: const Icon(Icons.add_rounded),
+                          color: AppColors.primary,
+                          tooltip: 'Add spot',
+                          visualDensity: VisualDensity.compact,
+                        ),
                     ],
                   ),
                 ),
@@ -106,9 +109,9 @@ class PlanTab extends StatelessWidget {
                 child: EmptyState(
                   icon: Icons.place_outlined,
                   title: 'Nothing planned',
-                  subtitle: 'Add spots for this day',
-                  action: () => _showAddSpot(context),
-                  actionLabel: 'Add spot',
+                  subtitle: readOnly ? 'No spots on this day yet' : 'Add spots for this day',
+                  action: readOnly ? null : () => _showAddSpot(context),
+                  actionLabel: readOnly ? null : 'Add spot',
                 ),
               )
             else
@@ -131,11 +134,12 @@ class PlanTab extends StatelessWidget {
                         const SizedBox(height: AppSpacing.sm),
                       ],
                       if (daySpots.isNotEmpty)
-                        _ReorderableSpotList(
+                        _SpotList(
                           trip: trip,
                           dayId: selectedDay!.id,
                           spots: daySpots,
                           defaultCurrency: trip.defaultCurrency,
+                          readOnly: readOnly,
                         ),
                       if (departureFlight != null) ...[
                         const SizedBox(height: AppSpacing.sm),
@@ -144,8 +148,10 @@ class PlanTab extends StatelessWidget {
                           leg: departureFlight.leg,
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.sm),
-                      _AddSpotButton(onTap: () => _showAddSpot(context)),
+                      if (!readOnly) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _AddSpotButton(onTap: () => _showAddSpot(context)),
+                      ],
                     ]),
                   ),
                 ),
@@ -172,6 +178,7 @@ class PlanTab extends StatelessWidget {
   }
 
   void _showAddSpot(BuildContext context, {Spot? editSpot}) {
+    if (readOnly) return;
     final tripDetailBloc = context.read<TripDetailBloc>();
 
     showModalBottomSheet(
@@ -188,21 +195,39 @@ class PlanTab extends StatelessWidget {
   }
 }
 
-class _ReorderableSpotList extends StatelessWidget {
-  const _ReorderableSpotList({
+class _SpotList extends StatelessWidget {
+  const _SpotList({
     required this.trip,
     required this.dayId,
     required this.spots,
     required this.defaultCurrency,
+    required this.readOnly,
   });
 
   final Trip trip;
   final String dayId;
   final List<Spot> spots;
   final String defaultCurrency;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
+    if (readOnly) {
+      return Column(
+        children: [
+          for (final spot in spots) ...[
+            _SpotCard(
+              spot: spot,
+              defaultCurrency: defaultCurrency,
+              trip: trip,
+              readOnly: true,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ],
+      );
+    }
+
     return ReorderableListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -225,6 +250,7 @@ class _ReorderableSpotList extends StatelessWidget {
               spot: spot,
               defaultCurrency: defaultCurrency,
               trip: trip,
+              readOnly: false,
             ),
           ),
         );
@@ -274,11 +300,13 @@ class _SpotCard extends StatelessWidget {
     required this.spot,
     required this.defaultCurrency,
     required this.trip,
+    required this.readOnly,
   });
 
   final Spot spot;
   final String defaultCurrency;
   final Trip trip;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -288,78 +316,83 @@ class _SpotCard extends StatelessWidget {
     );
     final categoryColor = AppColors.categoryColor(category);
 
-    return GestureDetector(
-      onLongPress: () => _showQuickExpense(context),
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        child: Opacity(
-          opacity: spot.visited ? 0.55 : 1,
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 4,
-                  decoration: BoxDecoration(
-                    color: spot.visited ? AppColors.textTertiary : categoryColor,
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.md)),
-                  ),
+    final card = AppCard(
+      padding: EdgeInsets.zero,
+      child: Opacity(
+        opacity: spot.visited ? 0.55 : 1,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: spot.visited ? AppColors.textTertiary : categoryColor,
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.md)),
                 ),
+              ),
+              if (!readOnly)
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.sm),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Icon(Icons.drag_handle_rounded, color: AppColors.textTertiary, size: 20),
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(category.emoji, style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      spot.name,
-                                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            decoration: spot.visited ? TextDecoration.lineThrough : null,
-                                          ),
-                                    ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(category.emoji, style: const TextStyle(fontSize: 22)),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    spot.name,
+                                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          decoration: spot.visited ? TextDecoration.lineThrough : null,
+                                        ),
                                   ),
-                                  if (spot.visited)
-                                    const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
-                                ],
-                              ),
-                              if (_meta(spot).isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
+                                ),
+                                if (spot.visited)
+                                  const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
                               ],
-                              if (spot.area != null) ...[
-                                const SizedBox(height: 2),
-                                Text('📍 ${spot.area!}', style: Theme.of(context).textTheme.bodySmall),
-                              ],
+                            ),
+                            if (_meta(spot).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(_meta(spot), style: Theme.of(context).textTheme.bodySmall),
                             ],
-                          ),
+                            if (spot.area != null) ...[
+                              const SizedBox(height: 2),
+                              Text('📍 ${spot.area!}', style: Theme.of(context).textTheme.bodySmall),
+                            ],
+                          ],
                         ),
-                        _SpotActionsMenu(spot: spot, trip: trip),
-                      ],
-                    ),
+                      ),
+                      if (!readOnly) _SpotActionsMenu(spot: spot, trip: trip),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (readOnly) return card;
+
+    return GestureDetector(
+      onLongPress: () => _showQuickExpense(context),
+      child: card,
     );
   }
 

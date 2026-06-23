@@ -18,11 +18,13 @@ class SpendTab extends StatelessWidget {
   final Trip trip;
   final List<TripDay> days;
   final List<Expense> expenses;
+  final bool readOnly;
 
   const SpendTab({
     required this.trip,
     required this.days,
     required this.expenses,
+    this.readOnly = false,
     super.key,
   });
 
@@ -36,9 +38,9 @@ class SpendTab extends StatelessWidget {
             child: EmptyState(
               icon: Icons.receipt_long_outlined,
               title: 'No expenses yet',
-              subtitle: 'Track spending and split with your group',
-              action: () => _showAddExpense(context),
-              actionLabel: 'Add expense',
+              subtitle: readOnly ? 'No spending recorded yet' : 'Track spending and split with your group',
+              action: readOnly ? null : () => _showAddExpense(context),
+              actionLabel: readOnly ? null : 'Add expense',
             ),
           ),
         ],
@@ -84,8 +86,10 @@ class SpendTab extends StatelessWidget {
                 trip: trip,
                 expenses: expenses,
               ),
-              const SizedBox(height: AppSpacing.md),
-              _AddExpenseButton(onTap: () => _showAddExpense(context)),
+              if (!readOnly) ...[
+                const SizedBox(height: AppSpacing.md),
+                _AddExpenseButton(onTap: () => _showAddExpense(context)),
+              ],
             ]),
           ),
         ),
@@ -94,6 +98,7 @@ class SpendTab extends StatelessWidget {
   }
 
   void _showAddExpense(BuildContext context) {
+    if (readOnly) return;
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,

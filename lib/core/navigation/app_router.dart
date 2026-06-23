@@ -8,12 +8,21 @@ import '../../features/2_tools/presentation/pages/tools_page.dart';
 import '../../features/4_profile/presentation/pages/profile_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
+import '../../features/6_trip_detail/presentation/pages/shared_trip_view_page.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/triftly_app_bar_title.dart';
 
 final appRouter = GoRouter(
   initialLocation: AppPage.plan.path,
   routes: [
+    GoRoute(
+      path: '/s/:token',
+      name: 'shared_trip',
+      builder: (context, state) {
+        final token = state.pathParameters['token']!;
+        return SharedTripViewPage(shareToken: token);
+      },
+    ),
     GoRoute(
       path: AppPage.explore.path,
       name: AppPage.explore.name,

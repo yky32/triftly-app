@@ -74,6 +74,13 @@ class TripStore {
     return null;
   }
 
+  Trip? tripByShareToken(String token) {
+    for (final trip in allTrips()) {
+      if (trip.shareToken == token || trip.id == token) return trip;
+    }
+    return null;
+  }
+
   void upsertCreatedTrip(Trip trip) {
     _createdTrips.removeWhere((t) => t.id == trip.id);
     _createdTrips.insert(0, trip);

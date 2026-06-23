@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
+import '../bottom_sheets/share_trip_bottom_sheet.dart';
 import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
 import '../widgets/trip_detail_tab_segment.dart';
@@ -18,20 +17,27 @@ import '../widgets/trip_detail_summary.dart';
 
 class TripDetailPage extends StatelessWidget {
   final String tripId;
+  final bool readOnly;
 
-  const TripDetailPage({required this.tripId, super.key});
+  const TripDetailPage({
+    required this.tripId,
+    this.readOnly = false,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => TripDetailBloc(tripId: tripId)..add(TripDetailLoadRequested()),
-      child: const _View(),
+      child: _View(readOnly: readOnly),
     );
   }
 }
 
 class _View extends StatefulWidget {
-  const _View();
+  const _View({this.readOnly = false});
+
+  final bool readOnly;
 
   @override
   State<_View> createState() => _ViewState();
@@ -94,10 +100,11 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                 tooltip: _summaryExpanded ? 'Hide trip details' : 'View trip details',
                 onPressed: () => setState(() => _summaryExpanded = !_summaryExpanded),
               ),
-              IconButton(
-                icon: const Icon(Icons.ios_share_outlined),
-                onPressed: () => _shareTrip(trip),
-              ),
+              if (!widget.readOnly)
+                IconButton(
+                  icon: const Icon(Icons.ios_share_outlined),
+                  onPressed: () => ShareTripBottomSheet.show(context, trip),
+                ),
             ],
           ),
           body: NotificationListener<ScrollNotification>(
@@ -177,12 +184,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   trip: trip,
                   days: state.days,
                   spots: state.spots,
+                  readOnly: widget.readOnly,
                 ),
                 SpendTab(
                   key: const PageStorageKey<String>('spend'),
                   trip: trip,
                   days: state.days,
                   expenses: state.expenses,
+                  readOnly: widget.readOnly,
                 ),
                 MapTab(
                   key: const PageStorageKey<String>('map'),
@@ -197,11 +206,6 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
         );
       },
     );
-  }
-
-  void _shareTrip(Trip trip) {
-    final token = trip.shareToken ?? trip.id;
-    Share.share('Join my trip "${trip.name}" on Triftly: https://triftly.app/s/$token');
   }
 }
 
