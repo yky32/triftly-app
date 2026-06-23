@@ -16,11 +16,13 @@ class PlanTab extends StatelessWidget {
   final Trip trip;
   final List<TripDay> days;
   final List<Spot> spots;
+  final bool readOnly;
 
   const PlanTab({
     required this.trip,
     required this.days,
     required this.spots,
+    this.readOnly = false,
     super.key,
   });
 
@@ -39,7 +41,10 @@ class PlanTab extends StatelessWidget {
             selectedDay != null ? _departureFlightForDay(selectedDay, trip, days) : null;
         final hasPlanContent = daySpots.isNotEmpty || arrivalFlight != null || departureFlight != null;
         final timelineCount =
-            (arrivalFlight != null ? 1 : 0) + daySpots.length + (departureFlight != null ? 1 : 0) + 1;
+            (arrivalFlight != null ? 1 : 0) +
+            daySpots.length +
+            (departureFlight != null ? 1 : 0) +
+            (readOnly ? 0 : 1);
 
         return TripDetailTabScroll(
           key: key,
@@ -67,13 +72,14 @@ class PlanTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => _showAddSpot(context),
-                        icon: const Icon(Icons.add_rounded),
-                        color: AppColors.primary,
-                        tooltip: 'Add spot',
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      if (!readOnly)
+                        IconButton(
+                          onPressed: () => _showAddSpot(context),
+                          icon: const Icon(Icons.add_rounded),
+                          color: AppColors.primary,
+                          tooltip: 'Add spot',
+                          visualDensity: VisualDensity.compact,
+                        ),
                     ],
                   ),
                 ),
@@ -84,9 +90,9 @@ class PlanTab extends StatelessWidget {
                 child: EmptyState(
                   icon: Icons.place_outlined,
                   title: 'Nothing planned',
-                  subtitle: 'Add spots for this day',
-                  action: () => _showAddSpot(context),
-                  actionLabel: 'Add spot',
+                  subtitle: readOnly ? 'No spots on this day yet' : 'Add spots for this day',
+                  action: readOnly ? null : () => _showAddSpot(context),
+                  actionLabel: readOnly ? null : 'Add spot',
                 ),
               )
             else
@@ -133,6 +139,8 @@ class PlanTab extends StatelessWidget {
                         cursor--;
                       }
 
+                      if (readOnly) return const SizedBox.shrink();
+
                       return _AddSpotButton(onTap: () => _showAddSpot(context));
                     },
                   ),
@@ -160,6 +168,7 @@ class PlanTab extends StatelessWidget {
   }
 
   void _showAddSpot(BuildContext context) {
+    if (readOnly) return;
     final tripDetailBloc = context.read<TripDetailBloc>();
 
     showModalBottomSheet(
