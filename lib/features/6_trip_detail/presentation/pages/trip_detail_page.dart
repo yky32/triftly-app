@@ -5,6 +5,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/today_plan_utils.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../widgets/plan_day_chips_bar.dart';
@@ -155,6 +156,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                               child: PlanDayChipsBar(
                                 days: state.days,
                                 selectedIndex: state.selectedDayIndex,
+                                todayIndex: TodayPlanUtils.todayDayIndex(trip, state.days),
                                 onDaySelected: (index) => context
                                     .read<TripDetailBloc>()
                                     .add(TripDetailDaySelected(index: index)),

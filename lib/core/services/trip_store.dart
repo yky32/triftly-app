@@ -94,6 +94,8 @@ class TripStore {
     return _sessionDetails[tripId];
   }
 
+  TripDetailData? detailSync(String tripId) => _sessionDetails[tripId];
+
   void addSpot(String tripId, Spot spot) {
     final detail = _sessionDetails[tripId];
     if (detail == null) return;
@@ -104,6 +106,41 @@ class TripStore {
     final detail = _sessionDetails[tripId];
     if (detail == null) return;
     _sessionDetails[tripId] = detail.copyWith(expenses: [...detail.expenses, expense]);
+  }
+
+  void updateSpot(String tripId, Spot spot) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+    final spots = detail.spots.map((s) => s.id == spot.id ? spot : s).toList();
+    _sessionDetails[tripId] = detail.copyWith(spots: spots);
+  }
+
+  void reorderSpotsInDay(String tripId, String dayId, int oldIndex, int newIndex) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+
+    final daySpots = detail.spots.where((s) => s.dayId == dayId).toList()
+      ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+    if (oldIndex < 0 || oldIndex >= daySpots.length) return;
+
+    var targetIndex = newIndex;
+    if (targetIndex > oldIndex) targetIndex -= 1;
+    if (targetIndex < 0 || targetIndex >= daySpots.length) return;
+
+    final moved = daySpots.removeAt(oldIndex);
+    daySpots.insert(targetIndex, moved);
+
+    final reindexed = <String, int>{
+      for (var i = 0; i < daySpots.length; i++) daySpots[i].id: i,
+    };
+
+    final spots = detail.spots.map((spot) {
+      final nextIndex = reindexed[spot.id];
+      if (nextIndex == null) return spot;
+      return spot.copyWith(orderIndex: nextIndex);
+    }).toList();
+
+    _sessionDetails[tripId] = detail.copyWith(spots: spots);
   }
 
   TripDetailData _seedDetail(Trip trip) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/spot_time_utils.dart';
@@ -12,7 +13,9 @@ import '../../../../core/widgets/trip_time_picker_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 
 class AddSpotBottomSheet extends StatefulWidget {
-  const AddSpotBottomSheet({super.key});
+  const AddSpotBottomSheet({this.editSpot, super.key});
+
+  final Spot? editSpot;
 
   @override
   State<AddSpotBottomSheet> createState() => _AddSpotBottomSheetState();
@@ -29,6 +32,27 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.editSpot != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final spot = widget.editSpot;
+    if (spot == null) return;
+
+    _nameController.text = spot.name;
+    _addressController.text = spot.address ?? '';
+    _notesController.text = spot.notes ?? '';
+    _category = spot.category;
+    _duration = spot.estimatedDuration;
+    _startTime = SpotTimeUtils.parseStartTime(spot.openingHours);
+    final endMatch = RegExp(r'-(\d{1,2}:\d{2})$').firstMatch(spot.openingHours ?? '');
+    if (endMatch != null) {
+      final parts = endMatch.group(1)!.split(':');
+      _endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
+  }
 
   @override
   void dispose() {
@@ -110,9 +134,9 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.xxl),
           SwipeToConfirm(
-            label: 'Slide to add spot',
+            label: _isEditing ? 'Slide to save spot' : 'Slide to add spot',
             enabled: _canAdd && !_isSubmitting,
-            onConfirmed: _addSpot,
+            onConfirmed: _submitSpot,
           ),
         ],
       ),
@@ -210,20 +234,44 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
     }
   }
 
-  Future<void> _addSpot() async {
+  Future<void> _submitSpot() async {
     if (!_canAdd || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    context.read<TripDetailBloc>().add(
-          TripDetailSpotAdded(
-            name: _nameController.text.trim(),
-            address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-            category: _category,
-            openingHours: SpotTimeUtils.openingHoursLabel(_startTime, _endTime),
-            estimatedDuration: _duration,
-            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-          ),
-        );
+    final payload = (
+      name: _nameController.text.trim(),
+      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      category: _category,
+      openingHours: SpotTimeUtils.openingHoursLabel(_startTime, _endTime),
+      estimatedDuration: _duration,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+    );
+
+    final bloc = context.read<TripDetailBloc>();
+    if (_isEditing) {
+      bloc.add(
+        TripDetailSpotUpdated(
+          spotId: widget.editSpot!.id,
+          name: payload.name,
+          address: payload.address,
+          category: payload.category,
+          openingHours: payload.openingHours,
+          estimatedDuration: payload.estimatedDuration,
+          notes: payload.notes,
+        ),
+      );
+    } else {
+      bloc.add(
+        TripDetailSpotAdded(
+          name: payload.name,
+          address: payload.address,
+          category: payload.category,
+          openingHours: payload.openingHours,
+          estimatedDuration: payload.estimatedDuration,
+          notes: payload.notes,
+        ),
+      );
+    }
 
     await Future<void>.delayed(const Duration(milliseconds: 180));
     if (!mounted) return;
