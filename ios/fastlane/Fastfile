@@ -190,6 +190,14 @@ def testflight_upload_options(ipa_path)
   options
 end
 
+def connect_api_for_spaceship
+  api_key = build_app_store_connect_api_key
+  return nil unless api_key
+
+  Spaceship::ConnectAPI.token = api_key
+  api_key
+end
+
 default_platform(:ios)
 
 # Helper function to increment build number in pubspec.yaml
@@ -396,6 +404,16 @@ platform :ios do
     
     # Step 2: Archive + export IPA using gym with xcodebuild auth flags
     UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")
+
+    if ENV["CI"] && export_method == "app-store"
+      UI.message("🔧 CI: preparing App Store signing before archive...")
+      begin
+        prune_excess_certificates_for_ci
+      rescue => prune_ex
+        UI.important("⚠️  Certificate prune skipped: #{prune_ex.message}")
+      end
+      setup_appstore_signing
+    end
 
     xcargs = "-allowProvisioningUpdates"
     api_key_params = app_store_connect_api_key_params
@@ -655,6 +673,30 @@ platform :ios do
         UI.error("      3. Bundle ID: com.triftly")
         UI.error("")
         raise
+      end
+    end
+  end
+
+  desc "Revoke excess API-created certificates on CI (frees Apple cert slots)"
+  lane :prune_excess_certificates_for_ci do
+    return unless ENV["CI"]
+    return unless connect_api_for_spaceship
+
+    keep_counts = {
+      "IOS_DEVELOPMENT" => 0,
+      "IOS_DISTRIBUTION" => 1
+    }
+
+    keep_counts.each do |type, keep|
+      certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: type })
+      UI.message("Found #{certs.length} #{type} certificate(s)")
+      next if certs.length <= keep
+
+      sorted = certs.sort_by { |cert| cert.expiration_date.to_s }
+      revoke_list = sorted[0...(sorted.length - keep)]
+      revoke_list.each do |cert|
+        UI.message("Revoking #{type} certificate #{cert.id}")
+        Spaceship::ConnectAPI::Certificate.delete(certificate_id: cert.id)
       end
     end
   end
