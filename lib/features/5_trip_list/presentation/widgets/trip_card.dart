@@ -4,6 +4,8 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import '../../../../core/theme/segment_style.dart';
+import '../../../../core/widgets/flight_leg_display.dart';
 
 class TripCard extends StatelessWidget {
   final Trip trip;
@@ -17,17 +19,24 @@ class TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final daysUntil = trip.startDate.difference(DateTime.now()).inDays;
-    final isSoon = trip.isUpcoming && daysUntil >= 0 && daysUntil <= 14;
+    final phase = trip.phase;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = SegmentStyle.of(phase);
 
     return Pressable(
       onTap: () => context.go('/plan/${trip.id}'),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground(context),
+          color: style.pill(isDark),
           borderRadius: AppRadii.card,
-          boxShadow: AppShadows.card(context),
+          boxShadow: [
+            BoxShadow(
+              color: style.foreground(isDark).withValues(alpha: isDark ? 0.15 : 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +48,7 @@ class TripCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.tintForDestination(trip.destination),
+                    color: style.badge(isDark),
                     borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
                   child: Center(
@@ -56,7 +65,10 @@ class TripCard extends StatelessWidget {
                     children: [
                       Text(
                         trip.name,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontSize: 18,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                            ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -68,24 +80,13 @@ class TripCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (isSoon)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryMuted,
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                    ),
-                    child: Text(
-                      daysUntil == 0 ? 'Today' : '${daysUntil}d',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ),
+                _StatusBadge(trip: trip, style: style),
               ],
             ),
+            if (phase == TripPhase.inProgress) ...[
+              const SizedBox(height: AppSpacing.md),
+              _InProgressBar(trip: trip, style: style),
+            ],
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -103,6 +104,27 @@ class TripCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (_showUpcomingFlight(trip)) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Icon(
+                    Icons.flight_takeoff_rounded,
+                    size: 14,
+                    color: FlightDirectionBadge.accentFor(true, isDark),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      flightLegCompactLabel(trip.outboundFlight!),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (trip.buddies.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               _BuddyDots(buddies: trip.buddies),
@@ -111,6 +133,14 @@ class TripCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _showUpcomingFlight(Trip trip) {
+    if (trip.phase != TripPhase.upcoming) return false;
+    final outbound = trip.outboundFlight;
+    if (outbound == null || outbound.isEmpty) return false;
+    final daysUntil = trip.daysUntilStart;
+    return daysUntil != null && daysUntil <= 7;
   }
 
   String _formatDate(DateTime date) {
@@ -128,6 +158,7 @@ class TripCard extends StatelessWidget {
     if (lower.contains('london')) return '🇬🇧';
     if (lower.contains('paris')) return '🇫🇷';
     if (lower.contains('taipei')) return '🇹🇼';
+    if (lower.contains('hong kong')) return '🇭🇰';
     return '✈️';
   }
 }
@@ -159,4 +190,110 @@ class _BuddyDots extends StatelessWidget {
   }
 
   Color _colorFromHex(String hex) => Color(int.parse('FF$hex', radix: 16));
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.trip, required this.style});
+
+  final Trip trip;
+  final SegmentStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = style.foreground(isDark);
+    final bg = style.badge(isDark);
+
+    switch (trip.phase) {
+      case TripPhase.inProgress:
+        final day = trip.currentDayNumber!;
+        return _Badge(label: 'Day $day', background: bg, foreground: fg);
+      case TripPhase.upcoming:
+        final days = trip.daysUntilStart!;
+        if (days > 14) return const SizedBox.shrink();
+        return _Badge(
+          label: days == 0 ? 'Today' : '${days}d',
+          background: bg,
+          foreground: fg,
+        );
+      case TripPhase.completed:
+        return _Badge(label: 'Done', background: bg, foreground: fg);
+    }
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: foreground),
+      ),
+    );
+  }
+}
+
+class _InProgressBar extends StatelessWidget {
+  const _InProgressBar({required this.trip, required this.style});
+
+  final Trip trip;
+  final SegmentStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = style.foreground(isDark);
+    final day = trip.currentDayNumber!;
+    final total = trip.numberOfDays;
+    final progress = (day / total).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Day $day of $total',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            if (trip.daysRemaining != null && trip.daysRemaining! > 0)
+              Text(
+                '${trip.daysRemaining}d left',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 4,
+            backgroundColor: style.badge(isDark),
+            color: accent,
+          ),
+        ),
+      ],
+    );
+  }
 }

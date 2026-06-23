@@ -3,11 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
+import '../widgets/trip_phase_segment.dart';
 import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/widgets/section_header.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -21,8 +21,32 @@ class TripListPage extends StatelessWidget {
   }
 }
 
-class _View extends StatelessWidget {
+class _View extends StatefulWidget {
   const _View();
+
+  @override
+  State<_View> createState() => _ViewState();
+}
+
+class _ViewState extends State<_View> {
+  TripPhase? _selectedPhase;
+
+  TripPhase _defaultPhase(TripListSections sections) {
+    if (sections.inProgress.isNotEmpty) return TripPhase.inProgress;
+    if (sections.upcoming.isNotEmpty) return TripPhase.upcoming;
+    return TripPhase.completed;
+  }
+
+  List<Trip> _tripsForPhase(TripListSections sections, TripPhase phase) {
+    switch (phase) {
+      case TripPhase.inProgress:
+        return sections.inProgress;
+      case TripPhase.upcoming:
+        return sections.upcoming;
+      case TripPhase.completed:
+        return sections.completed;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +59,12 @@ class _View extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => _showNotifications(context),
+            tooltip: 'Notifications',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => _showCreateTrip(context),
+            tooltip: 'New trip',
           ),
         ],
       ),
@@ -44,13 +74,6 @@ class _View extends StatelessWidget {
           if (state.trips.isEmpty) return _buildEmpty(context);
           return _buildTripList(context, state);
         },
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.navIslandClearance),
-        child: FloatingActionButton(
-          onPressed: () => _showCreateTrip(context),
-          child: const Icon(Icons.add_rounded),
-        ),
       ),
     );
   }
@@ -88,44 +111,80 @@ class _View extends StatelessWidget {
   }
 
   Widget _buildTripList(BuildContext context, TripListState state) {
-    final upcoming = state.trips.where((t) => t.isUpcoming || !t.isPast).toList();
-    final past = state.trips.where((t) => t.isPast).toList();
+    final sections = TripListSections.from(state.trips);
+    final selected = _selectedPhase ?? _defaultPhase(sections);
+    final trips = _tripsForPhase(sections, selected);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 100),
+    final counts = {
+      TripPhase.inProgress: sections.inProgress.length,
+      TripPhase.upcoming: sections.upcoming.length,
+      TripPhase.completed: sections.completed.length,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (upcoming.isNotEmpty) ...[
-          const SectionHeader(title: 'Upcoming'),
-          ...upcoming.map(
-            (trip) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: TripCard(trip: trip),
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+          child: TripPhaseSegment(
+            selected: selected,
+            counts: counts,
+            onChanged: (TripPhase phase) => setState(() => _selectedPhase = phase),
           ),
-        ],
-        if (past.isNotEmpty) ...[
-          const SectionHeader(title: 'Past'),
-          ...past.map(
-            (trip) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Opacity(opacity: 0.65, child: TripCard(trip: trip)),
-            ),
-          ),
-        ],
+        ),
+        Expanded(
+          child: trips.isEmpty
+              ? _buildPhaseEmpty(selected)
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
+                  itemCount: trips.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                  itemBuilder: (_, index) => TripCard(trip: trips[index]),
+                ),
+        ),
       ],
     );
   }
 
+  Widget _buildPhaseEmpty(TripPhase phase) {
+    final (icon, title, subtitle) = switch (phase) {
+      TripPhase.inProgress => (
+          Icons.flight_takeoff_rounded,
+          'Nothing in progress',
+          'Trips you\'re on right now show up here',
+        ),
+      TripPhase.upcoming => (
+          Icons.event_rounded,
+          'No upcoming trips',
+          'Plan your next adventure',
+        ),
+      TripPhase.completed => (
+          Icons.check_circle_outline_rounded,
+          'No completed trips',
+          'Past trips will appear here',
+        ),
+    };
+
+    return EmptyState(icon: icon, title: title, subtitle: subtitle);
+  }
+
   void _showCreateTrip(BuildContext context) {
-    showModalBottomSheet(
+    final tripListBloc = context.read<TripListBloc>();
+
+    showModalBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
+      showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => const CreateTripBottomSheet(),
-    ).then((_) {
-      if (context.mounted) {
-        context.read<TripListBloc>().add(TripListLoadRequested());
+      builder: (sheetContext) => BlocProvider.value(
+        value: tripListBloc,
+        child: const CreateTripBottomSheet(),
+      ),
+    ).then((created) {
+      if (!context.mounted) return;
+      if (created == true) {
+        tripListBloc.add(TripListLoadRequested());
       }
     });
   }

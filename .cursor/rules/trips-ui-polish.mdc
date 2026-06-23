@@ -1,0 +1,48 @@
+---
+description: Trips tab UI polish — segment, create sheet, swipe confirm, date picker (feat/trip-add-app-bar-action)
+globs: lib/features/5_trip_list/**,lib/features/6_trip_detail/presentation/bottom_sheets/add_spot_bottom_sheet.dart,lib/core/widgets/sheet_scaffold.dart,lib/core/widgets/sheet_form_primitives.dart,lib/core/widgets/swipe_to_confirm.dart,lib/core/widgets/trip_date_picker_sheet.dart,lib/core/constants/currency_options.dart
+alwaysApply: false
+---
+
+# Trips UI (PR #25 branch work)
+
+Branch: `feat/trip-add-app-bar-action`. Do not regress these patterns when editing Trips.
+
+## Segment control (`trip_phase_segment.dart`, `trip_phase_style.dart`)
+- **Active** tab only: live ripple rings + pulsing dot when selected. No ripple on trip cards.
+- Phase colors: Active = orange, **Upcoming = light blue** (`#F0F9FF` / `#0369A1`), Done = grey.
+
+## New Trip sheet (`create_trip_bottom_sheet.dart`)
+- Opened from app bar **+** (no FAB). No sheet title/subtitle; drag handle is **inside** `SheetScaffold`.
+- `showCloseButton: false` — dismiss via swipe-down or after slide-to-create.
+- `showModalBottomSheet`: `showDragHandle: false`, `useRootNavigator: true`.
+- **Must** wrap sheet with `BlocProvider.value(value: tripListBloc)` — root navigator sheet is outside page `BlocProvider`.
+- Form: hero **New Trip Name**, location pin (not emoji) for destination, From/To dates, minimal currency row, people icon on buddies.
+- Submit: `SwipeToConfirm` label **"Slide to create trip"** — not a `FilledButton`.
+
+## Slide-to-create (`swipe_to_confirm.dart`)
+- Spring snap, white thumb + chevrons, teal fill. Fire `onConfirmed` immediately on complete.
+- Dismiss: `Navigator.of(context, rootNavigator: true).pop(true)`.
+
+## Trip list bloc (`trip_list_bloc.dart`)
+- `_createdTrips` persists user-created trips across `TripListLoadRequested` (mock reload must not wipe them).
+
+## Currency (`currency_options.dart`)
+- Horizontal scroll chips: **flag + symbol** only (e.g. 🇯🇵 ¥). No country name on chips.
+
+## Date picker (`trip_date_picker_sheet.dart`)
+- Use `TripDatePickerSheet.show` — **not** `showDatePicker`.
+- Bottom sheet: flight icons, teal preview, month grid, tap-to-select.
+- Return mode: duration shortcuts `3d` `5d` `7d` `10d` `14d`; `minDate` = departure when picking end.
+
+## Sheet scaffold (`sheet_scaffold.dart`)
+- `title` optional (omit for create trip). `showDragHandle` renders handle inside sheet body.
+
+## Add Spot sheet (`add_spot_bottom_sheet.dart`)
+- Same chrome as create trip: no title, `showCloseButton: false`, drag handle inside `SheetScaffold`.
+- `showModalBottomSheet`: `showDragHandle: false`, `useRootNavigator: true`.
+- **Must** wrap with `BlocProvider.value(value: tripDetailBloc)` — root navigator sheet is outside page `BlocProvider`.
+- Form: hero **Spot name**, location pin for address, emoji-only category chips, soft card for hours / duration / notes.
+- Shared primitives live in `sheet_form_primitives.dart` (`SheetHeroField`, `SheetSoftCard`, `SheetSectionHeader`, etc.).
+- Submit: `SwipeToConfirm` label **"Slide to add spot"** — not a `FilledButton`.
+- Dismiss: `Navigator.of(context, rootNavigator: true).pop()` after brief success beat.

@@ -11,10 +11,13 @@ class SplitCalculator {
   }) {
     if (buddyIds.isEmpty) return {};
     final splitCount = Decimal.fromInt(buddyIds.length);
-    final perPerson = (totalAmount / splitCount).toDecimal();
+    final perPerson = (totalAmount / splitCount).toDecimal(scaleOnInfinitePrecision: 10);
     final perPersonRounded = _floorTo2(perPerson);
     final totalDistributed = perPersonRounded * Decimal.fromInt(buddyIds.length);
-    final remainderCents = ((totalAmount - totalDistributed) * Decimal.fromInt(100)).floor().toBigInt().toInt();
+    final remainderCents = _floorTo2(totalAmount - totalDistributed)
+        .shift(2)
+        .toBigInt()
+        .toInt();
 
     final result = <String, Decimal>{};
     for (int i = 0; i < buddyIds.length; i++) {
