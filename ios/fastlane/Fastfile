@@ -236,6 +236,34 @@ def persist_ci_signing_env!
   end
 end
 
+def distribution_identity_installed?
+  output = `security find-identity -v -p codesigning ~/Library/Keychains/login.keychain-db 2>/dev/null`
+  output.include?("Apple Distribution") && output.include?("3G34999H3A")
+end
+
+def import_distribution_certificate_for_ci!
+  return false unless ENV["CI"]
+
+  cert_b64 = ENV["IOS_DISTRIBUTION_CERT_BASE64"]
+  return false if cert_b64.nil? || cert_b64.strip.empty?
+
+  require "base64"
+  p12_path = File.join(IOS_DIR, "distribution.ci.p12")
+  File.binwrite(p12_path, Base64.decode64(cert_b64))
+
+  import_certificate(
+    certificate_path: p12_path,
+    certificate_password: ENV["IOS_DISTRIBUTION_CERT_PASSWORD"] || "",
+    keychain_name: "login.keychain-db"
+  )
+
+  File.delete(p12_path) if File.exist?(p12_path)
+  UI.success("✅ Imported KAI YIN YU distribution certificate from CI secret")
+  true
+ensure
+  File.delete(p12_path) if defined?(p12_path) && p12_path && File.exist?(p12_path)
+end
+
 def write_ci_export_options_plist!
   profile_name = ENV["SIGH_NAME"]
   UI.user_error!("SIGH_NAME is required to export the App Store IPA on CI.") unless profile_name
@@ -775,16 +803,11 @@ platform :ios do
     return unless ENV["CI"]
     return unless connect_api_for_spaceship
 
-    # cert/get_certificates uses DISTRIBUTION (Apple Distribution) with generate_apple_certs.
-    # CI cannot import existing portal certs without their private keys — revoke all so a
-    # fresh distribution cert can be created on the runner keychain.
+    # Only prune Development certs ("Created via API"). Keep the existing
+    # KAI YIN YU Distribution certificate — CI reuses it via IOS_DISTRIBUTION_CERT_* secret.
     revoked_ids = []
 
     %w[DEVELOPMENT IOS_DEVELOPMENT].each do |type|
-      prune_certificates_of_type(type, keep: 0, revoked_ids: revoked_ids)
-    end
-
-    %w[DISTRIBUTION IOS_DISTRIBUTION].each do |type|
       prune_certificates_of_type(type, keep: 0, revoked_ids: revoked_ids)
     end
   end
@@ -798,20 +821,31 @@ platform :ios do
     api_key_params = app_store_connect_api_key_params
     
     begin
-      # Get or create App Store Distribution certificate
-      UI.message("📜 Getting App Store Distribution certificate...")
-      if api_key_params
-        get_certificates(
-          development: false,
-          api_key: app_store_connect_api_key(**api_key_params),
-          team_id: "3G34999H3A"
-        )
+      if ENV["CI"]
+        import_distribution_certificate_for_ci!
+        unless distribution_identity_installed?
+          UI.user_error!(
+            "No Apple Distribution identity in keychain. Export the KAI YIN YU " \
+            "Distribution .p12 from Keychain Access and add GitHub secrets " \
+            "IOS_DISTRIBUTION_CERT_BASE64 and IOS_DISTRIBUTION_CERT_PASSWORD."
+          )
+        end
+        UI.message("📜 Reusing imported Apple Distribution certificate (KAI YIN YU)")
       else
-        get_certificates(
-          development: false,
-          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-          team_id: "3G34999H3A"
-        )
+        UI.message("📜 Getting App Store Distribution certificate...")
+        if api_key_params
+          get_certificates(
+            development: false,
+            api_key: app_store_connect_api_key(**api_key_params),
+            team_id: "3G34999H3A"
+          )
+        else
+          get_certificates(
+            development: false,
+            username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
+            team_id: "3G34999H3A"
+          )
+        end
       end
       
       # Get or create App Store provisioning profile
