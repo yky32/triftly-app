@@ -65,32 +65,22 @@ class PlanDayEmptyState extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: _suggestions.map((entry) {
-                final category = entry.$1;
-                final label = entry.$2;
-                return Pressable(
-                  onTap: onAddSuggestion != null
-                      ? () => onAddSuggestion!(category.value)
-                      : onAddSpot,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(AppRadii.md),
-                      border: Border.all(
-                        color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                      ),
-                    ),
-                    child: Text(
-                      '${category.emoji} $label',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                for (var i = 0; i < _suggestions.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _SuggestionChip(
+                      emoji: _suggestions[i].$1.emoji,
+                      label: _suggestions[i].$2,
+                      isDark: isDark,
+                      onTap: onAddSuggestion != null
+                          ? () => onAddSuggestion!(_suggestions[i].$1.value)
+                          : onAddSpot,
                     ),
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
             if (onAddSpot != null)
@@ -141,17 +131,72 @@ class _EmojiCluster extends StatelessWidget {
 
   final bool isDark;
 
+  static const _sideSize = 44.0;
+  static const _centerSize = 52.0;
+  static const _overlap = 10.0;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 72,
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _Bubble(emoji: '🍜', size: 44, offset: const Offset(-34, 4), isDark: isDark),
-          _Bubble(emoji: '🏯', size: 52, offset: Offset.zero, isDark: isDark, elevated: true),
-          _Bubble(emoji: '📍', size: 40, offset: const Offset(36, 6), isDark: isDark),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: _Bubble(emoji: '🍜', size: _sideSize, isDark: isDark),
+          ),
+          Transform.translate(
+            offset: const Offset(-_overlap, 0),
+            child: _Bubble(emoji: '🏯', size: _centerSize, isDark: isDark, elevated: true),
+          ),
+          Transform.translate(
+            offset: const Offset(-_overlap * 2, 4),
+            child: _Bubble(emoji: '📍', size: _sideSize, isDark: isDark),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip({
+    required this.emoji,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final bool isDark;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$emoji $label',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
@@ -161,42 +206,37 @@ class _Bubble extends StatelessWidget {
   const _Bubble({
     required this.emoji,
     required this.size,
-    required this.offset,
     required this.isDark,
     this.elevated = false,
   });
 
   final String emoji;
   final double size;
-  final Offset offset;
   final bool isDark;
   final bool elevated;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: offset,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: elevated
-              ? (isDark ? AppColors.surfaceCardDark : Colors.white)
-              : AppColors.primaryMuted.withValues(alpha: isDark ? 0.18 : 0.45),
-          shape: BoxShape.circle,
-          boxShadow: elevated
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(emoji, style: TextStyle(fontSize: size * 0.46)),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: elevated
+            ? (isDark ? AppColors.surfaceCardDark : Colors.white)
+            : AppColors.primaryMuted.withValues(alpha: isDark ? 0.18 : 0.45),
+        shape: BoxShape.circle,
+        boxShadow: elevated
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
+      alignment: Alignment.center,
+      child: Text(emoji, style: TextStyle(fontSize: size * 0.46)),
     );
   }
 }
