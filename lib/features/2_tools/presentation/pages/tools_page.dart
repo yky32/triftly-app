@@ -228,21 +228,74 @@ class _TravelTool {
 class _ToolGrid extends StatelessWidget {
   const _ToolGrid({required this.tools});
 
+  static const _tileHeight = 118.0;
+
   final List<_TravelTool> tools;
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: tools.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppSpacing.sm,
-        crossAxisSpacing: AppSpacing.sm,
-        childAspectRatio: 1.15,
-      ),
-      itemBuilder: (context, index) => _ToolTile(tool: tools[index]),
+    return Column(
+      children: [
+        for (var i = 0; i < tools.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            height: _tileHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _ToolTile(tool: tools[i])),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: i + 1 < tools.length
+                      ? _ToolTile(tool: tools[i + 1])
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ToolCardBody extends StatelessWidget {
+  const _ToolCardBody({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final Widget leading;
+  final String title;
+  final String subtitle;
+
+  static const _subtitleSlotHeight = 34.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        leading,
+        const Spacer(),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        SizedBox(
+          height: _subtitleSlotHeight,
+          child: Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -283,42 +336,28 @@ class _KitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return _DimmedWhenDisabled(
-      enabled: false,
-      child: Pressable(
-        onTap: null,
-        child: SizedBox(
-          width: 168,
+    return SizedBox(
+      width: 168,
+      height: 132,
+      child: _DimmedWhenDisabled(
+        enabled: false,
+        child: Pressable(
+          onTap: null,
           child: AppCard(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: kit.tint.withValues(alpha: isDark ? 0.22 : 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(kit.emoji, style: const TextStyle(fontSize: 22)),
+            child: _ToolCardBody(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: kit.tint.withValues(alpha: isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
                 ),
-                const Spacer(),
-                Text(
-                  kit.title,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  kit.subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                alignment: Alignment.center,
+                child: Text(kit.emoji, style: const TextStyle(fontSize: 22)),
+              ),
+              title: kit.title,
+              subtitle: kit.subtitle,
             ),
           ),
         ),
@@ -343,10 +382,11 @@ class _ToolTile extends StatelessWidget {
         onTap: enabled ? () => ToolsPage.openTool(context, tool.id) : null,
         child: AppCard(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
+          child: SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: _ToolCardBody(
+              leading: Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
@@ -355,19 +395,9 @@ class _ToolTile extends StatelessWidget {
                 ),
                 child: Icon(tool.icon, size: 20, color: tool.tint),
               ),
-              const Spacer(),
-              Text(
-                tool.title,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                tool.subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              title: tool.title,
+              subtitle: tool.subtitle,
+            ),
           ),
         ),
       ),
@@ -387,6 +417,7 @@ class _DimmedWhenDisabled extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       clipBehavior: Clip.none,
       children: [
         AnimatedOpacity(

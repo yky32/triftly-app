@@ -59,6 +59,7 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final showMapcode = _mode == _MapcodeMode.addressToCode;
 
     return SheetScaffold(
       showCloseButton: false,
@@ -73,35 +74,28 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
             onSelected: _setMode,
           ),
           const SizedBox(height: AppSpacing.lg),
-          SheetSoftCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _mode == _MapcodeMode.addressToCode ? 'Place or address' : 'Mapcode',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SheetIconFieldRow(
-                  icon: Icons.pin_drop_outlined,
-                  field: SheetInlineField(
-                    controller: _queryController,
-                    hint: _mode == _MapcodeMode.addressToCode
-                        ? 'e.g. Tokyo Tower, Shibuya'
-                        : 'e.g. 349 246 831*52',
-                    textInputAction: TextInputAction.search,
-                    onChanged: () => setState(() {}),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                SheetPrimaryButton(label: 'Look up', onPressed: _search),
-              ],
+          SheetGradientHero(
+            child: SheetIconFieldRow(
+              icon: Icons.pin_drop_outlined,
+              field: SheetInlineField(
+                controller: _queryController,
+                hint: showMapcode ? 'e.g. Tokyo Tower, Shibuya' : 'e.g. 349 246 831*52',
+                textInputAction: TextInputAction.search,
+                onChanged: () => setState(() {}),
+              ),
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          SheetPrimaryButton(label: 'Look up', onPressed: _search),
           if (_searched) ...[
+            const SizedBox(height: AppSpacing.xl),
+            SheetSectionHeader(
+              title: _result == null ? 'No match' : _result!.label,
+              caption: _result == null ? 'Try another query' : null,
+            ),
             const SizedBox(height: AppSpacing.md),
             if (_result != null)
-              _ResultCard(result: _result!, showMapcode: _mode == _MapcodeMode.addressToCode)
+              _ResultBlock(result: _result!, showMapcode: showMapcode)
             else
               SheetSoftCard(
                 child: Text(
@@ -112,32 +106,38 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
                 ),
               ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          const SheetSectionHeader(title: 'Try a sample'),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: MapcodeLookup.entries.map((entry) {
-              return Pressable(
-                onTap: () {
-                  setState(() {
-                    _mode = _MapcodeMode.addressToCode;
-                    _queryController.text = entry.label;
-                    _result = entry;
-                    _searched = true;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
+          const SizedBox(height: AppSpacing.xl),
+          const SheetSectionHeader(title: 'Try a sample', caption: 'Optional'),
+          const SizedBox(height: AppSpacing.md),
+          SheetSoftCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: MapcodeLookup.entries.map((entry) {
+                return Pressable(
+                  onTap: () {
+                    setState(() {
+                      _mode = _MapcodeMode.addressToCode;
+                      _queryController.text = entry.label;
+                      _result = entry;
+                      _searched = true;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                    child: Text(
+                      entry.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  child: Text(entry.label, style: Theme.of(context).textTheme.bodySmall),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),
@@ -145,8 +145,8 @@ class _MapcodeFinderSheetState extends State<MapcodeFinderSheet> {
   }
 }
 
-class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.result, required this.showMapcode});
+class _ResultBlock extends StatelessWidget {
+  const _ResultBlock({required this.result, required this.showMapcode});
 
   final MapcodeResult result;
   final bool showMapcode;
@@ -155,19 +155,20 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final highlight = showMapcode ? result.mapcode : result.address;
     final caption = showMapcode ? 'Mapcode' : 'Address';
+    final secondary = showMapcode ? result.address : result.mapcode;
 
     return SheetSoftCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.pin_drop_rounded, size: 20, color: AppColors.primary),
-              const SizedBox(width: 8),
+              const SheetIconTile(icon: Icons.pin_drop_rounded),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
-                  result.label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  caption,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -183,22 +184,9 @@ class _ResultCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(caption, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 4),
-          SelectableText(
-            highlight,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: showMapcode ? 0.6 : 0,
-                ),
-          ),
-          if (showMapcode) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(result.address, style: Theme.of(context).textTheme.bodySmall),
-          ] else ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(result.mapcode, style: Theme.of(context).textTheme.bodySmall),
-          ],
+          SheetResultBanner(text: highlight),
+          const SizedBox(height: AppSpacing.sm),
+          Text(secondary, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

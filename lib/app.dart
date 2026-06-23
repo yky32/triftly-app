@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'core/navigation/app_router.dart';
 
 class TripApp extends StatelessWidget {
-  const TripApp({super.key});
+  const TripApp({required this.themeController, super.key});
+
+  final ThemeController themeController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Triftly',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      routerConfig: appRouter,
+    return ThemeScope(
+      controller: themeController,
+      child: ListenableBuilder(
+        listenable: themeController,
+        builder: (context, _) {
+          return MaterialApp.router(
+            title: 'Triftly',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeController.themeMode,
+            routerConfig: appRouter,
+          );
+        },
+      ),
     );
   }
 }

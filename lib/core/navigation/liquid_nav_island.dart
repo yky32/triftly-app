@@ -53,6 +53,8 @@ class _LiquidNavIslandState extends State<LiquidNavIsland> with SingleTickerProv
 
     return GlassSurface(
       blur: 36,
+      bordered: false,
+      borderRadius: AppRadii.navIslandRadius,
       padding: const EdgeInsets.all(5),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -72,7 +74,7 @@ class _LiquidNavIslandState extends State<LiquidNavIsland> with SingleTickerProv
                   width: slotWidth - inset * 2,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                      borderRadius: AppRadii.navIslandSlotRadius,
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.1)
                           : Colors.white.withValues(alpha: 0.88),
@@ -148,7 +150,7 @@ class _NavSlot extends StatelessWidget {
       type: MaterialType.transparency,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderRadius: AppRadii.navIslandSlotRadius,
         splashColor: AppColors.primary.withValues(alpha: 0.08),
         highlightColor: Colors.transparent,
         child: SizedBox(

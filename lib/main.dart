@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'app.dart';
+import 'core/theme/theme_controller.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final themeController = ThemeController();
+  await themeController.load();
   // TODO: Initialize Supabase
   // TODO: Initialize Hive
-  runApp(const TripApp());
+  runApp(TripApp(themeController: themeController));
 }

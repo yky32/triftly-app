@@ -9,15 +9,29 @@ abstract final class AppSpacing {
   static const double xxl = 32;
   static const double xxxl = 48;
 
-  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, 0, lg, 110);
+  static const EdgeInsets page = EdgeInsets.fromLTRB(lg, 0, lg, 100);
   static const EdgeInsets sheet = EdgeInsets.fromLTRB(lg, sm, lg, xl);
 
-  /// Vertical clearance so content / FAB sit above the floating nav island.
-  static const double navIslandClearance = 80;
+  /// Gap above the home-indicator safe area to the nav island bottom edge.
+  static const double navIslandBottomInset = 4;
+
+  /// Liquid nav island height (glass padding + 48pt slots).
+  static const double navIslandBarHeight = 58;
+
+  /// Distance from the screen bottom to the nav island's bottom edge.
+  static double navIslandBottomOffset(BuildContext context) {
+    final homeIndicator = MediaQuery.paddingOf(context).bottom;
+    return (homeIndicator > 0 ? homeIndicator : xs) + navIslandBottomInset;
+  }
+
+  /// Total vertical space reserved for the floating nav island.
+  static double navIslandOccupiedHeight(BuildContext context) {
+    return navIslandBottomOffset(context) + navIslandBarHeight;
+  }
 
   /// List bottom inset when the floating nav island is visible (nested routes).
   static double listBottomInset(BuildContext context) {
-    return MediaQuery.paddingOf(context).bottom + navIslandClearance;
+    return navIslandOccupiedHeight(context) + sm;
   }
 }
 
@@ -27,6 +41,15 @@ abstract final class AppRadii {
   static const double lg = 20;
   static const double xl = 28;
   static const double pill = 999;
+
+  /// Nav island shell — ~15% less round than a full capsule on [AppSpacing.navIslandBarHeight].
+  static const double navIsland = 24.65;
+
+  /// Active tab pill inside the nav island.
+  static const double navIslandSlot = 18.7;
+
+  static BorderRadius get navIslandRadius => BorderRadius.circular(navIsland);
+  static BorderRadius get navIslandSlotRadius => BorderRadius.circular(navIslandSlot);
 
   static BorderRadius get card => BorderRadius.circular(lg);
   static BorderRadius get sheet => const BorderRadius.vertical(top: Radius.circular(xl));

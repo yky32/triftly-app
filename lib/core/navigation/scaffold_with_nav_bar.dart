@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import 'liquid_nav_island.dart';
 
 class ScaffoldWithNavBar extends StatelessWidget {
@@ -13,7 +14,6 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.paddingOf(context).bottom;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     // Compact centered island — not edge-to-edge (2026 pattern).
@@ -29,7 +29,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomSafe + 16,
+            bottom: AppSpacing.navIslandBottomOffset(context),
             child: Center(
               child: SizedBox(
                 width: islandWidth,

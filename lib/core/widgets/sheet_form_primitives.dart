@@ -70,6 +70,38 @@ class SheetSoftCard extends StatelessWidget {
   }
 }
 
+/// Teal gradient shell shared by form hero fields and converter inputs.
+class SheetGradientHero extends StatelessWidget {
+  const SheetGradientHero({
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+    super.key,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF134E4A), const Color(0xFF1E1E20)]
+              : [AppColors.primaryMuted, const Color(0xFFF7F5F2)],
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 class SheetHeroField extends StatelessWidget {
   const SheetHeroField({
     required this.label,
@@ -91,18 +123,7 @@ class SheetHeroField extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF134E4A), const Color(0xFF1E1E20)]
-              : [AppColors.primaryMuted, const Color(0xFFF7F5F2)],
-        ),
-      ),
+    return SheetGradientHero(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,23 +433,49 @@ class SheetPrimaryButton extends StatelessWidget {
 
 /// Teal result banner used in converter / lookup tool sheets.
 class SheetResultBanner extends StatelessWidget {
-  const SheetResultBanner({required this.text, super.key});
+  const SheetResultBanner({
+    required this.text,
+    this.caption,
+    super.key,
+  });
 
   final String text;
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.primaryMuted.withValues(alpha: 0.35),
+        color: AppColors.primaryMuted.withValues(alpha: isDark ? 0.22 : 0.35),
         borderRadius: BorderRadius.circular(AppRadii.md),
       ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-        textAlign: TextAlign.center,
+      child: Column(
+        children: [
+          if (caption != null) ...[
+            Text(
+              caption!,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            text,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

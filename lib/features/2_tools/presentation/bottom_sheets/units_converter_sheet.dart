@@ -71,35 +71,30 @@ class _UnitsConverterSheetState extends State<UnitsConverterSheet> {
             onSelected: (index) => setState(() => _kind = _UnitKind.values[index]),
           ),
           const SizedBox(height: AppSpacing.lg),
+          SheetGradientHero(
+            child: SheetNumericHeroField(
+              label: switch (_kind) {
+                _UnitKind.distance => 'Kilometers',
+                _UnitKind.temperature => 'Celsius',
+                _UnitKind.weight => 'Kilograms',
+              },
+              trailingAffix: conversion.from,
+              controller: _inputController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              onChanged: () => setState(() {}),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          const SheetSectionHeader(title: 'Result'),
+          const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SheetNumericHeroField(
-                  label: switch (_kind) {
-                    _UnitKind.distance => 'Kilometers',
-                    _UnitKind.temperature => 'Celsius',
-                    _UnitKind.weight => 'Kilograms',
-                  },
-                  trailingAffix: conversion.from,
-                  controller: _inputController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  onChanged: () => setState(() {}),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                const SheetSoftDivider(),
-                const SizedBox(height: AppSpacing.md),
-                SheetNumericHeroField(
-                  label: switch (_kind) {
-                    _UnitKind.distance => 'Miles',
-                    _UnitKind.temperature => 'Fahrenheit',
-                    _UnitKind.weight => 'Pounds',
-                  },
-                  trailingAffix: conversion.to,
-                  readOnly: true,
-                  value: conversion.result ?? '—',
-                ),
-              ],
+            child: SheetResultBanner(
+              caption: switch (_kind) {
+                _UnitKind.distance => 'Miles',
+                _UnitKind.temperature => 'Fahrenheit',
+                _UnitKind.weight => 'Pounds',
+              },
+              text: conversion.result == null ? '—' : '${conversion.result} ${conversion.to}',
             ),
           ),
         ],

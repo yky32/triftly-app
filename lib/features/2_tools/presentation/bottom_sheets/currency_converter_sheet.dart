@@ -63,6 +63,7 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
     final toOption = CurrencyOptions.find(_to)!;
     final result = _result;
     final rate = CurrencyRates.convert(amount: 1, from: _from, to: _to);
+    final rateLabel = '1 ${fromOption.code} ≈ ${_formatResult(rate)} ${toOption.code}';
 
     return SheetScaffold(
       showCloseButton: false,
@@ -71,7 +72,7 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
         children: [
           const SheetSectionHeader(title: 'Currency', caption: 'Offline demo rates'),
           const SizedBox(height: AppSpacing.md),
-          SheetSoftCard(
+          SheetGradientHero(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -86,24 +87,31 @@ class _CurrencyConverterSheetState extends State<CurrencyConverterSheet> {
                   controller: _amountController,
                   onChanged: () => setState(() {}),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                _SwapRow(onSwap: _swap, rateLabel: '1 ${fromOption.code} ≈ ${_formatResult(rate)} ${toOption.code}'),
-                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _SwapRow(onSwap: _swap, rateLabel: rateLabel),
+          const SizedBox(height: AppSpacing.xl),
+          const SheetSectionHeader(title: 'You get'),
+          const SizedBox(height: AppSpacing.md),
+          SheetSoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 SheetCurrencyChipPicker(
                   selected: _to,
                   onSelected: (code) => setState(() => _to = code),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                SheetNumericHeroField(
-                  label: 'You get',
-                  leadingAffix: toOption.symbol,
-                  readOnly: true,
-                  value: result == null ? '—' : _formatResult(result),
+                SheetResultBanner(
+                  caption: toOption.code,
+                  text: result == null ? '—' : '${toOption.symbol}${_formatResult(result)}',
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'Rates are approximate for travel planning — not for trading.',
             style: Theme.of(context).textTheme.bodySmall,

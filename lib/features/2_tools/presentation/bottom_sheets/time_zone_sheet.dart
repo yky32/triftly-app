@@ -70,37 +70,61 @@ class _TimeZoneSheetState extends State<TimeZoneSheet> {
         children: [
           const SheetSectionHeader(title: 'Time zones', caption: 'Home vs destination'),
           const SizedBox(height: AppSpacing.md),
-          _ZonePickerCard(
-            label: 'Home',
-            selectedId: _homeId,
-            onSelected: (id) => setState(() => _homeId = id),
+          SheetSoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _ZoneSectionLabel(title: 'Home'),
+                const SizedBox(height: AppSpacing.sm),
+                _ZoneChipWrap(
+                  selectedId: _homeId,
+                  onSelected: (id) => setState(() => _homeId = id),
+                ),
+                const SheetSoftDivider(),
+                const _ZoneSectionLabel(title: 'Destination'),
+                const SizedBox(height: AppSpacing.sm),
+                _ZoneChipWrap(
+                  selectedId: _awayId,
+                  onSelected: (id) => setState(() => _awayId = id),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          _ZonePickerCard(
-            label: 'Destination',
-            selectedId: _awayId,
-            onSelected: (id) => setState(() => _awayId = id),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(child: _ClockCard(zone: home, formatTime: _formatTime, offsetLabel: _offsetLabel(home))),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _ClockCard(zone: away, formatTime: _formatTime, offsetLabel: _offsetLabel(away))),
-            ],
+          const SizedBox(height: AppSpacing.xl),
+          const SheetSectionHeader(title: 'Now'),
+          const SizedBox(height: AppSpacing.md),
+          SheetGradientHero(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ClockColumn(
+                    zone: home,
+                    formatTime: _formatTime,
+                    offsetLabel: _offsetLabel(home),
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 72,
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
+                Expanded(
+                  child: _ClockColumn(
+                    zone: away,
+                    formatTime: _formatTime,
+                    offsetLabel: _offsetLabel(away),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.compare_arrows_rounded, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(
-                  diffLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ],
+            child: SheetResultBanner(
+              caption: 'Difference',
+              text: diffLabel,
             ),
           ),
         ],
@@ -109,14 +133,33 @@ class _TimeZoneSheetState extends State<TimeZoneSheet> {
   }
 }
 
-class _ZonePickerCard extends StatelessWidget {
-  const _ZonePickerCard({
-    required this.label,
+class _ZoneSectionLabel extends StatelessWidget {
+  const _ZoneSectionLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+      ),
+    );
+  }
+}
+
+class _ZoneChipWrap extends StatelessWidget {
+  const _ZoneChipWrap({
     required this.selectedId,
     required this.onSelected,
   });
 
-  final String label;
   final String selectedId;
   final ValueChanged<String> onSelected;
 
@@ -124,52 +167,43 @@ class _ZonePickerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SheetSoftCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: TimeZoneOptions.all.map((zone) {
-              final selected = zone.id == selectedId;
-              return Pressable(
-                onTap: () => onSelected(zone.id),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
-                        : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : Colors.transparent,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Text(
-                    zone.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.primaryDark : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: TimeZoneOptions.all.map((zone) {
+        final selected = zone.id == selectedId;
+        return Pressable(
+          onTap: () => onSelected(zone.id),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+                  : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: selected ? AppColors.primary : Colors.transparent,
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              zone.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
           ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 }
 
-class _ClockCard extends StatelessWidget {
-  const _ClockCard({
+class _ClockColumn extends StatelessWidget {
+  const _ClockColumn({
     required this.zone,
     required this.formatTime,
     required this.offsetLabel,
@@ -181,22 +215,40 @@ class _ClockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = zone.now();
 
-    return SheetSoftCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        children: [
-          Text(zone.label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 4),
-          Text(
-            formatTime(now),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+    return Column(
+      children: [
+        Text(
+          zone.label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
           ),
-          const SizedBox(height: 2),
-          Text(offsetLabel, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          formatTime(now),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.8,
+            height: 1.05,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          offsetLabel,
+          style: TextStyle(
+            fontSize: 12,
+            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+          ),
+        ),
+      ],
     );
   }
 }
