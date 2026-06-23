@@ -25,13 +25,18 @@ class AppCard extends StatelessWidget {
     final radius = borderRadius ?? AppRadii.card;
     final card = Container(
       margin: margin,
-      padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.cardBackground(context),
         borderRadius: radius,
         boxShadow: AppShadows.card(context),
       ),
-      child: child,
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Padding(
+          padding: padding,
+          child: child,
+        ),
+      ),
     );
 
     if (onTap == null) return card;

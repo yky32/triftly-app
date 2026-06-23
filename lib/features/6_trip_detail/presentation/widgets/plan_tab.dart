@@ -339,10 +339,7 @@ class _SpotCard extends StatelessWidget {
             children: [
               Container(
                 width: 4,
-                decoration: BoxDecoration(
-                  color: spot.visited ? AppColors.textTertiary : categoryColor,
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.md)),
-                ),
+                color: spot.visited ? AppColors.textTertiary : categoryColor,
               ),
               if (!readOnly)
                 Padding(
