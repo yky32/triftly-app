@@ -66,7 +66,7 @@ jobs:
         run: |
           cd ios
           unset SPACESHIP_2FA_SMS_DEFAULT_PHONE_NUMBER FASTLANE_SESSION FASTLANE_PASSWORD FASTLANE_USER FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD || true
-          bundle exec fastlane ios prune_excess_certificates_for_ci || true
+          bundle exec fastlane ios prune_excess_certificates_for_ci
           bundle exec fastlane ios setup_appstore_signing
 
       - name: Deploy to TestFlight

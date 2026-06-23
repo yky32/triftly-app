@@ -213,6 +213,21 @@ def connect_api_for_spaceship
   token
 end
 
+def prune_certificates_of_type(type, keep:, revoked_ids:)
+  certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: type })
+  certs = certs.reject { |cert| revoked_ids.include?(cert.id) }
+  UI.message("Found #{certs.length} #{type} certificate(s)")
+  return if certs.length <= keep
+
+  sorted = certs.sort_by { |cert| cert.expiration_date.to_s }
+  revoke_list = sorted[0...(sorted.length - keep)]
+  revoke_list.each do |cert|
+    UI.message("Revoking #{type} certificate #{cert.display_name} (#{cert.id})")
+    Spaceship::ConnectAPI::Certificate.delete(certificate_id: cert.id)
+    revoked_ids << cert.id
+  end
+end
+
 default_platform(:ios)
 
 # Helper function to increment build number in pubspec.yaml
@@ -712,22 +727,17 @@ platform :ios do
     return unless ENV["CI"]
     return unless connect_api_for_spaceship
 
-    keep_counts = {
-      "IOS_DEVELOPMENT" => 0,
-      "IOS_DISTRIBUTION" => 1
-    }
+    # cert/get_certificates uses DISTRIBUTION (Apple Distribution) with generate_apple_certs.
+    # CI cannot import existing portal certs without their private keys — revoke all so a
+    # fresh distribution cert can be created on the runner keychain.
+    revoked_ids = []
 
-    keep_counts.each do |type, keep|
-      certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: type })
-      UI.message("Found #{certs.length} #{type} certificate(s)")
-      next if certs.length <= keep
+    %w[DEVELOPMENT IOS_DEVELOPMENT].each do |type|
+      prune_certificates_of_type(type, keep: 0, revoked_ids: revoked_ids)
+    end
 
-      sorted = certs.sort_by { |cert| cert.expiration_date.to_s }
-      revoke_list = sorted[0...(sorted.length - keep)]
-      revoke_list.each do |cert|
-        UI.message("Revoking #{type} certificate #{cert.id}")
-        Spaceship::ConnectAPI::Certificate.delete(certificate_id: cert.id)
-      end
+    %w[DISTRIBUTION IOS_DISTRIBUTION].each do |type|
+      prune_certificates_of_type(type, keep: 0, revoked_ids: revoked_ids)
     end
   end
 
