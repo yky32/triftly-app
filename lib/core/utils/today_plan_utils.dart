@@ -1,5 +1,7 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import '../models/trip_models.dart';
+import '../utils/currency_conversion.dart';
 import 'spot_time_utils.dart';
 
 /// Today-mode helpers for trip execution on the Plan tab.
@@ -52,5 +54,41 @@ abstract final class TodayPlanUtils {
     }
 
     return upcoming ?? unvisited.first;
+  }
+
+  static TripDay? todayDay(Trip trip, List<TripDay> days) {
+    final index = todayDayIndex(trip, days);
+    if (index == null) return null;
+    return days[index];
+  }
+
+  static List<Expense> expensesForDay(List<Expense> expenses, String dayId) {
+    return expenses.where((e) => e.dayId == dayId).toList();
+  }
+
+  static Decimal todaySpendingTotal({
+    required Trip trip,
+    required List<TripDay> days,
+    required List<Expense> expenses,
+  }) {
+    final today = todayDay(trip, days);
+    if (today == null) return Decimal.zero;
+
+    return expensesForDay(expenses, today.id).fold<Decimal>(
+      Decimal.zero,
+      (sum, expense) =>
+          sum +
+          CurrencyConversion.toTripCurrency(
+            amount: expense.amount,
+            currency: expense.currency,
+            tripCurrency: trip.defaultCurrency,
+          ),
+    );
+  }
+
+  static int todayExpenseCount(Trip trip, List<TripDay> days, List<Expense> expenses) {
+    final today = todayDay(trip, days);
+    if (today == null) return 0;
+    return expensesForDay(expenses, today.id).length;
   }
 }

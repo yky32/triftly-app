@@ -15,6 +15,7 @@ import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
 import 'plan_day_empty_state.dart';
 import 'today_now_card.dart';
+import 'today_spend_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class PlanTab extends StatelessWidget {
@@ -22,12 +23,14 @@ class PlanTab extends StatelessWidget {
   final List<TripDay> days;
   final List<Spot> spots;
   final bool readOnly;
+  final VoidCallback? onOpenSpendTab;
 
   const PlanTab({
     required this.trip,
     required this.days,
     required this.spots,
     this.readOnly = false,
+    this.onOpenSpendTab,
     super.key,
   });
 
@@ -61,12 +64,41 @@ class PlanTab extends StatelessWidget {
                   ),
                 ),
               ),
-            if (selectedDay != null)
+            if (isToday && selectedDay != null)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     nextSpot != null ? AppSpacing.md : AppSpacing.sm,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: TodaySpendCard(
+                    trip: trip,
+                    todayDay: selectedDay,
+                    todayTotal: TodayPlanUtils.todaySpendingTotal(
+                      trip: trip,
+                      days: days,
+                      expenses: state.expenses,
+                    ),
+                    expenseCount: TodayPlanUtils.todayExpenseCount(
+                      trip,
+                      days,
+                      state.expenses,
+                    ),
+                    onAddExpense: readOnly
+                        ? null
+                        : () => _showTodayExpense(context, dayId: selectedDay.id),
+                    onOpenSpend: onOpenSpendTab,
+                  ),
+                ),
+              ),
+            if (selectedDay != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    (nextSpot != null || isToday) ? AppSpacing.md : AppSpacing.sm,
                     AppSpacing.lg,
                     0,
                   ),
@@ -204,6 +236,24 @@ class PlanTab extends StatelessWidget {
         value: tripDetailBloc,
         child: AddSpotBottomSheet(editSpot: editSpot, initialCategory: initialCategory),
       ),
+    );
+  }
+
+  void _showTodayExpense(
+    BuildContext context, {
+    required String dayId,
+    String? prefillTitle,
+    String? prefillCategory,
+  }) {
+    if (readOnly) return;
+    HapticFeedback.mediumImpact();
+    AddExpenseBottomSheet.show(
+      context,
+      trip: trip,
+      bloc: context.read<TripDetailBloc>(),
+      prefillTitle: prefillTitle,
+      prefillCategory: prefillCategory,
+      initialDayId: dayId,
     );
   }
 }
@@ -409,12 +459,16 @@ class _SpotCard extends StatelessWidget {
   void _showQuickExpense(BuildContext context) {
     HapticFeedback.mediumImpact();
     final bloc = context.read<TripDetailBloc>();
+    final dayId = bloc.state.days.isEmpty
+        ? null
+        : bloc.state.days[bloc.state.selectedDayIndex].id;
     AddExpenseBottomSheet.show(
       context,
       trip: trip,
       bloc: bloc,
       prefillTitle: spot.name,
       prefillCategory: spot.category,
+      initialDayId: dayId,
     );
   }
 }
@@ -458,6 +512,9 @@ class _SpotActionsMenu extends StatelessWidget {
           bloc: bloc,
           prefillTitle: spot.name,
           prefillCategory: spot.category,
+          initialDayId: bloc.state.days.isEmpty
+              ? null
+              : bloc.state.days[bloc.state.selectedDayIndex].id,
         );
       case _SpotAction.edit:
         showModalBottomSheet(

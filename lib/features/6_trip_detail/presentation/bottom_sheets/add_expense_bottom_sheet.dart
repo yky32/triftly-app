@@ -23,6 +23,7 @@ class AddExpenseBottomSheet extends StatefulWidget {
     this.editExpense,
     this.prefillTitle,
     this.prefillCategory,
+    this.initialDayId,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class AddExpenseBottomSheet extends StatefulWidget {
   final Expense? editExpense;
   final String? prefillTitle;
   final String? prefillCategory;
+  final String? initialDayId;
 
   static Future<void> show(
     BuildContext context, {
@@ -38,6 +40,7 @@ class AddExpenseBottomSheet extends StatefulWidget {
     Expense? editExpense,
     String? prefillTitle,
     String? prefillCategory,
+    String? initialDayId,
   }) {
     return TriftlyBottomSheet.show(
       context,
@@ -48,6 +51,7 @@ class AddExpenseBottomSheet extends StatefulWidget {
           editExpense: editExpense,
           prefillTitle: prefillTitle,
           prefillCategory: prefillCategory,
+          initialDayId: initialDayId,
         ),
       ),
     );
@@ -123,7 +127,8 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       final bloc = context.read<TripDetailBloc>();
       if (bloc.state.days.isEmpty) return;
       setState(() {
-        _selectedDayId = bloc.state.days[bloc.state.selectedDayIndex].id;
+        _selectedDayId = widget.initialDayId ??
+            bloc.state.days[bloc.state.selectedDayIndex].id;
       });
     });
   }
