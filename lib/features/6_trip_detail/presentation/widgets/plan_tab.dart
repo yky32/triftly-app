@@ -341,14 +341,6 @@ class _SpotCard extends StatelessWidget {
                 width: 4,
                 color: spot.visited ? AppColors.textTertiary : categoryColor,
               ),
-              if (!readOnly)
-                Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.sm),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                    child: Icon(Icons.drag_handle_rounded, color: AppColors.textTertiary, size: 20),
-                  ),
-                ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
