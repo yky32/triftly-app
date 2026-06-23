@@ -13,6 +13,8 @@ class TripDetailBloc extends Bloc<TripDetailEvent, TripDetailState> {
     on<TripDetailLoadRequested>(_onLoadRequested);
     on<TripDetailSpotAdded>(_onSpotAdded);
     on<TripDetailExpenseAdded>(_onExpenseAdded);
+    on<TripDetailExpenseUpdated>(_onExpenseUpdated);
+    on<TripDetailExpenseRemoved>(_onExpenseRemoved);
     on<TripDetailDaySelected>(_onDaySelected);
     on<TripDetailSpotVisitedToggled>(_onSpotVisitedToggled);
     on<TripDetailSpotsReordered>(_onSpotsReordered);
@@ -74,6 +76,32 @@ class TripDetailBloc extends Bloc<TripDetailEvent, TripDetailState> {
   ) async {
     _store.addExpense(tripId, event.expense);
     emit(state.copyWith(expenses: [...state.expenses, event.expense]));
+  }
+
+  void _onExpenseUpdated(
+    TripDetailExpenseUpdated event,
+    Emitter<TripDetailState> emit,
+  ) {
+    final index = state.expenses.indexWhere((e) => e.id == event.expense.id);
+    if (index < 0) return;
+
+    _store.updateExpense(tripId, event.expense);
+    final expenses = [...state.expenses];
+    expenses[index] = event.expense;
+    emit(state.copyWith(expenses: expenses));
+  }
+
+  void _onExpenseRemoved(
+    TripDetailExpenseRemoved event,
+    Emitter<TripDetailState> emit,
+  ) {
+    final index = state.expenses.indexWhere((e) => e.id == event.expenseId);
+    if (index < 0) return;
+
+    _store.removeExpense(tripId, event.expenseId);
+    emit(state.copyWith(
+      expenses: state.expenses.where((e) => e.id != event.expenseId).toList(),
+    ));
   }
 
   void _onDaySelected(

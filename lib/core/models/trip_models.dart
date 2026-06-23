@@ -450,6 +450,29 @@ class Expense extends Equatable {
             [],
         createdAt: DateTime.parse(map['created_at'] as String),
       );
+
+  Expense copyWith({
+    String? dayId,
+    String? title,
+    Decimal? amount,
+    String? currency,
+    String? paidById,
+    String? category,
+    List<ExpenseSplit>? splits,
+    DateTime? createdAt,
+  }) =>
+      Expense(
+        id: id,
+        tripId: tripId,
+        dayId: dayId ?? this.dayId,
+        title: title ?? this.title,
+        amount: amount ?? this.amount,
+        currency: currency ?? this.currency,
+        paidById: paidById ?? this.paidById,
+        category: category ?? this.category,
+        splits: splits ?? this.splits,
+        createdAt: createdAt ?? this.createdAt,
+      );
 }
 
 class ExpenseSplit extends Equatable {
