@@ -170,7 +170,7 @@ def testflight_upload_options(ipa_path)
   options = {
     ipa: ipa_path,
     app_identifier: "com.triftly",
-    skip_waiting_for_build_processing: false,
+    skip_waiting_for_build_processing: ENV["CI"] ? true : false,
     skip_submission: true,
     distribute_external: false,
     notify_external_testers: false
