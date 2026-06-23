@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -6,7 +8,7 @@ import '../../../../core/utils/currency_utils.dart';
 import '../spend_wallet_summary.dart';
 import 'spend_wallet_accent.dart';
 
-/// Wallet hero — balance + owed/owe in one card.
+/// Wallet hero — liquid glass over teal, balance + owed/owe.
 class SpendWalletCard extends StatelessWidget {
   const SpendWalletCard({
     required this.summary,
@@ -18,13 +20,7 @@ class SpendWalletCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: isDark
-          ? [const Color(0xFF134E4A), const Color(0xFF0F172A)]
-          : [AppColors.primaryDark, const Color(0xFF115E59)],
-    );
+    final radius = BorderRadius.circular(AppRadii.lg);
 
     final heroAmount = summary.isSettled ? summary.myShare : summary.net.abs();
     final sign = summary.isSettled
@@ -43,29 +39,87 @@ class SpendWalletCard extends StatelessWidget {
       SpendSign.neutral => 'All settled',
     };
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: gradient,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: isDark ? 0.28 : 0.18),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: radius,
+        boxShadow: AppShadows.navBar(context),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderRadius: radius,
         child: Stack(
           children: [
+            // Color wash beneath the glass
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [const Color(0xFF0F766E), const Color(0xFF0C4A6E)]
+                        : [AppColors.primaryDark, const Color(0xFF0E7490)],
+                  ),
+                ),
+              ),
+            ),
+            // Frosted liquid glass layer
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: isDark ? 0.14 : 0.28),
+                        Colors.white.withValues(alpha: isDark ? 0.04 : 0.08),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: isDark ? 0.22 : 0.45),
+                      width: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Specular highlight along the top edge
             Positioned(
-              right: -20,
-              top: -20,
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.55),
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: -24,
+              top: -28,
               child: Icon(
                 Icons.account_balance_wallet_rounded,
-                size: 100,
-                color: Colors.white.withValues(alpha: 0.06),
+                size: 112,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+            Positioned(
+              left: -40,
+              bottom: -50,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primaryLight.withValues(alpha: 0.12),
+                ),
               ),
             ),
             Padding(
@@ -75,30 +129,20 @@ class SpendWalletCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadii.md),
-                        ),
+                      _GlassChip(
                         child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         'Wallet',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: Colors.white.withValues(alpha: 0.92),
                               fontWeight: FontWeight.w700,
                             ),
                       ),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadii.pill),
-                        ),
+                      _GlassChip(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         child: Text(
                           summary.currency,
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -125,35 +169,109 @@ class SpendWalletCard extends StatelessWidget {
                         SpendSign.neutral => Colors.white,
                       },
                       letterSpacing: -1,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _OweStat(
-                          icon: Icons.add_circle_outline_rounded,
-                          label: 'Owed to you',
-                          amount: '+${summary.symbol}${CurrencyUtils.formatDecimal(summary.owedToMe)}',
-                          tint: const Color(0xFF6EE7B7),
+                  _GlassInset(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _OweStat(
+                            icon: Icons.add_circle_outline_rounded,
+                            label: 'Owed to you',
+                            amount: '+${summary.symbol}${CurrencyUtils.formatDecimal(summary.owedToMe)}',
+                            tint: const Color(0xFF6EE7B7),
+                          ),
                         ),
-                      ),
-                      Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.18)),
-                      Expanded(
-                        child: _OweStat(
-                          icon: Icons.remove_circle_outline_rounded,
-                          label: 'You owe',
-                          amount: '−${summary.symbol}${CurrencyUtils.formatDecimal(summary.iOwe)}',
-                          tint: const Color(0xFFFCA5A5),
-                          alignEnd: true,
+                        Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.2)),
+                        Expanded(
+                          child: _OweStat(
+                            icon: Icons.remove_circle_outline_rounded,
+                            label: 'You owe',
+                            amount: '−${summary.symbol}${CurrencyUtils.formatDecimal(summary.iOwe)}',
+                            tint: const Color(0xFFFCA5A5),
+                            alignEnd: true,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini frosted capsule for icons and chips on the wallet card.
+class _GlassChip extends StatelessWidget {
+  const _GlassChip({
+    required this.child,
+    this.padding,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: padding == null ? 36 : null,
+          height: padding == null ? 36 : null,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.18),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          alignment: padding == null ? Alignment.center : null,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Frosted inset panel for the owe/owed row.
+class _GlassInset extends StatelessWidget {
+  const _GlassInset({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: child,
+          ),
         ),
       ),
     );
@@ -169,32 +287,51 @@ class _HeroStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, icon) = switch (sign) {
-      SpendSign.positive => (const Color(0xFF065F46), const Color(0xFF6EE7B7), Icons.trending_up_rounded),
-      SpendSign.negative => (const Color(0xFF7F1D1D), const Color(0xFFFCA5A5), Icons.trending_down_rounded),
-      SpendSign.neutral => (Colors.white.withValues(alpha: 0.12), Colors.white70, Icons.verified_rounded),
+      SpendSign.positive => (
+          const Color(0xFF065F46).withValues(alpha: 0.75),
+          const Color(0xFF6EE7B7),
+          Icons.trending_up_rounded,
+        ),
+      SpendSign.negative => (
+          const Color(0xFF7F1D1D).withValues(alpha: 0.75),
+          const Color(0xFFFCA5A5),
+          Icons.trending_down_rounded,
+        ),
+      SpendSign.neutral => (
+          Colors.white.withValues(alpha: 0.14),
+          Colors.white70,
+          Icons.verified_rounded,
+        ),
     };
 
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: fg),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: Border.all(color: fg.withValues(alpha: 0.35)),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: fg),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: fg,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -219,7 +356,7 @@ class _OweStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: alignEnd ? 12 : 0, right: alignEnd ? 0 : 12),
+      padding: EdgeInsets.only(left: alignEnd ? 8 : 0, right: alignEnd ? 0 : 8),
       child: Column(
         crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
