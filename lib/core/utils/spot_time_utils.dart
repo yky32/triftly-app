@@ -69,4 +69,12 @@ abstract final class SpotTimeUtils {
     if (start != null && end != null) return '${format24(start)}-${format24(end)}';
     return start != null ? format24(start) : format24(end!);
   }
+
+  /// Parses the start of an opening-hours string (e.g. `09:00-22:00`).
+  static TimeOfDay? parseStartTime(String? openingHours) {
+    if (openingHours == null || openingHours.isEmpty) return null;
+    final match = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(openingHours.trim());
+    if (match == null) return null;
+    return TimeOfDay(hour: int.parse(match.group(1)!), minute: int.parse(match.group(2)!));
+  }
 }

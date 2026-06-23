@@ -295,6 +295,7 @@ class Spot extends Equatable {
   final double? longitude;
   final String? notes;
   final int orderIndex;
+  final bool visited;
 
   const Spot({
     required this.id,
@@ -312,6 +313,7 @@ class Spot extends Equatable {
     this.longitude,
     this.notes,
     required this.orderIndex,
+    this.visited = false,
   });
 
   Spot copyWith({
@@ -327,6 +329,7 @@ class Spot extends Equatable {
     double? longitude,
     String? notes,
     int? orderIndex,
+    bool? visited,
   }) =>
       Spot(
         id: id,
@@ -344,6 +347,7 @@ class Spot extends Equatable {
         longitude: longitude ?? this.longitude,
         notes: notes ?? this.notes,
         orderIndex: orderIndex ?? this.orderIndex,
+        visited: visited ?? this.visited,
       );
 
   Map<String, dynamic> toMap() => {
@@ -362,6 +366,7 @@ class Spot extends Equatable {
         'longitude': longitude,
         'notes': notes,
         'order_index': orderIndex,
+        'visited': visited,
       };
 
   factory Spot.fromMap(Map<String, dynamic> map) => Spot(
@@ -382,10 +387,11 @@ class Spot extends Equatable {
         longitude: map['longitude'] as double?,
         notes: map['notes'] as String?,
         orderIndex: map['order_index'] as int,
+        visited: map['visited'] as bool? ?? false,
       );
 
   @override
-  List<Object?> get props => [id, dayId, name, orderIndex];
+  List<Object?> get props => [id, dayId, name, orderIndex, visited];
 }
 
 class Expense extends Equatable {

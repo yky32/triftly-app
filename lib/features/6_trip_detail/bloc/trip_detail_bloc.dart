@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/trip_store.dart';
+import '../../../../core/utils/today_plan_utils.dart';
 
 part 'trip_detail_event.dart';
 part 'trip_detail_state.dart';
@@ -13,6 +14,9 @@ class TripDetailBloc extends Bloc<TripDetailEvent, TripDetailState> {
     on<TripDetailSpotAdded>(_onSpotAdded);
     on<TripDetailExpenseAdded>(_onExpenseAdded);
     on<TripDetailDaySelected>(_onDaySelected);
+    on<TripDetailSpotVisitedToggled>(_onSpotVisitedToggled);
+    on<TripDetailSpotsReordered>(_onSpotsReordered);
+    on<TripDetailSpotUpdated>(_onSpotUpdated);
   }
 
   final String tripId;
@@ -29,13 +33,16 @@ class TripDetailBloc extends Bloc<TripDetailEvent, TripDetailState> {
       return;
     }
 
+    final trip = _store.tripById(tripId);
+    final dayIndex = TodayPlanUtils.initialDayIndex(trip, detail.days);
+
     emit(state.copyWith(
       isLoading: false,
-      trip: _store.tripById(tripId),
+      trip: trip,
       days: detail.days,
       spots: detail.spots,
       expenses: detail.expenses,
-      selectedDayIndex: 0,
+      selectedDayIndex: dayIndex,
     ));
   }
 
@@ -74,5 +81,50 @@ class TripDetailBloc extends Bloc<TripDetailEvent, TripDetailState> {
     Emitter<TripDetailState> emit,
   ) {
     emit(state.copyWith(selectedDayIndex: event.index));
+  }
+
+  void _onSpotVisitedToggled(
+    TripDetailSpotVisitedToggled event,
+    Emitter<TripDetailState> emit,
+  ) {
+    final index = state.spots.indexWhere((s) => s.id == event.spotId);
+    if (index < 0) return;
+
+    final updated = state.spots[index].copyWith(visited: !state.spots[index].visited);
+    _store.updateSpot(tripId, updated);
+    final spots = [...state.spots];
+    spots[index] = updated;
+    emit(state.copyWith(spots: spots));
+  }
+
+  void _onSpotsReordered(
+    TripDetailSpotsReordered event,
+    Emitter<TripDetailState> emit,
+  ) {
+    _store.reorderSpotsInDay(tripId, event.dayId, event.oldIndex, event.newIndex);
+    final detail = _store.detailSync(tripId);
+    if (detail == null) return;
+    emit(state.copyWith(spots: detail.spots));
+  }
+
+  void _onSpotUpdated(
+    TripDetailSpotUpdated event,
+    Emitter<TripDetailState> emit,
+  ) {
+    final index = state.spots.indexWhere((s) => s.id == event.spotId);
+    if (index < 0) return;
+
+    final updated = state.spots[index].copyWith(
+      name: event.name,
+      address: event.address,
+      category: event.category,
+      openingHours: event.openingHours,
+      estimatedDuration: event.estimatedDuration,
+      notes: event.notes,
+    );
+    _store.updateSpot(tripId, updated);
+    final spots = [...state.spots];
+    spots[index] = updated;
+    emit(state.copyWith(spots: spots));
   }
 }
