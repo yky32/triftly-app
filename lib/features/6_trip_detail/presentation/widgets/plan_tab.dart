@@ -9,10 +9,10 @@ import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
-import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
+import 'plan_add_spot_action.dart';
 import 'plan_day_empty_state.dart';
 import 'today_plan_card.dart';
 import 'trip_detail_tab_scroll.dart';
@@ -50,101 +50,108 @@ class PlanTab extends StatelessWidget {
         final isToday = TodayPlanUtils.isSelectedDayToday(trip, days, state.selectedDayIndex);
         final nextSpot = isToday ? TodayPlanUtils.nextSpotNow(daySpots) : null;
 
+        final dayItems = <Widget>[];
+
+        if (isToday && selectedDay != null) {
+          dayItems.add(
+            TodayPlanCard(
+              trip: trip,
+              todayDay: selectedDay,
+              nextSpot: nextSpot,
+              todayTotal: TodayPlanUtils.todaySpendingTotal(
+                trip: trip,
+                days: days,
+                expenses: state.expenses,
+              ),
+              expenseCount: TodayPlanUtils.todayExpenseCount(
+                trip,
+                days,
+                state.expenses,
+              ),
+              onAddExpense: readOnly
+                  ? null
+                  : () => _showTodayExpense(context, dayId: selectedDay.id),
+              onOpenSpend: onOpenSpendTab,
+            ),
+          );
+          dayItems.add(const SizedBox(height: AppSpacing.md));
+        }
+
+        if (selectedDay != null) {
+          dayItems.add(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedDay.displayTitleLine,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormatters.weekdayDate(selectedDay.date),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          );
+          dayItems.add(const SizedBox(height: AppSpacing.md));
+
+          if (!hasPlanContent) {
+            dayItems.add(
+              PlanDayEmptyState(
+                day: selectedDay,
+                readOnly: readOnly,
+                onAddSuggestion: readOnly
+                    ? null
+                    : (category) => _showAddSpot(context, initialCategory: category),
+              ),
+            );
+          } else {
+            if (arrivalFlight != null) {
+              dayItems.add(
+                FlightLegCard(
+                  isOutbound: arrivalFlight.isOutbound,
+                  leg: arrivalFlight.leg,
+                ),
+              );
+              dayItems.add(const SizedBox(height: AppSpacing.sm));
+            }
+            if (daySpots.isNotEmpty) {
+              dayItems.add(
+                _SpotList(
+                  trip: trip,
+                  dayId: selectedDay.id,
+                  spots: daySpots,
+                  defaultCurrency: trip.defaultCurrency,
+                  readOnly: readOnly,
+                ),
+              );
+            }
+            if (departureFlight != null) {
+              if (daySpots.isNotEmpty) {
+                dayItems.add(const SizedBox(height: AppSpacing.sm));
+              }
+              dayItems.add(
+                FlightLegCard(
+                  isOutbound: departureFlight.isOutbound,
+                  leg: departureFlight.leg,
+                ),
+              );
+            }
+          }
+
+          if (!readOnly) {
+            dayItems.add(const SizedBox(height: AppSpacing.sm));
+            dayItems.add(PlanAddSpotAction(onTap: () => _showAddSpot(context)));
+          }
+        }
+
         return TripDetailTabScroll(
           key: key,
           slivers: [
-            if (isToday && selectedDay != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                    AppSpacing.lg,
-                    0,
-                  ),
-                  child: TodayPlanCard(
-                    trip: trip,
-                    todayDay: selectedDay,
-                    nextSpot: nextSpot,
-                    todayTotal: TodayPlanUtils.todaySpendingTotal(
-                      trip: trip,
-                      days: days,
-                      expenses: state.expenses,
-                    ),
-                    expenseCount: TodayPlanUtils.todayExpenseCount(
-                      trip,
-                      days,
-                      state.expenses,
-                    ),
-                    onAddExpense: readOnly
-                        ? null
-                        : () => _showTodayExpense(context, dayId: selectedDay.id),
-                    onOpenSpend: onOpenSpendTab,
-                  ),
-                ),
-              ),
-            if (selectedDay != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    isToday ? AppSpacing.md : AppSpacing.sm,
-                    AppSpacing.lg,
-                    0,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              selectedDay.displayTitleLine,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormatters.weekdayDate(selectedDay.date),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!readOnly)
-                        IconButton(
-                          onPressed: () => _showAddSpot(context),
-                          icon: const Icon(Icons.add_rounded),
-                          color: AppColors.primary,
-                          tooltip: 'Add spot',
-                          visualDensity: VisualDensity.compact,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            if (!hasPlanContent && selectedDay != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                  ),
-                  child: PlanDayEmptyState(
-                    day: selectedDay,
-                    readOnly: readOnly,
-                    onAddSpot: readOnly ? null : () => _showAddSpot(context),
-                    onAddSuggestion: readOnly
-                        ? null
-                        : (category) => _showAddSpot(context, initialCategory: category),
-                  ),
-                ),
-              )
-            else if (!hasPlanContent)
+            if (dayItems.isEmpty)
               const SliverFillRemaining(
                 hasScrollBody: false,
                 child: SizedBox.shrink(),
@@ -153,41 +160,14 @@ class PlanTab extends StatelessWidget {
               TripDetailTabScroll.listBottomPadding(
                 context,
                 sliver: SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
-                    AppSpacing.md,
+                    AppSpacing.sm,
                     AppSpacing.lg,
                     AppSpacing.md,
                   ),
                   sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      if (arrivalFlight != null) ...[
-                        FlightLegCard(
-                          isOutbound: arrivalFlight.isOutbound,
-                          leg: arrivalFlight.leg,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                      ],
-                      if (daySpots.isNotEmpty)
-                        _SpotList(
-                          trip: trip,
-                          dayId: selectedDay!.id,
-                          spots: daySpots,
-                          defaultCurrency: trip.defaultCurrency,
-                          readOnly: readOnly,
-                        ),
-                      if (departureFlight != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        FlightLegCard(
-                          isOutbound: departureFlight.isOutbound,
-                          leg: departureFlight.leg,
-                        ),
-                      ],
-                      if (!readOnly) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _AddSpotButton(onTap: () => _showAddSpot(context)),
-                      ],
-                    ]),
+                    delegate: SliverChildListDelegate(dayItems),
                   ),
                 ),
               ),
@@ -317,35 +297,6 @@ class _DayFlight {
 
   final bool isOutbound;
   final FlightLeg leg;
-}
-
-class _AddSpotButton extends StatelessWidget {
-  const _AddSpotButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          borderRadius: AppRadii.card,
-          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
-            const SizedBox(width: 6),
-            Text('Add spot', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary)),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _SpotCard extends StatelessWidget {
