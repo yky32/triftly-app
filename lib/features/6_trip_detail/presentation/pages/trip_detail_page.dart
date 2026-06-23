@@ -227,6 +227,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   days: state.days,
                   spots: state.spots,
                   readOnly: widget.readOnly,
+                  onOpenSpendTab: widget.readOnly ? null : () => _tabController.animateTo(1),
                 ),
                 SpendTab(
                   key: const PageStorageKey<String>('spend'),

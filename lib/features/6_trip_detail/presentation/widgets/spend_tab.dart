@@ -8,12 +8,14 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
+import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/services/split_calculator.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import 'spend_empty_state.dart';
+import 'today_spend_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class SpendTab extends StatelessWidget {
@@ -32,6 +34,23 @@ class SpendTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final todayDay = trip.isInProgress ? TodayPlanUtils.todayDay(trip, days) : null;
+    final todayCard = todayDay == null
+        ? null
+        : TodaySpendCard(
+            trip: trip,
+            todayDay: todayDay,
+            todayTotal: TodayPlanUtils.todaySpendingTotal(
+              trip: trip,
+              days: days,
+              expenses: expenses,
+            ),
+            expenseCount: TodayPlanUtils.todayExpenseCount(trip, days, expenses),
+            onAddExpense: readOnly
+                ? null
+                : () => _showExpenseSheet(context, dayId: todayDay.id),
+          );
+
     if (expenses.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.transparent,
@@ -46,9 +65,23 @@ class SpendTab extends StatelessWidget {
                 AppSpacing.xxl,
               ),
               sliver: SliverToBoxAdapter(
-                child: SpendEmptyState(
-                  readOnly: readOnly,
-                  onAddExpense: readOnly ? null : () => _showExpenseSheet(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (todayCard != null) ...[
+                      todayCard,
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    SpendEmptyState(
+                      readOnly: readOnly,
+                      onAddExpense: readOnly
+                          ? null
+                          : () => _showExpenseSheet(
+                                context,
+                                dayId: todayDay?.id,
+                              ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -75,6 +108,10 @@ class SpendTab extends StatelessWidget {
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                if (todayCard != null) ...[
+                  todayCard,
+                  const SizedBox(height: AppSpacing.lg),
+                ],
                 _SummaryCard(
                   totalSpending: totalSpending,
                   currency: trip.defaultCurrency,
@@ -161,13 +198,14 @@ class SpendTab extends StatelessWidget {
     return current != null && day.dayNumber == current;
   }
 
-  void _showExpenseSheet(BuildContext context, {Expense? editExpense}) {
+  void _showExpenseSheet(BuildContext context, {Expense? editExpense, String? dayId}) {
     if (readOnly) return;
     AddExpenseBottomSheet.show(
       context,
       trip: trip,
       bloc: context.read<TripDetailBloc>(),
       editExpense: editExpense,
+      initialDayId: dayId,
     );
   }
 
