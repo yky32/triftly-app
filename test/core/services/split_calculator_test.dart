@@ -210,6 +210,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: buddies,
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 2);
@@ -273,6 +274,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: four,
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 3);
@@ -316,6 +318,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: buddies,
+      settleCurrency: 'USD',
     );
 
     expect(txs, isEmpty);
@@ -338,6 +341,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: buddies,
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 2);
@@ -370,6 +374,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: [buddy('alice'), buddy('bob')],
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 1);
@@ -393,6 +398,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: buddies,
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 1);
@@ -416,6 +422,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: [buddy('alice'), buddy('bob')],
+      settleCurrency: 'USD',
     );
 
     expect(txs.first.amount, d('10.99'));
@@ -425,6 +432,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: const [],
       buddies: buddies,
+      settleCurrency: 'USD',
     );
     expect(txs, isEmpty);
   });
@@ -444,6 +452,7 @@ group('SplitCalculator.calculateSettlement', () {
     final txs = SplitCalculator.calculateSettlement(
       expenses: expenses,
       buddies: [buddy('alice'), buddy('bob')],
+      settleCurrency: 'USD',
     );
 
     expect(txs.length, 1);
@@ -451,4 +460,62 @@ group('SplitCalculator.calculateSettlement', () {
     expect(txs.first.amount, d('50'));
   });
 });
+
+group('SplitCalculator.calculateShares', () {
+  test('percent split 50/50', () {
+    final shares = SplitCalculator.calculateShares(
+      totalAmount: d('3000'),
+      entries: [
+        SplitBuddyInput(buddyId: 'a', splitType: SplitType.percent, configValue: d('50')),
+        SplitBuddyInput(buddyId: 'b', splitType: SplitType.percent, configValue: d('50')),
+      ],
+    );
+    expectSharesSumTo(shares, d('3000'), {'a': '1500', 'b': '1500'});
+  });
+
+  test('amount split Wayne 1000 Alice 2000', () {
+    final shares = SplitCalculator.calculateShares(
+      totalAmount: d('3000'),
+      entries: [
+        SplitBuddyInput(buddyId: 'wayne', splitType: SplitType.amount, configValue: d('1000')),
+        SplitBuddyInput(buddyId: 'alice', splitType: SplitType.amount, configValue: d('2000')),
+      ],
+    );
+    expectSharesSumTo(shares, d('3000'), {'wayne': '1000', 'alice': '2000'});
+  });
+
+  test('share split 2:1', () {
+    final shares = SplitCalculator.calculateShares(
+      totalAmount: d('3000'),
+      entries: [
+        SplitBuddyInput(buddyId: 'wayne', splitType: SplitType.share, configValue: d('2')),
+        SplitBuddyInput(buddyId: 'alice', splitType: SplitType.share, configValue: d('1')),
+      ],
+    );
+    expectSharesSumTo(shares, d('3000'), {'wayne': '2000', 'alice': '1000'});
+  });
+
+  test('validate rejects amount splits over total', () {
+    final error = SplitCalculator.validateInputs(
+      totalAmount: d('100'),
+      entries: [
+        SplitBuddyInput(buddyId: 'a', splitType: SplitType.amount, configValue: d('80')),
+        SplitBuddyInput(buddyId: 'b', splitType: SplitType.amount, configValue: d('30')),
+      ],
+    );
+    expect(error, isNotNull);
+  });
+
+  test('validate rejects percent over 100', () {
+    final error = SplitCalculator.validateInputs(
+      totalAmount: d('100'),
+      entries: [
+        SplitBuddyInput(buddyId: 'a', splitType: SplitType.percent, configValue: d('60')),
+        SplitBuddyInput(buddyId: 'b', splitType: SplitType.percent, configValue: d('50')),
+      ],
+    );
+    expect(error, isNotNull);
+  });
+});
+
 }

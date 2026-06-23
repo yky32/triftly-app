@@ -8,6 +8,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/split_calculator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
@@ -59,15 +60,20 @@ class AddExpenseBottomSheet extends StatefulWidget {
 class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
+  final _configControllers = <String, TextEditingController>{};
   String? _paidById;
   final Set<String> _splitBuddyIds = {};
   String _category = 'food';
   String? _selectedDayId;
+  String _expenseCurrency = 'USD';
+  SplitType _splitType = SplitType.equal;
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.editExpense != null;
 
-  String get _currency => widget.trip.defaultCurrency;
+  String get _currency => _expenseCurrency;
+
+  String get _tripCurrency => widget.trip.defaultCurrency;
 
   String get _currencySymbol =>
       CurrencyOptions.find(_currency)?.symbol ?? _currency;
@@ -75,14 +81,29 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
   @override
   void initState() {
     super.initState();
+    _expenseCurrency = widget.trip.defaultCurrency;
     final expense = widget.editExpense;
     if (expense != null) {
       _titleController.text = expense.title;
       _amountController.text = CurrencyUtils.formatDecimal(expense.amount);
+      _expenseCurrency = expense.currency;
       _paidById = expense.paidById;
       _splitBuddyIds.addAll(expense.splits.map((s) => s.buddyId));
       _category = expense.category;
       _selectedDayId = expense.dayId;
+      if (expense.splits.isNotEmpty) {
+        _splitType = expense.splits.first.splitType;
+        for (final split in expense.splits) {
+          final controller = TextEditingController(
+            text: split.splitConfigValue != null
+                ? CurrencyUtils.formatDecimal(split.splitConfigValue!)
+                : (_splitType == SplitType.equal
+                    ? ''
+                    : CurrencyUtils.formatDecimal(split.shareAmount)),
+          );
+          _configControllers[split.buddyId] = controller;
+        }
+      }
       return;
     }
 
@@ -111,7 +132,63 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
+    for (final controller in _configControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  TextEditingController _configControllerFor(String buddyId) {
+    return _configControllers.putIfAbsent(
+      buddyId,
+      () => TextEditingController(
+        text: _defaultConfigValue(buddyId),
+      ),
+    );
+  }
+
+  String _defaultConfigValue(String buddyId) {
+    if (!_splitBuddyIds.contains(buddyId)) return '';
+    switch (_splitType) {
+      case SplitType.equal:
+        return '';
+      case SplitType.percent:
+        if (_splitBuddyIds.isEmpty) return '';
+        final even = (Decimal.fromInt(100) / Decimal.fromInt(_splitBuddyIds.length))
+            .toDecimal(scaleOnInfinitePrecision: 2);
+        return CurrencyUtils.formatDecimal(even);
+      case SplitType.amount:
+        return '';
+      case SplitType.share:
+        return '1';
+    }
+  }
+
+  void _ensureConfigControllers() {
+    for (final buddy in widget.trip.buddies) {
+      _configControllerFor(buddy.id);
+    }
+    final stale = _configControllers.keys
+        .where((id) => !_splitBuddyIds.contains(id))
+        .toList();
+    for (final id in stale) {
+      _configControllers.remove(id)?.dispose();
+    }
+  }
+
+  List<SplitBuddyInput> _splitInputs() {
+    return _splitBuddyIds.map((buddyId) {
+      final configText = _configControllers[buddyId]?.text.trim() ?? '';
+      Decimal? configValue;
+      if (_splitType != SplitType.equal && configText.isNotEmpty) {
+        configValue = Decimal.tryParse(configText);
+      }
+      return SplitBuddyInput(
+        buddyId: buddyId,
+        splitType: _splitType,
+        configValue: configValue,
+      );
+    }).toList();
   }
 
   bool get _canSubmit =>
@@ -126,9 +203,15 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       return null;
     }
 
-    final shares = SplitCalculator.equalSplit(
+    final validation = SplitCalculator.validateInputs(
       totalAmount: amount,
-      buddyIds: _splitBuddyIds.toList(),
+      entries: _splitInputs(),
+    );
+    if (validation != null) return validation;
+
+    final shares = SplitCalculator.calculateShares(
+      totalAmount: amount,
+      entries: _splitInputs(),
     );
     if (shares.isEmpty) return null;
 
@@ -137,6 +220,16 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       return '$_currencySymbol${CurrencyUtils.formatDecimal(uniqueShares.first)} each · ${_splitBuddyIds.length} people';
     }
     return 'Split across ${_splitBuddyIds.length} people';
+  }
+
+  String? get _conversionPreview {
+    final amount = Decimal.tryParse(_amountController.text.trim());
+    if (amount == null || amount <= Decimal.zero) return null;
+    return CurrencyConversion.tripEquivalentLabel(
+      amount: amount,
+      currency: _expenseCurrency,
+      tripCurrency: _tripCurrency,
+    );
   }
 
   @override
@@ -161,12 +254,32 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
             onChanged: () => setState(() {}),
           ),
           const SizedBox(height: AppSpacing.xl),
-          SheetNumericHeroField(
-            label: 'Amount',
-            leadingAffix: _currencySymbol,
-            controller: _amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: () => setState(() {}),
+          const SheetSectionHeader(title: 'Amount'),
+          const SizedBox(height: AppSpacing.md),
+          SheetGradientHero(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SheetCurrencyChipPicker(
+                  selected: _expenseCurrency,
+                  onSelected: (code) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _expenseCurrency = code);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SheetNumericHeroField(
+                  leadingAffix: _currencySymbol,
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: () => setState(() {}),
+                ),
+                if (_conversionPreview case final preview?) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  SheetResultBanner(caption: 'Trip currency', text: preview),
+                ],
+              ],
+            ),
           ),
           if (days.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
@@ -193,7 +306,18 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
           ),
           if (widget.trip.buddies.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
-            const SheetSectionHeader(title: 'Split', caption: 'Equal split'),
+            const SheetSectionHeader(title: 'Split', caption: 'Equal · % · Amount · Shares'),
+            const SizedBox(height: AppSpacing.md),
+            _SplitTypePicker(
+              selected: _splitType,
+              onSelected: (type) {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _splitType = type;
+                  _ensureConfigControllers();
+                });
+              },
+            ),
             const SizedBox(height: AppSpacing.md),
             SheetSoftCard(
               child: Column(
@@ -237,15 +361,55 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
                         } else {
                           _splitBuddyIds.add(id);
                         }
+                        _ensureConfigControllers();
                       });
                     },
                   ),
+                  if (_splitType != SplitType.equal && _splitBuddyIds.isNotEmpty) ...[
+                    const SheetSoftDivider(),
+                    ..._splitBuddyIds.map((buddyId) {
+                      final buddy = widget.trip.buddies.firstWhere((b) => b.id == buddyId);
+                      final controller = _configControllerFor(buddyId);
+                      final suffix = switch (_splitType) {
+                        SplitType.percent => '%',
+                        SplitType.amount => _currencySymbol,
+                        SplitType.share => 'shares',
+                        SplitType.equal => '',
+                      };
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                buddy.name,
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 96,
+                              child: SheetInlineField(
+                                controller: controller,
+                                hint: suffix,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: () => setState(() {}),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
                   if (_splitPreview case final preview?) ...[
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       preview,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.primaryDark,
+                            color: preview.startsWith('Fixed') || preview.startsWith('Percent')
+                                ? AppColors.error
+                                : AppColors.primaryDark,
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -275,11 +439,20 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       return;
     }
 
+    final validation = SplitCalculator.validateInputs(
+      totalAmount: amount,
+      entries: _splitInputs(),
+    );
+    if (validation != null) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
     final bloc = context.read<TripDetailBloc>();
     final expenseId = widget.editExpense?.id ?? const Uuid().v4();
-    final shares = SplitCalculator.equalSplit(
+    final shares = SplitCalculator.calculateShares(
       totalAmount: amount,
-      buddyIds: _splitBuddyIds.toList(),
+      entries: _splitInputs(),
     );
 
     final expense = Expense(
@@ -288,20 +461,22 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       dayId: _selectedDayId,
       title: _titleController.text.trim(),
       amount: amount,
-      currency: _currency,
+      currency: _expenseCurrency,
       paidById: _paidById!,
       category: _category,
-      splits: _splitBuddyIds
-          .map(
-            (id) => ExpenseSplit(
-              id: const Uuid().v4(),
-              expenseId: expenseId,
-              buddyId: id,
-              splitType: SplitType.equal,
-              shareAmount: shares[id] ?? Decimal.zero,
-            ),
-          )
-          .toList(),
+      splits: _splitBuddyIds.map((id) {
+        final configText = _configControllers[id]?.text.trim() ?? '';
+        final configValue =
+            _splitType == SplitType.equal ? null : Decimal.tryParse(configText);
+        return ExpenseSplit(
+          id: const Uuid().v4(),
+          expenseId: expenseId,
+          buddyId: id,
+          splitType: _splitType,
+          shareAmount: shares[id] ?? Decimal.zero,
+          splitConfigValue: configValue,
+        );
+      }).toList(),
       createdAt: widget.editExpense?.createdAt ?? DateTime.now(),
     );
 
@@ -315,6 +490,50 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
     if (!mounted) return;
 
     Navigator.of(context, rootNavigator: true).pop();
+  }
+}
+
+class _SplitTypePicker extends StatelessWidget {
+  const _SplitTypePicker({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final SplitType selected;
+  final ValueChanged<SplitType> onSelected;
+
+  static const _types = [
+    SplitType.equal,
+    SplitType.percent,
+    SplitType.amount,
+    SplitType.share,
+  ];
+
+  static String _label(SplitType type) => switch (type) {
+        SplitType.equal => 'Equal',
+        SplitType.percent => 'Percent',
+        SplitType.amount => 'Amount',
+        SplitType.share => 'Shares',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _types.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final type = _types[index];
+          return _TextChip(
+            label: _label(type),
+            isSelected: selected == type,
+            onTap: () => onSelected(type),
+          );
+        },
+      ),
+    );
   }
 }
 

@@ -481,6 +481,7 @@ class ExpenseSplit extends Equatable {
   final String buddyId;
   final SplitType splitType;
   final Decimal shareAmount;
+  final Decimal? splitConfigValue;
 
   const ExpenseSplit({
     required this.id,
@@ -488,6 +489,7 @@ class ExpenseSplit extends Equatable {
     required this.buddyId,
     required this.splitType,
     required this.shareAmount,
+    this.splitConfigValue,
   });
 
   @override
@@ -499,6 +501,8 @@ class ExpenseSplit extends Equatable {
         'buddy_id': buddyId,
         'split_type': splitType.name,
         'share_amount': shareAmount.toString(),
+        if (splitConfigValue != null)
+          'split_config_value': splitConfigValue.toString(),
       };
 
   factory ExpenseSplit.fromMap(Map<String, dynamic> map) => ExpenseSplit(
@@ -510,6 +514,9 @@ class ExpenseSplit extends Equatable {
           orElse: () => SplitType.equal,
         ),
         shareAmount: Decimal.parse(map['share_amount'] as String),
+        splitConfigValue: map['split_config_value'] != null
+            ? Decimal.parse(map['split_config_value'] as String)
+            : null,
       );
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -49,7 +50,16 @@ class SpendTab extends StatelessWidget {
       );
     }
 
-    final totalSpending = expenses.fold<Decimal>(Decimal.zero, (sum, e) => sum + e.amount);
+    final totalSpending = expenses.fold<Decimal>(
+      Decimal.zero,
+      (sum, e) =>
+          sum +
+          CurrencyConversion.toTripCurrency(
+            amount: e.amount,
+            currency: e.currency,
+            tripCurrency: trip.defaultCurrency,
+          ),
+    );
     final grouped = _groupByDay(expenses);
 
     return TripDetailTabScroll(
@@ -81,6 +91,7 @@ class SpendTab extends StatelessWidget {
                       child: _ExpenseItem(
                         expense: expense,
                         buddies: trip.buddies,
+                        tripCurrency: trip.defaultCurrency,
                         onTap: readOnly
                             ? null
                             : () => _showExpenseSheet(context, editExpense: expense),
@@ -179,7 +190,7 @@ class _SummaryCard extends StatelessWidget {
           ],
           if (expenses.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
-            _CategoryBreakdown(expenses: expenses),
+            _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
           ],
         ],
       ),
@@ -188,15 +199,24 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _CategoryBreakdown extends StatelessWidget {
-  const _CategoryBreakdown({required this.expenses});
+  const _CategoryBreakdown({
+    required this.expenses,
+    required this.tripCurrency,
+  });
 
   final List<Expense> expenses;
+  final String tripCurrency;
 
   @override
   Widget build(BuildContext context) {
     final categoryTotals = <String, Decimal>{};
     for (final e in expenses) {
-      categoryTotals[e.category] = (categoryTotals[e.category] ?? Decimal.zero) + e.amount;
+      final converted = CurrencyConversion.toTripCurrency(
+        amount: e.amount,
+        currency: e.currency,
+        tripCurrency: tripCurrency,
+      );
+      categoryTotals[e.category] = (categoryTotals[e.category] ?? Decimal.zero) + converted;
     }
     final maxAmount = categoryTotals.values.fold(Decimal.zero, (a, b) => a > b ? a : b);
 
@@ -248,11 +268,13 @@ class _ExpenseItem extends StatelessWidget {
   const _ExpenseItem({
     required this.expense,
     required this.buddies,
+    required this.tripCurrency,
     this.onTap,
   });
 
   final Expense expense;
   final List<Buddy> buddies;
+  final String tripCurrency;
   final VoidCallback? onTap;
 
   @override
@@ -302,6 +324,13 @@ class _ExpenseItem extends StatelessWidget {
                       '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                     ),
+                    if (CurrencyConversion.tripEquivalentLabel(
+                          amount: expense.amount,
+                          currency: expense.currency,
+                          tripCurrency: tripCurrency,
+                        )
+                        case final label?)
+                      Text(label, style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -334,7 +363,11 @@ class _SettlementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = SplitCalculator.calculateSettlement(expenses: expenses, buddies: trip.buddies);
+    final transactions = SplitCalculator.calculateSettlement(
+      expenses: expenses,
+      buddies: trip.buddies,
+      settleCurrency: trip.defaultCurrency,
+    );
 
     if (transactions.isEmpty) {
       return AppCard(
