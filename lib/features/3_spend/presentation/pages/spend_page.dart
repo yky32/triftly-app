@@ -9,6 +9,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../bloc/spend_overview_bloc.dart';
 import '../spend_wallet_summary.dart';
+import '../widgets/spend_wallet_accent.dart';
 import '../widgets/spend_wallet_activity.dart';
 import '../widgets/spend_wallet_card.dart';
 import '../widgets/spend_wallet_trip_row.dart';
@@ -82,11 +83,11 @@ class _View extends StatelessWidget {
                 SpendWalletCard(summary: summary),
                 if (trips.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Trips',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  SpendSectionTitle(
+                    icon: Icons.luggage_rounded,
+                    title: 'Trips',
+                    count: trips.length,
                   ),
-                  const SizedBox(height: AppSpacing.xs),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     decoration: BoxDecoration(

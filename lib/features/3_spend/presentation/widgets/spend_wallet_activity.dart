@@ -4,6 +4,7 @@ import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
+import 'spend_wallet_accent.dart';
 
 class SpendWalletActivity extends StatelessWidget {
   const SpendWalletActivity({
@@ -25,11 +26,11 @@ class SpendWalletActivity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Recent',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        SpendSectionTitle(
+          icon: Icons.receipt_long_rounded,
+          title: 'Recent',
+          count: items.length,
         ),
-        const SizedBox(height: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
@@ -41,7 +42,7 @@ class SpendWalletActivity extends StatelessWidget {
                 if (i > 0)
                   Divider(
                     height: 1,
-                    indent: 16,
+                    indent: 60,
                     endIndent: 16,
                     color: isDark ? AppColors.borderDark : AppColors.borderLight,
                   ),
@@ -71,13 +72,25 @@ class _ActivityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final expense = line.expense;
     final trip = line.trip;
+    final category = SpotCategory.values.firstWhere(
+      (c) => c.value == expense.category,
+      orElse: () => SpotCategory.other,
+    );
+    final accent = AppColors.categoryColor(category);
+    final amountLabel = '−${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}';
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         child: Row(
           children: [
+            SpendIconAvatar(
+              size: 38,
+              color: accent,
+              child: Text(category.emoji, style: const TextStyle(fontSize: 17)),
+            ),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,18 +100,30 @@ class _ActivityRow extends StatelessWidget {
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    trip.name,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Icon(Icons.flight_takeoff_rounded, size: 12, color: AppColors.textTertiary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          trip.name,
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              amountLabel,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.error,
+                    letterSpacing: -0.2,
+                  ),
             ),
           ],
         ),

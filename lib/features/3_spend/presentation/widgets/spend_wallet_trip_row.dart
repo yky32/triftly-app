@@ -5,6 +5,7 @@ import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
+import 'spend_wallet_accent.dart';
 
 class SpendWalletTripRow extends StatelessWidget {
   const SpendWalletTripRow({
@@ -19,35 +20,65 @@ class SpendWalletTripRow extends StatelessWidget {
     final trip = snapshot.trip;
     final symbol = CurrencyUtils.symbolFor(snapshot.currency);
     final net = snapshot.myNet;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final (netLabel, netColor) = switch (true) {
-      _ when net > Decimal.zero => ('+$symbol${CurrencyUtils.formatDecimal(net)}', AppColors.success),
-      _ when net < Decimal.zero => ('-$symbol${CurrencyUtils.formatDecimal(net.abs())}', AppColors.error),
-      _ => ('Settled', isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+    final (sign, netLabel) = switch (true) {
+      _ when net > Decimal.zero => (
+          SpendSign.positive,
+          '+$symbol${CurrencyUtils.formatDecimal(net)}',
+        ),
+      _ when net < Decimal.zero => (
+          SpendSign.negative,
+          '−$symbol${CurrencyUtils.formatDecimal(net.abs())}',
+        ),
+      _ => (SpendSign.neutral, 'Settled'),
     };
 
     return InkWell(
       onTap: () => SpendNavigation.openTripSpend(context, trip.id),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 13),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Expanded(
+            SpendIconAvatar(
               child: Text(
-                trip.name,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                overflow: TextOverflow.ellipsis,
+                tripDestinationEmoji(trip.destination),
+                style: const TextStyle(fontSize: 20),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              netLabel,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: netColor,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trip.name,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (trip.isInProgress)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 6, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Active',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: AppColors.primaryDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
+            SpendSignedBadge(label: netLabel, sign: sign, compact: true),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
           ],
         ),
       ),
