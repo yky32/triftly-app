@@ -191,11 +191,26 @@ def testflight_upload_options(ipa_path)
 end
 
 def connect_api_for_spaceship
-  api_key = build_app_store_connect_api_key
-  return nil unless api_key
+  params = app_store_connect_api_key_params
+  return nil unless params
 
-  Spaceship::ConnectAPI.token = api_key
-  api_key
+  key_path = File.join(Dir.home, ".appstoreconnect", "api_key.p8")
+  token = if File.exist?(key_path)
+            Spaceship::ConnectAPI::Token.create(
+              key_id: params[:key_id],
+              issuer_id: params[:issuer_id],
+              filepath: key_path
+            )
+          else
+            Spaceship::ConnectAPI::Token.create(
+              key_id: params[:key_id],
+              issuer_id: params[:issuer_id],
+              key: params[:key_content]
+            )
+          end
+
+  Spaceship::ConnectAPI.token = token
+  token
 end
 
 default_platform(:ios)
@@ -413,6 +428,18 @@ platform :ios do
         UI.important("⚠️  Certificate prune skipped: #{prune_ex.message}")
       end
       setup_appstore_signing
+
+      if ENV["SIGH_NAME"]
+        update_code_signing_settings(
+          use_automatic_signing: false,
+          path: "#{IOS_DIR}/Runner.xcodeproj",
+          team_id: "3G34999H3A",
+          bundle_identifier: "com.triftly",
+          profile_name: ENV["SIGH_NAME"],
+          code_sign_identity: "Apple Distribution",
+          targets: ["Runner"]
+        )
+      end
     end
 
     xcargs = "-allowProvisioningUpdates"
@@ -437,8 +464,11 @@ platform :ios do
       output_directory: "#{PROJECT_ROOT}/build/ios/ipa",
       export_options: {
         method: export_method,
-        signingStyle: "automatic",
-        teamID: "3G34999H3A"
+        signingStyle: "manual",
+        teamID: "3G34999H3A",
+        provisioningProfiles: {
+          "com.triftly" => ENV["SIGH_NAME"]
+        }.compact
       },
       export_team_id: "3G34999H3A",
       xcargs: xcargs,
