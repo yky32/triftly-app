@@ -64,17 +64,31 @@ class PlanTab extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        selectedDay.displayTitleLine,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedDay.displayTitleLine,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormatters.weekdayDate(selectedDay.date),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        DateFormatters.weekdayDate(selectedDay.date),
-                        style: Theme.of(context).textTheme.bodySmall,
+                      IconButton(
+                        onPressed: () => _showAddSpot(context),
+                        icon: const Icon(Icons.add_rounded),
+                        color: AppColors.primary,
+                        tooltip: 'Add spot',
+                        visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),
