@@ -64,7 +64,7 @@ class TodaySpendCard extends StatelessWidget {
                   Text(
                     hasSpending
                         ? '$symbol${CurrencyUtils.formatDecimal(todayTotal)} spent'
-                        : 'No spending logged yet',
+                        : '$symbol${CurrencyUtils.formatDecimal(Decimal.zero)} spent',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,

@@ -14,7 +14,6 @@ import '../../../../core/services/split_calculator.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
-import 'spend_empty_state.dart';
 import 'today_spend_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
@@ -72,14 +71,11 @@ class SpendTab extends StatelessWidget {
                       todayCard,
                       const SizedBox(height: AppSpacing.lg),
                     ],
-                    SpendEmptyState(
-                      readOnly: readOnly,
-                      onAddExpense: readOnly
-                          ? null
-                          : () => _showExpenseSheet(
-                                context,
-                                dayId: todayDay?.id,
-                              ),
+                    _SummaryCard(
+                      totalSpending: Decimal.zero,
+                      currency: trip.defaultCurrency,
+                      expenses: expenses,
+                      emptyBadgeLabel: readOnly ? 'No spending recorded' : 'No expenses yet',
                     ),
                   ],
                 ),
@@ -385,11 +381,13 @@ class _SummaryCard extends StatelessWidget {
     required this.totalSpending,
     required this.currency,
     required this.expenses,
+    this.emptyBadgeLabel,
   });
 
   final Decimal totalSpending;
   final String currency;
   final List<Expense> expenses;
+  final String? emptyBadgeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -398,24 +396,61 @@ class _SummaryCard extends StatelessWidget {
 
     return AppCard(
       color: AppColors.primaryDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text('Total Spending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
-          const SizedBox(height: 4),
-          Text(
-            '$symbol${CurrencyUtils.formatDecimal(totalSpending)}',
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total Spending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text(
+                '$symbol${CurrencyUtils.formatDecimal(totalSpending)}',
+                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5),
+              ),
+              if (converted != null) ...[
+                const SizedBox(height: 2),
+                Text(converted, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
+              ],
+              if (expenses.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
+              ],
+            ],
           ),
-          if (converted != null) ...[
-            const SizedBox(height: 2),
-            Text(converted, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
-          ],
-          if (expenses.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
-          ],
+          if (emptyBadgeLabel != null)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _SpendEmptyBadge(label: emptyBadgeLabel!),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _SpendEmptyBadge extends StatelessWidget {
+  const _SpendEmptyBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.92),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
+            ),
       ),
     );
   }
