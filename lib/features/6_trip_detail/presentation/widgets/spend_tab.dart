@@ -39,6 +39,7 @@ class SpendTab extends StatelessWidget {
         : TodaySpendCard(
             trip: trip,
             todayDay: todayDay,
+            compact: true,
             todayTotal: TodayPlanUtils.todaySpendingTotal(
               trip: trip,
               days: days,
@@ -49,6 +50,22 @@ class SpendTab extends StatelessWidget {
                 ? null
                 : () => _showExpenseSheet(context, dayId: todayDay.id),
           );
+
+    Widget buildOverviewRow({
+      required Decimal totalSpending,
+      String? emptyBadgeLabel,
+    }) {
+      return _SpendOverviewRow(
+        todayCard: todayCard,
+        summaryCard: _SummaryCard(
+          compact: true,
+          totalSpending: totalSpending,
+          currency: trip.defaultCurrency,
+          expenses: expenses,
+          emptyBadgeLabel: emptyBadgeLabel,
+        ),
+      );
+    }
 
     if (expenses.isEmpty) {
       return Scaffold(
@@ -64,20 +81,9 @@ class SpendTab extends StatelessWidget {
                 AppSpacing.xxl,
               ),
               sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (todayCard != null) ...[
-                      todayCard,
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    _SummaryCard(
-                      totalSpending: Decimal.zero,
-                      currency: trip.defaultCurrency,
-                      expenses: expenses,
-                      emptyBadgeLabel: readOnly ? 'No spending recorded' : 'No expenses yet',
-                    ),
-                  ],
+                child: buildOverviewRow(
+                  totalSpending: Decimal.zero,
+                  emptyBadgeLabel: readOnly ? 'No spending' : 'No expenses',
                 ),
               ),
             ),
@@ -104,15 +110,14 @@ class SpendTab extends StatelessWidget {
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                if (todayCard != null) ...[
-                  todayCard,
+                buildOverviewRow(totalSpending: totalSpending),
+                if (expenses.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.lg),
+                  AppCard(
+                    color: AppColors.primaryDark,
+                    child: _CategoryBreakdown(expenses: expenses, tripCurrency: trip.defaultCurrency),
+                  ),
                 ],
-                _SummaryCard(
-                  totalSpending: totalSpending,
-                  currency: trip.defaultCurrency,
-                  expenses: expenses,
-                ),
                 const SizedBox(height: AppSpacing.lg),
                 ...grouped.entries.expand((entry) {
                   final day = entry.key;
@@ -376,47 +381,102 @@ class _ExpenseDismissible extends StatelessWidget {
   }
 }
 
+class _SpendOverviewRow extends StatelessWidget {
+  const _SpendOverviewRow({
+    required this.summaryCard,
+    this.todayCard,
+  });
+
+  final Widget? todayCard;
+  final Widget summaryCard;
+
+  @override
+  Widget build(BuildContext context) {
+    if (todayCard == null) return summaryCard;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: todayCard!),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: summaryCard),
+        ],
+      ),
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.totalSpending,
     required this.currency,
     required this.expenses,
+    this.compact = false,
     this.emptyBadgeLabel,
   });
 
   final Decimal totalSpending;
   final String currency;
   final List<Expense> expenses;
+  final bool compact;
   final String? emptyBadgeLabel;
 
   @override
   Widget build(BuildContext context) {
     final converted = CurrencyUtils.approximateHkd(amount: totalSpending, currency: currency);
     final symbol = CurrencyUtils.symbolFor(currency);
+    final amountStyle = TextStyle(
+      fontSize: compact ? 22 : 30,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+      letterSpacing: -0.5,
+      height: compact ? 1.1 : null,
+    );
 
     return AppCard(
       color: AppColors.primaryDark,
+      padding: compact ? const EdgeInsets.all(AppSpacing.md) : const EdgeInsets.all(AppSpacing.lg),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Total Spending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
-              const SizedBox(height: 4),
-              Text(
-                '$symbol${CurrencyUtils.formatDecimal(totalSpending)}',
-                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5),
-              ),
-              if (converted != null) ...[
-                const SizedBox(height: 2),
-                Text(converted, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
+          SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  compact ? 'Total' : 'Total Spending',
+                  style: (compact
+                          ? Theme.of(context).textTheme.labelSmall
+                          : Theme.of(context).textTheme.bodySmall)
+                      ?.copyWith(color: Colors.white70, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: compact ? AppSpacing.sm : 4),
+                Text(
+                  '$symbol${CurrencyUtils.formatDecimal(totalSpending)}',
+                  style: amountStyle,
+                  maxLines: compact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (converted != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    converted,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white70,
+                          fontSize: compact ? 11 : null,
+                        ),
+                    maxLines: compact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (!compact && expenses.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
+                ],
               ],
-              if (expenses.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
-              ],
-            ],
+            ),
           ),
           if (emptyBadgeLabel != null)
             Positioned(
