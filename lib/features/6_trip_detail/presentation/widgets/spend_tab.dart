@@ -16,6 +16,7 @@ import '../bottom_sheets/settlement_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import 'today_spend_card.dart';
 import 'spend_overview_metric_card.dart';
+import 'spend_category_breakdown_card.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class SpendTab extends StatelessWidget {
@@ -114,9 +115,9 @@ class SpendTab extends StatelessWidget {
                 buildOverviewRow(totalSpending: totalSpending),
                 if (expenses.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.lg),
-                  AppCard(
-                    color: AppColors.primaryDark,
-                    child: _CategoryBreakdown(expenses: expenses, tripCurrency: trip.defaultCurrency),
+                  SpendCategoryBreakdownCard(
+                    expenses: expenses,
+                    tripCurrency: trip.defaultCurrency,
                   ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
@@ -456,76 +457,13 @@ class _SummaryCard extends StatelessWidget {
           ],
           if (expenses.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
-            _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
+            SpendCategoryBreakdownCard(
+              expenses: expenses,
+              tripCurrency: currency,
+            ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _CategoryBreakdown extends StatelessWidget {
-  const _CategoryBreakdown({
-    required this.expenses,
-    required this.tripCurrency,
-  });
-
-  final List<Expense> expenses;
-  final String tripCurrency;
-
-  @override
-  Widget build(BuildContext context) {
-    final categoryTotals = <String, Decimal>{};
-    for (final e in expenses) {
-      final converted = CurrencyConversion.toTripCurrency(
-        amount: e.amount,
-        currency: e.currency,
-        tripCurrency: tripCurrency,
-      );
-      categoryTotals[e.category] = (categoryTotals[e.category] ?? Decimal.zero) + converted;
-    }
-    final maxAmount = categoryTotals.values.fold(Decimal.zero, (a, b) => a > b ? a : b);
-
-    return Column(
-      children: categoryTotals.entries.map((entry) {
-        final category = SpotCategory.values.firstWhere(
-          (c) => c.value == entry.key,
-          orElse: () => SpotCategory.other,
-        );
-        final ratio = maxAmount > Decimal.zero ? (entry.value / maxAmount).toDouble() : 0.0;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 72,
-                child: Text(
-                  '${category.emoji} ${category.label}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    backgroundColor: Colors.white24,
-                    color: Colors.white,
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                CurrencyUtils.formatDecimal(entry.value),
-                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }

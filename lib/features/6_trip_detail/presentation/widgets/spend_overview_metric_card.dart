@@ -4,6 +4,42 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 
+/// Frosted spend shell — matches overview metric cards.
+class SpendGlassShell extends StatelessWidget {
+  const SpendGlassShell({
+    required this.child,
+    this.padding,
+    super.key,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  static Color tint(bool isDark) {
+    if (isDark) {
+      return const Color(0xFF2A2A2C).withValues(alpha: 0.62);
+    }
+    return Color.lerp(
+      const Color(0xFFFAFAF8),
+      AppColors.primaryMuted,
+      0.08,
+    )!.withValues(alpha: 0.94);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GlassSurface(
+      borderRadius: AppRadii.card,
+      blur: 22,
+      padding: padding,
+      tint: tint(isDark),
+      child: child,
+    );
+  }
+}
+
 /// Shared compact hero metric used in the Spend tab overview row.
 class SpendOverviewMetricCard extends StatelessWidget {
   const SpendOverviewMetricCard({
@@ -65,31 +101,17 @@ class SpendOverviewMetricCard extends StatelessWidget {
         );
   }
 
-  static Color _glassTint(bool isDark) {
-    if (isDark) {
-      return const Color(0xFF2A2A2C).withValues(alpha: 0.62);
-    }
-    return Color.lerp(
-      const Color(0xFFFAFAF8),
-      AppColors.primaryMuted,
-      0.08,
-    )!.withValues(alpha: 0.94);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final card = GlassSurface(
-      borderRadius: AppRadii.card,
-      blur: 22,
+    final card = SpendGlassShell(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.md,
         AppSpacing.md,
         AppSpacing.md + 2,
       ),
-      tint: _glassTint(isDark),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: _minHeight),
         child: Column(
