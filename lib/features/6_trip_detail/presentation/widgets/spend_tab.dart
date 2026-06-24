@@ -72,7 +72,6 @@ class SpendTab extends StatelessWidget {
     if (expenses.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: readOnly ? null : _AddFab(onPressed: () => _showExpenseSheet(context)),
         body: TripDetailTabScroll(
           slivers: [
             SliverPadding(
@@ -99,7 +98,6 @@ class SpendTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: readOnly ? null : _AddFab(onPressed: () => _showExpenseSheet(context)),
       body: TripDetailTabScroll(
         key: key,
         slivers: [
@@ -108,7 +106,7 @@ class SpendTab extends StatelessWidget {
               AppSpacing.lg,
               AppSpacing.md,
               AppSpacing.lg,
-              AppSpacing.listBottomInset(context) + 72,
+              AppSpacing.listBottomInset(context),
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
@@ -242,21 +240,6 @@ class SpendTab extends StatelessWidget {
       });
 
     return {for (final key in sortedKeys) key: map[key]!};
-  }
-}
-
-class _AddFab extends StatelessWidget {
-  const _AddFab({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      icon: const Icon(Icons.add_rounded),
-      label: const Text('Expense'),
-    );
   }
 }
 
