@@ -9,7 +9,7 @@ import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import 'spend_overview_metric_card.dart';
 
-/// Single today summary on Plan tab — up next + spending in one card.
+/// Today summary on Plan tab — glass "Up next" plus inline spend strip.
 class TodayPlanCard extends StatelessWidget {
   const TodayPlanCard({
     required this.trip,
@@ -34,122 +34,160 @@ class TodayPlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final symbol = CurrencyUtils.symbolFor(trip.defaultCurrency);
     final hasSpending = expenseCount > 0;
+    final amountText = '$symbol${CurrencyUtils.formatDecimal(hasSpending ? todayTotal : Decimal.zero)}';
+    final dateLabel = DateFormatters.shortDate(todayDay.date);
     final showUpNext = nextSpot != null;
-    final amountText = hasSpending
-        ? '$symbol${CurrencyUtils.formatDecimal(todayTotal)}'
-        : '$symbol${CurrencyUtils.formatDecimal(Decimal.zero)}';
-    final spendDetail = hasSpending
-        ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'} · ${DateFormatters.shortDate(todayDay.date)}'
-        : DateFormatters.shortDate(todayDay.date);
 
-    return SpendGlassShell(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showUpNext) ...[
-            Pressable(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showUpNext) ...[
+          SpendGlassShell(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Pressable(
               onTap: onOpenMaps ?? () => MapsLauncher.openSpot(nextSpot!),
               child: _UpNextRow(
                 spot: nextSpot!,
                 defaultCurrency: trip.defaultCurrency,
-                isDark: isDark,
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Divider(
-                height: 1,
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              ),
-            ),
-          ],
-          Pressable(
-            onTap: onOpenSpend,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _IconTile(
-                  emoji: showUpNext ? '💰' : _dayEmoji(todayDay.dayNumber),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TODAY · DAY ${todayDay.dayNumber}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                              letterSpacing: 0.45,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: amountText,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-                                letterSpacing: -0.6,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' spent',
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        spendDetail,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!hasSpending) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  _EmptySpendBadge(isDark: isDark),
-                ],
-                if (onAddExpense != null) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  _AddChipButton(onPressed: onAddExpense!),
-                ] else ...[
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 22,
-                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-                  ),
-                ],
-              ],
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        _TodaySpendInlineStrip(
+          amountText: amountText,
+          dateLabel: dateLabel,
+          hasSpending: hasSpending,
+          expenseCount: expenseCount,
+          onOpenSpend: onOpenSpend,
+          onAddExpense: onAddExpense,
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact spend meta row — not a glass island; links to Spend tab.
+class _TodaySpendInlineStrip extends StatelessWidget {
+  const _TodaySpendInlineStrip({
+    required this.amountText,
+    required this.dateLabel,
+    required this.hasSpending,
+    required this.expenseCount,
+    this.onOpenSpend,
+    this.onAddExpense,
+  });
+
+  final String amountText;
+  final String dateLabel;
+  final bool hasSpending;
+  final int expenseCount;
+  final VoidCallback? onOpenSpend;
+  final VoidCallback? onAddExpense;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final statusLabel = hasSpending
+        ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'}'
+        : 'No expenses';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Pressable(
+              onTap: onOpenSpend,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 15,
+                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: muted,
+                              height: 1.25,
+                            ),
+                        children: [
+                          TextSpan(
+                            text: amountText,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          const TextSpan(text: ' spent  ·  '),
+                          TextSpan(text: dateLabel),
+                          const TextSpan(text: '  ·  '),
+                          TextSpan(
+                            text: statusLabel,
+                            style: TextStyle(
+                              fontStyle: hasSpending ? FontStyle.normal : FontStyle.italic,
+                              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (onAddExpense != null)
+            _InlineAddButton(onPressed: onAddExpense!)
+          else
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            ),
         ],
       ),
     );
   }
+}
 
-  static String _dayEmoji(int dayNumber) {
-    const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-    if (dayNumber >= 1 && dayNumber <= emojis.length) return emojis[dayNumber - 1];
-    return '📅';
+class _InlineAddButton extends StatelessWidget {
+  const _InlineAddButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onPressed,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Icon(
+          Icons.add_circle_outline_rounded,
+          size: 20,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+        ),
+      ),
+    );
   }
 }
 
@@ -179,79 +217,18 @@ class _IconTile extends StatelessWidget {
   }
 }
 
-class _EmptySpendBadge extends StatelessWidget {
-  const _EmptySpendBadge({required this.isDark});
-
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
-        ),
-      ),
-      child: Text(
-        'No expenses',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-              fontWeight: FontWeight.w600,
-              fontSize: 10,
-            ),
-      ),
-    );
-  }
-}
-
-class _AddChipButton extends StatelessWidget {
-  const _AddChipButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Material(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.1)
-          : AppColors.primary.withValues(alpha: 0.08),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: Icon(
-            Icons.add_rounded,
-            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
-            size: 18,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _UpNextRow extends StatelessWidget {
   const _UpNextRow({
     required this.spot,
     required this.defaultCurrency,
-    required this.isDark,
   });
 
   final Spot spot;
   final String defaultCurrency;
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final category = SpotCategory.values.firstWhere(
       (c) => c.value == spot.category,
       orElse: () => SpotCategory.other,
