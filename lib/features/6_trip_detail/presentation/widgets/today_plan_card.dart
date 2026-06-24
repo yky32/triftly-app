@@ -6,10 +6,10 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/utils/maps_launcher.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import 'spend_overview_metric_card.dart';
 
-/// Single today summary on Plan tab — up next + spending in one card.
+/// Today summary on Plan tab — glass "Up next" plus inline spend strip.
 class TodayPlanCard extends StatelessWidget {
   const TodayPlanCard({
     required this.trip,
@@ -36,92 +36,184 @@ class TodayPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final symbol = CurrencyUtils.symbolFor(trip.defaultCurrency);
     final hasSpending = expenseCount > 0;
+    final amountText = '$symbol${CurrencyUtils.formatDecimal(hasSpending ? todayTotal : Decimal.zero)}';
+    final dateLabel = DateFormatters.shortDate(todayDay.date);
     final showUpNext = nextSpot != null;
 
-    return AppCard(
-      color: AppColors.primaryDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showUpNext) ...[
-            Pressable(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showUpNext) ...[
+          SpendGlassShell(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Pressable(
               onTap: onOpenMaps ?? () => MapsLauncher.openSpot(nextSpot!),
-              child: _UpNextRow(spot: nextSpot!, defaultCurrency: trip.defaultCurrency),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Divider(height: 1, color: Colors.white.withValues(alpha: 0.14)),
-            ),
-          ],
-          Pressable(
-            onTap: onOpenSpend,
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    showUpNext ? '💰' : _dayEmoji(todayDay.dayNumber),
-                    style: const TextStyle(fontSize: 22),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Today · Day ${todayDay.dayNumber}',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasSpending
-                            ? '$symbol${CurrencyUtils.formatDecimal(todayTotal)} spent'
-                            : 'No spending logged yet',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      Text(
-                        hasSpending
-                            ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'} · ${DateFormatters.shortDate(todayDay.date)}'
-                            : DateFormatters.shortDate(todayDay.date),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-                if (onAddExpense != null)
-                  IconButton(
-                    tooltip: 'Add expense',
-                    onPressed: onAddExpense,
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                  )
-                else
-                  const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 22),
-              ],
+              child: _UpNextRow(
+                spot: nextSpot!,
+                defaultCurrency: trip.defaultCurrency,
+              ),
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        _TodaySpendInlineStrip(
+          amountText: amountText,
+          dateLabel: dateLabel,
+          hasSpending: hasSpending,
+          expenseCount: expenseCount,
+          onOpenSpend: onOpenSpend,
+          onAddExpense: onAddExpense,
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact spend meta row — not a glass island; links to Spend tab.
+class _TodaySpendInlineStrip extends StatelessWidget {
+  const _TodaySpendInlineStrip({
+    required this.amountText,
+    required this.dateLabel,
+    required this.hasSpending,
+    required this.expenseCount,
+    this.onOpenSpend,
+    this.onAddExpense,
+  });
+
+  final String amountText;
+  final String dateLabel;
+  final bool hasSpending;
+  final int expenseCount;
+  final VoidCallback? onOpenSpend;
+  final VoidCallback? onAddExpense;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final statusLabel = hasSpending
+        ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'}'
+        : 'No expenses';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Pressable(
+              onTap: onOpenSpend,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 15,
+                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: muted,
+                              height: 1.25,
+                            ),
+                        children: [
+                          TextSpan(
+                            text: amountText,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          const TextSpan(text: ' spent  ·  '),
+                          TextSpan(text: dateLabel),
+                          const TextSpan(text: '  ·  '),
+                          TextSpan(
+                            text: statusLabel,
+                            style: TextStyle(
+                              fontStyle: hasSpending ? FontStyle.normal : FontStyle.italic,
+                              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (onAddExpense != null)
+            _InlineAddButton(onPressed: onAddExpense!)
+          else
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            ),
         ],
       ),
     );
   }
+}
 
-  static String _dayEmoji(int dayNumber) {
-    const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-    if (dayNumber >= 1 && dayNumber <= emojis.length) return emojis[dayNumber - 1];
-    return '📅';
+class _InlineAddButton extends StatelessWidget {
+  const _InlineAddButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onPressed,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Icon(
+          Icons.add_circle_outline_rounded,
+          size: 20,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+        ),
+      ),
+    );
+  }
+}
+
+class _IconTile extends StatelessWidget {
+  const _IconTile({required this.emoji, required this.isDark});
+
+  final String emoji;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(emoji, style: const TextStyle(fontSize: 22)),
+    );
   }
 }
 
@@ -136,6 +228,7 @@ class _UpNextRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final category = SpotCategory.values.firstWhere(
       (c) => c.value == spot.category,
       orElse: () => SpotCategory.other,
@@ -143,34 +236,26 @@ class _UpNextRow extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(AppRadii.md),
-          ),
-          alignment: Alignment.center,
-          child: Text(category.emoji, style: const TextStyle(fontSize: 22)),
-        ),
+        _IconTile(emoji: category.emoji, isDark: isDark),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Up next',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Colors.white70,
+                'UP NEXT',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                      fontSize: 11,
+                      letterSpacing: 0.45,
                     ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 spot.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
               ),
@@ -178,13 +263,19 @@ class _UpNextRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   _meta(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                      ),
                 ),
               ],
             ],
           ),
         ),
-        const Icon(Icons.navigation_rounded, color: Colors.white, size: 22),
+        Icon(
+          Icons.navigation_rounded,
+          size: 22,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+        ),
       ],
     );
   }

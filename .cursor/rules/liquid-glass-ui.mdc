@@ -1,0 +1,59 @@
+---
+description: Liquid glass UI — frosted cards, metrics, app bar controls
+globs: lib/core/widgets/glass_*.dart,lib/features/6_trip_detail/**/spend_*.dart,lib/features/6_trip_detail/**/today_*.dart,lib/features/3_spend/**
+alwaysApply: false
+---
+
+# Liquid glass UI
+
+Frosted, light surfaces for trip summaries, metrics, and inline stats. **Do not** use solid `AppColors.primaryDark` blocks for these — they read too heavy.
+
+## Primitives
+
+| Widget | Use |
+|--------|-----|
+| `GlassSurface` | Low-level frosted shell (blur + gradient + border). Nav island, toggles. |
+| `SpendGlassShell` | **Card-radius** glass for trip Spend/Plan stats. Reuse before inventing new shells. |
+| `GlassIconButton` / `GlassToggle` | App bar tool clusters (bare mode + optional track tints). |
+| `SpendOverviewMetricCard` | Side-by-side metric halves (Today / Total). |
+
+`SpendGlassShell` settings: `AppRadii.card`, blur **22**, tint via `SpendGlassShell.tint(isDark)` — warm off-white + ~8% `primaryMuted` (light); charcoal glass (dark).
+
+## Typography on glass
+
+- **Labels**: `11px`, `w600`, `letterSpacing: 0.45`, **UPPERCASE** — `textTertiary` / `textTertiaryDark`
+- **Hero amounts**: **22–24px**, `w700`, `letterSpacing: -0.6`, `FontFeature.tabularFigures()` — `textPrimary`
+- **Suffix** (“spent”): `labelLarge`, `textSecondary`
+- **Meta** (date, HKD hint): `bodySmall`, `textSecondary`
+- **Never** white-on-teal body text on summary cards
+
+## Empty / compact states
+
+- Show **`$0 spent`** (trip currency), not long copy like “No spending logged yet”
+- **Badge** top-right or inline: `No expenses` — pill on `surfaceElevated`, `borderLight` border, 10px label
+- **Add** affordance: frosted circle chip, `primaryDark` icon (see `TodaySpendCard` `_AddChipButton`)
+
+## Layout patterns
+
+- **Overview row**: `Row` + `Expanded` + `IntrinsicHeight` — `[Today card | Total card]`, equal width
+- **Plan tab spend**: **inline pill strip** (`_TodaySpendInlineStrip`) — not a glass island; glass is for **Up next** only
+- **Category breakdown**: `SpendCategoryBreakdownCard` — glass shell, bars use `AppColors.categoryColor`, collapse to **2 rows** when **3+** categories; tap header to expand
+- **Dividers** inside glass: `borderLight` / `borderDark`, not `Colors.white24`
+
+## When to use what
+
+| Surface | Glass? |
+|---------|--------|
+| Today / trip spend snapshot (Spend tab) | ✅ `SpendGlassShell` or `SpendOverviewMetricCard` |
+| Plan tab today spending hint | ✅ inline pill strip — **not** glass |
+| Category / breakdown lists | ✅ `SpendCategoryBreakdownCard` pattern |
+| Expense transaction rows | ❌ `AppCard` (standard card) |
+| Settlement / form sheets | ❌ `SheetSoftCard` (see `trips-ui-polish.mdc`) |
+| Bottom nav island | ✅ `GlassSurface` pill |
+
+## Reference implementations
+
+- `spend_overview_metric_card.dart` — shell + metric card
+- `spend_category_breakdown_card.dart` — collapsible breakdown
+- `today_spend_card.dart` / `today_plan_card.dart` — Plan & Spend today rows
+- `trip_detail_page.dart` — `GlassToggle` + `GlassIconButton` app bar cluster

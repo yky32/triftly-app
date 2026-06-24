@@ -202,6 +202,18 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       _paidById != null &&
       _splitBuddyIds.isNotEmpty;
 
+  String get _splitTypeHelper => switch (_splitType) {
+        SplitType.equal => 'Everyone pays the same share',
+        SplitType.percent => 'Percents must add up to 100%',
+        SplitType.amount => 'Fixed amounts must not exceed total',
+        SplitType.share => 'Split by ratio (e.g. 2 shares vs 1)',
+      };
+
+  bool _splitPreviewIsError(String preview) =>
+      preview.startsWith('Fixed amounts') ||
+      preview.startsWith('Percents') ||
+      preview == 'Select at least one person';
+
   String? get _splitPreview {
     final amount = Decimal.tryParse(_amountController.text.trim());
     if (amount == null || amount <= Decimal.zero || _splitBuddyIds.isEmpty) {
@@ -311,7 +323,7 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
           ),
           if (widget.trip.buddies.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
-            const SheetSectionHeader(title: 'Split', caption: 'Equal · % · Amount · Shares'),
+            SheetSectionHeader(title: 'Split', caption: _splitTypeHelper),
             const SizedBox(height: AppSpacing.md),
             _SplitTypePicker(
               selected: _splitType,
@@ -328,12 +340,9 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Paid by',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
+                  _SplitFieldLabel(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Paid by',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   _BuddyPicker(
@@ -345,12 +354,37 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
                     },
                   ),
                   const SheetSoftDivider(),
-                  Text(
-                    'Split between',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SplitFieldLabel(
+                          icon: Icons.group_outlined,
+                          label: 'Split between',
                         ),
+                      ),
+                      if (_splitBuddyIds.length < widget.trip.buddies.length)
+                        TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _splitBuddyIds
+                                ..clear()
+                                ..addAll(widget.trip.buddies.map((b) => b.id));
+                              _ensureConfigControllers();
+                            });
+                          },
+                          icon: const Icon(Icons.select_all_rounded, size: 16),
+                          label: const Text('Everyone'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   _BuddyPicker(
@@ -373,50 +407,23 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
                   if (_splitType != SplitType.equal && _splitBuddyIds.isNotEmpty) ...[
                     const SheetSoftDivider(),
                     ..._splitBuddyIds.map((buddyId) {
-                      final buddy = widget.trip.buddies.firstWhere((b) => b.id == buddyId);
+                      final buddy =
+                          widget.trip.buddies.firstWhere((b) => b.id == buddyId);
                       final controller = _configControllerFor(buddyId);
-                      final suffix = switch (_splitType) {
-                        SplitType.percent => '%',
-                        SplitType.amount => _currencySymbol,
-                        SplitType.share => 'shares',
-                        SplitType.equal => '',
-                      };
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                buddy.name,
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 96,
-                              child: SheetInlineField(
-                                controller: controller,
-                                hint: suffix,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                onChanged: () => setState(() {}),
-                              ),
-                            ),
-                          ],
-                        ),
+                      return _SplitConfigRow(
+                        buddy: buddy,
+                        splitType: _splitType,
+                        currencySymbol: _currencySymbol,
+                        controller: controller,
+                        onChanged: () => setState(() {}),
                       );
                     }),
                   ],
                   if (_splitPreview case final preview?) ...[
                     const SizedBox(height: AppSpacing.md),
-                    Text(
-                      preview,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: preview.startsWith('Fixed') || preview.startsWith('Percent')
-                                ? AppColors.error
-                                : AppColors.primaryDark,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    _SplitPreviewBanner(
+                      text: preview,
+                      isError: _splitPreviewIsError(preview),
                     ),
                   ],
                 ],
@@ -507,19 +514,12 @@ class _SplitTypePicker extends StatelessWidget {
   final SplitType selected;
   final ValueChanged<SplitType> onSelected;
 
-  static const _types = [
-    SplitType.equal,
-    SplitType.percent,
-    SplitType.amount,
-    SplitType.share,
+  static const _options = [
+    (SplitType.equal, Icons.horizontal_split_rounded, 'Equal'),
+    (SplitType.percent, Icons.percent_rounded, 'Percent'),
+    (SplitType.amount, Icons.payments_outlined, 'Amount'),
+    (SplitType.share, Icons.pie_chart_outline_rounded, 'Shares'),
   ];
-
-  static String _label(SplitType type) => switch (type) {
-        SplitType.equal => 'Equal',
-        SplitType.percent => 'Percent',
-        SplitType.amount => 'Amount',
-        SplitType.share => 'Shares',
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -527,16 +527,182 @@ class _SplitTypePicker extends StatelessWidget {
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _types.length,
+        itemCount: _options.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
-          final type = _types[index];
-          return _TextChip(
-            label: _label(type),
+          final (type, icon, label) = _options[index];
+          return _IconTextChip(
+            icon: icon,
+            label: label,
             isSelected: selected == type,
             onTap: () => onSelected(type),
           );
         },
+      ),
+    );
+  }
+}
+
+class _SplitFieldLabel extends StatelessWidget {
+  const _SplitFieldLabel({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SplitConfigRow extends StatelessWidget {
+  const _SplitConfigRow({
+    required this.buddy,
+    required this.splitType,
+    required this.currencySymbol,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final Buddy buddy;
+  final SplitType splitType;
+  final String currencySymbol;
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final suffix = switch (splitType) {
+      SplitType.percent => '%',
+      SplitType.amount => currencySymbol,
+      SplitType.share => 'shares',
+      SplitType.equal => '',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          _BuddyAvatar(name: buddy.name, size: 28),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              buddy.name,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(
+            width: 104,
+            child: SheetInlineField(
+              controller: controller,
+              hint: suffix,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SplitPreviewBanner extends StatelessWidget {
+  const _SplitPreviewBanner({
+    required this.text,
+    required this.isError,
+  });
+
+  final String text;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isError ? AppColors.error : AppColors.primaryDark;
+    final bg = isError
+        ? AppColors.error.withValues(alpha: isDark ? 0.18 : 0.08)
+        : AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.08);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline_rounded : Icons.receipt_long_outlined,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BuddyAvatar extends StatelessWidget {
+  const _BuddyAvatar({
+    required this.name,
+    this.size = 24,
+  });
+
+  final String name;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: isDark ? 0.28 : 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: size * 0.42,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primaryDark,
+        ),
       ),
     );
   }
@@ -629,12 +795,127 @@ class _BuddyPicker extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final buddy = buddies[index];
-          return _TextChip(
-            label: buddy.name,
+          return _BuddyChip(
+            name: buddy.name,
             isSelected: selectedIds.contains(buddy.id),
             onTap: () => onSelected(buddy.id),
           );
         },
+      ),
+    );
+  }
+}
+
+class _BuddyChip extends StatelessWidget {
+  const _BuddyChip({
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Pressable(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.md, 0),
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+              : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _BuddyAvatar(name: name, size: 22),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: AppColors.primaryDark,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IconTextChip extends StatelessWidget {
+  const _IconTextChip({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isSelected ? AppColors.primaryDark : AppColors.textSecondary;
+
+    return Pressable(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+              : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: fg),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

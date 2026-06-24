@@ -7,6 +7,7 @@ import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import 'spend_overview_metric_card.dart';
 
 class TodaySpendCard extends StatelessWidget {
   const TodaySpendCard({
@@ -14,6 +15,7 @@ class TodaySpendCard extends StatelessWidget {
     required this.todayDay,
     required this.todayTotal,
     required this.expenseCount,
+    this.compact = false,
     this.onAddExpense,
     this.onOpenSpend,
     super.key,
@@ -23,6 +25,7 @@ class TodaySpendCard extends StatelessWidget {
   final TripDay todayDay;
   final Decimal todayTotal;
   final int expenseCount;
+  final bool compact;
   final VoidCallback? onAddExpense;
   final VoidCallback? onOpenSpend;
 
@@ -30,11 +33,29 @@ class TodaySpendCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final symbol = CurrencyUtils.symbolFor(trip.defaultCurrency);
     final hasSpending = expenseCount > 0;
+    final amountText = '$symbol${CurrencyUtils.formatDecimal(hasSpending ? todayTotal : Decimal.zero)}';
+    final detailLine = hasSpending
+        ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'} · ${DateFormatters.shortDate(todayDay.date)}'
+        : DateFormatters.shortDate(todayDay.date);
+
+    if (compact) {
+      return SpendOverviewMetricCard(
+        label: 'Today · Day ${todayDay.dayNumber}',
+        amount: amountText,
+        amountSuffix: 'spent',
+        meta: detailLine,
+        onTap: onOpenSpend,
+        trailing: onAddExpense == null
+            ? null
+            : _AddChipButton(onPressed: onAddExpense!),
+      );
+    }
 
     return Pressable(
       onTap: onOpenSpend,
       child: AppCard(
         color: AppColors.primaryDark,
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
           children: [
             Container(
@@ -62,18 +83,14 @@ class TodaySpendCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    hasSpending
-                        ? '$symbol${CurrencyUtils.formatDecimal(todayTotal)} spent'
-                        : 'No spending logged yet',
+                    '$amountText spent',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
                   ),
                   Text(
-                    hasSpending
-                        ? '$expenseCount ${expenseCount == 1 ? 'expense' : 'expenses'} · ${DateFormatters.shortDate(todayDay.date)}'
-                        : DateFormatters.shortDate(todayDay.date),
+                    detailLine,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
@@ -88,6 +105,38 @@ class TodaySpendCard extends StatelessWidget {
             else
               const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 22),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddChipButton extends StatelessWidget {
+  const _AddChipButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : AppColors.primary.withValues(alpha: 0.08),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Icon(
+            Icons.add_rounded,
+            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+            size: 18,
+          ),
         ),
       ),
     );

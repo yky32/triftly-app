@@ -1,0 +1,373 @@
+import 'package:flutter/material.dart';
+import '../../../../core/models/trip_models.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/triftly_motion.dart';
+import 'spend_overview_metric_card.dart';
+
+/// Empty Map tab — glass preview plus inline link to Plan.
+class MapEmptyState extends StatelessWidget {
+  const MapEmptyState({
+    required this.trip,
+    this.readOnly = false,
+    this.onOpenPlan,
+    super.key,
+  });
+
+  final Trip trip;
+  final bool readOnly;
+  final VoidCallback? onOpenPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SpendGlassShell(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _MapPreviewGraphic(),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                readOnly ? 'No places mapped' : 'Your map is waiting',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                readOnly
+                    ? 'Stops will appear here once added to the plan.'
+                    : 'Add spots in Plan and they’ll show up as pins and routes.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted),
+                textAlign: TextAlign.center,
+              ),
+              if (trip.destination.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  trip.destination,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: const [
+                  Expanded(child: _FeatureChip(icon: Icons.route_outlined, label: 'Routes')),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _FeatureChip(icon: Icons.location_on_outlined, label: 'Pins')),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _FeatureChip(icon: Icons.layers_outlined, label: 'Areas')),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (!readOnly && onOpenPlan != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _PlanLinkStrip(
+            destination: trip.destination,
+            onOpenPlan: onOpenPlan!,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Shown when spots exist but none have coordinates for the current filter.
+class MapNoCoordinatesBanner extends StatelessWidget {
+  const MapNoCoordinatesBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_off_outlined,
+            size: 16,
+            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No coordinates for this day — edit a spot to add a location',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanLinkStrip extends StatelessWidget {
+  const _PlanLinkStrip({
+    required this.destination,
+    required this.onOpenPlan,
+  });
+
+  final String destination;
+  final VoidCallback onOpenPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    return Pressable(
+      onTap: onOpenPlan,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.event_note_outlined,
+              size: 15,
+              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                  children: [
+                    const TextSpan(
+                      text: 'Plan your stops',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(
+                      text: destination.isNotEmpty ? '  ·  $destination' : '  ·  open Plan tab',
+                    ),
+                  ],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapPreviewGraphic extends StatelessWidget {
+  const _MapPreviewGraphic();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: SizedBox(
+        height: 132,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: _MapGridPainter(isDark: isDark),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 28,
+                top: 36,
+                child: _MapPin(tint: AppColors.categoryColor(SpotCategory.food), isDark: isDark),
+              ),
+              Positioned(
+                right: 36,
+                top: 28,
+                child: _MapPin(
+                  tint: AppColors.categoryColor(SpotCategory.attraction),
+                  isDark: isDark,
+                  elevated: true,
+                ),
+              ),
+              Positioned(
+                left: 52,
+                bottom: 24,
+                child: _MapPin(tint: AppColors.categoryColor(SpotCategory.shopping), isDark: isDark),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapPin extends StatelessWidget {
+  const _MapPin({
+    required this.tint,
+    required this.isDark,
+    this.elevated = false,
+  });
+
+  final Color tint;
+  final bool isDark;
+  final bool elevated;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: elevated ? 34 : 28,
+      height: elevated ? 34 : 28,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceCardDark : Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: tint.withValues(alpha: 0.55), width: elevated ? 2 : 1.5),
+        boxShadow: elevated
+            ? [
+                BoxShadow(
+                  color: tint.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.location_on_rounded,
+        size: elevated ? 18 : 15,
+        color: tint,
+      ),
+    );
+  }
+}
+
+class _MapGridPainter extends CustomPainter {
+  const _MapGridPainter({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = isDark
+        ? AppColors.surfaceElevatedDark.withValues(alpha: 0.65)
+        : AppColors.primaryMuted.withValues(alpha: 0.22);
+    canvas.drawRect(Offset.zero & size, Paint()..color = fill);
+
+    final gridPaint = Paint()
+      ..color = (isDark ? Colors.white : AppColors.primary).withValues(alpha: isDark ? 0.06 : 0.08)
+      ..strokeWidth = 1;
+
+    const step = 22.0;
+    for (var x = 0.0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (var y = 0.0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final pathPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.4)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..moveTo(42, 50)
+      ..quadraticBezierTo(size.width * 0.5, 28, size.width - 52, 42)
+      ..quadraticBezierTo(size.width * 0.42, size.height - 36, 66, size.height - 38);
+
+    canvas.drawPath(
+      _dashPath(path, dashArray: const [6, 5]),
+      pathPaint,
+    );
+  }
+
+  Path _dashPath(Path source, {required List<double> dashArray}) {
+    final dashed = Path();
+    final metrics = source.computeMetrics();
+    for (final metric in metrics) {
+      var distance = 0.0;
+      var draw = true;
+      while (distance < metric.length) {
+        final length = dashArray[draw ? 0 : 1];
+        final next = distance + length;
+        if (draw) {
+          dashed.addPath(metric.extractPath(distance, next.clamp(0, metric.length)), Offset.zero);
+        }
+        distance = next;
+        draw = !draw;
+      }
+    }
+    return dashed;
+  }
+
+  @override
+  bool shouldRepaint(covariant _MapGridPainter oldDelegate) => oldDelegate.isDark != isDark;
+}

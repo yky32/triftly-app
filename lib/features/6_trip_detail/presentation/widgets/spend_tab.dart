@@ -14,10 +14,10 @@ import '../../../../core/services/split_calculator.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
-import 'spend_empty_state.dart';
 import 'today_spend_card.dart';
+import 'spend_overview_metric_card.dart';
+import 'spend_category_breakdown_card.dart';
 import 'trip_detail_tab_scroll.dart';
-import '../../../spend_shared/widgets/spend_global_link_banner.dart';
 
 class SpendTab extends StatelessWidget {
   final Trip trip;
@@ -41,6 +41,7 @@ class SpendTab extends StatelessWidget {
         : TodaySpendCard(
             trip: trip,
             todayDay: todayDay,
+            compact: true,
             todayTotal: TodayPlanUtils.todaySpendingTotal(
               trip: trip,
               days: days,
@@ -52,10 +53,25 @@ class SpendTab extends StatelessWidget {
                 : () => _showExpenseSheet(context, dayId: todayDay.id),
           );
 
+    Widget buildOverviewRow({
+      required Decimal totalSpending,
+      String? emptyBadgeLabel,
+    }) {
+      return _SpendOverviewRow(
+        todayCard: todayCard,
+        summaryCard: _SummaryCard(
+          compact: true,
+          totalSpending: totalSpending,
+          currency: trip.defaultCurrency,
+          expenses: expenses,
+          emptyBadgeLabel: emptyBadgeLabel,
+        ),
+      );
+    }
+
     if (expenses.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: readOnly ? null : _AddFab(onPressed: () => _showExpenseSheet(context)),
         body: TripDetailTabScroll(
           slivers: [
             SliverPadding(
@@ -66,25 +82,9 @@ class SpendTab extends StatelessWidget {
                 AppSpacing.xxl,
               ),
               sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SpendGlobalLinkBanner(),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (todayCard != null) ...[
-                      todayCard,
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    SpendEmptyState(
-                      readOnly: readOnly,
-                      onAddExpense: readOnly
-                          ? null
-                          : () => _showExpenseSheet(
-                                context,
-                                dayId: todayDay?.id,
-                              ),
-                    ),
-                  ],
+                child: buildOverviewRow(
+                  totalSpending: Decimal.zero,
+                  emptyBadgeLabel: readOnly ? 'No spending' : 'No expenses',
                 ),
               ),
             ),
@@ -98,7 +98,6 @@ class SpendTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: readOnly ? null : _AddFab(onPressed: () => _showExpenseSheet(context)),
       body: TripDetailTabScroll(
         key: key,
         slivers: [
@@ -107,21 +106,18 @@ class SpendTab extends StatelessWidget {
               AppSpacing.lg,
               AppSpacing.md,
               AppSpacing.lg,
-              AppSpacing.listBottomInset(context) + 72,
+              AppSpacing.listBottomInset(context),
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SpendGlobalLinkBanner(),
-                const SizedBox(height: AppSpacing.lg),
-                if (todayCard != null) ...[
-                  todayCard,
+                buildOverviewRow(totalSpending: totalSpending),
+                if (expenses.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.lg),
+                  SpendCategoryBreakdownCard(
+                    expenses: expenses,
+                    tripCurrency: trip.defaultCurrency,
+                  ),
                 ],
-                _SummaryCard(
-                  totalSpending: totalSpending,
-                  currency: trip.defaultCurrency,
-                  expenses: expenses,
-                ),
                 const SizedBox(height: AppSpacing.lg),
                 ...grouped.entries.expand((entry) {
                   final day = entry.key;
@@ -244,21 +240,6 @@ class SpendTab extends StatelessWidget {
       });
 
     return {for (final key in sortedKeys) key: map[key]!};
-  }
-}
-
-class _AddFab extends StatelessWidget {
-  const _AddFab({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      icon: const Icon(Icons.add_rounded),
-      label: const Text('Expense'),
-    );
   }
 }
 
@@ -385,31 +366,72 @@ class _ExpenseDismissible extends StatelessWidget {
   }
 }
 
+class _SpendOverviewRow extends StatelessWidget {
+  const _SpendOverviewRow({
+    required this.summaryCard,
+    this.todayCard,
+  });
+
+  final Widget? todayCard;
+  final Widget summaryCard;
+
+  @override
+  Widget build(BuildContext context) {
+    if (todayCard == null) return summaryCard;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: todayCard!),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: summaryCard),
+        ],
+      ),
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.totalSpending,
     required this.currency,
     required this.expenses,
+    this.compact = false,
+    this.emptyBadgeLabel,
   });
 
   final Decimal totalSpending;
   final String currency;
   final List<Expense> expenses;
+  final bool compact;
+  final String? emptyBadgeLabel;
 
   @override
   Widget build(BuildContext context) {
     final converted = CurrencyUtils.approximateHkd(amount: totalSpending, currency: currency);
     final symbol = CurrencyUtils.symbolFor(currency);
+    final amountText = '$symbol${CurrencyUtils.formatDecimal(totalSpending)}';
+
+    if (compact) {
+      return SpendOverviewMetricCard(
+        label: 'Trip total',
+        amount: amountText,
+        meta: converted,
+        badgeLabel: emptyBadgeLabel,
+      );
+    }
 
     return AppCard(
       color: AppColors.primaryDark,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Total Spending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
           const SizedBox(height: 4),
           Text(
-            '$symbol${CurrencyUtils.formatDecimal(totalSpending)}',
+            amountText,
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5),
           ),
           if (converted != null) ...[
@@ -418,76 +440,13 @@ class _SummaryCard extends StatelessWidget {
           ],
           if (expenses.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
-            _CategoryBreakdown(expenses: expenses, tripCurrency: currency),
+            SpendCategoryBreakdownCard(
+              expenses: expenses,
+              tripCurrency: currency,
+            ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _CategoryBreakdown extends StatelessWidget {
-  const _CategoryBreakdown({
-    required this.expenses,
-    required this.tripCurrency,
-  });
-
-  final List<Expense> expenses;
-  final String tripCurrency;
-
-  @override
-  Widget build(BuildContext context) {
-    final categoryTotals = <String, Decimal>{};
-    for (final e in expenses) {
-      final converted = CurrencyConversion.toTripCurrency(
-        amount: e.amount,
-        currency: e.currency,
-        tripCurrency: tripCurrency,
-      );
-      categoryTotals[e.category] = (categoryTotals[e.category] ?? Decimal.zero) + converted;
-    }
-    final maxAmount = categoryTotals.values.fold(Decimal.zero, (a, b) => a > b ? a : b);
-
-    return Column(
-      children: categoryTotals.entries.map((entry) {
-        final category = SpotCategory.values.firstWhere(
-          (c) => c.value == entry.key,
-          orElse: () => SpotCategory.other,
-        );
-        final ratio = maxAmount > Decimal.zero ? (entry.value / maxAmount).toDouble() : 0.0;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 72,
-                child: Text(
-                  '${category.emoji} ${category.label}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    backgroundColor: Colors.white24,
-                    color: Colors.white,
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                CurrencyUtils.formatDecimal(entry.value),
-                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }
