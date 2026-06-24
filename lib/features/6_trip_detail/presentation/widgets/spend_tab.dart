@@ -17,7 +17,6 @@ import '../../bloc/trip_detail_bloc.dart';
 import 'spend_empty_state.dart';
 import 'today_spend_card.dart';
 import 'trip_detail_tab_scroll.dart';
-import '../../../spend_shared/widgets/spend_global_link_banner.dart';
 
 class SpendTab extends StatelessWidget {
   final Trip trip;
@@ -69,8 +68,6 @@ class SpendTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SpendGlobalLinkBanner(),
-                    const SizedBox(height: AppSpacing.lg),
                     if (todayCard != null) ...[
                       todayCard,
                       const SizedBox(height: AppSpacing.lg),
@@ -111,8 +108,6 @@ class SpendTab extends StatelessWidget {
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SpendGlobalLinkBanner(),
-                const SizedBox(height: AppSpacing.lg),
                 if (todayCard != null) ...[
                   todayCard,
                   const SizedBox(height: AppSpacing.lg),

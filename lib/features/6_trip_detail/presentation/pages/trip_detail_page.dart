@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/today_plan_utils.dart';
@@ -106,6 +107,8 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
         }
 
         final trip = state.trip!;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final isSpendTab = _tabController.index == 1;
 
         return Scaffold(
           appBar: AppBar(
@@ -134,11 +137,24 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                 child: Center(
                   child: GlassToolbarCluster(
                     children: [
+                      if (isSpendTab)
+                        GlassIconButton(
+                          icon: Icons.account_balance_wallet_outlined,
+                          tooltip: 'All my spending',
+                          bare: true,
+                          size: 30,
+                          onPressed: () => SpendNavigation.openGlobalSpend(context),
+                        ),
                       Semantics(
                         label: _summaryExpanded ? 'Hide trip details' : 'Show trip details',
                         child: GlassToggle(
                           value: _summaryExpanded,
                           bare: true,
+                          activeTrackColor:
+                              AppColors.primary.withValues(alpha: isDark ? 0.32 : 0.2),
+                          inactiveTrackColor: isDark
+                              ? AppColors.textTertiaryDark.withValues(alpha: 0.45)
+                              : AppColors.textTertiary.withValues(alpha: 0.35),
                           onChanged: (value) => setState(() => _summaryExpanded = value),
                         ),
                       ),

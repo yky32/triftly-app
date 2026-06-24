@@ -9,12 +9,20 @@ class GlassToggle extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.bare = false,
+    this.activeTrackColor,
+    this.inactiveTrackColor,
     super.key,
   });
 
   final bool value;
   final ValueChanged<bool> onChanged;
   final bool bare;
+
+  /// Track fill when [value] is true. Defaults to primary tint.
+  final Color? activeTrackColor;
+
+  /// Track fill when [value] is false. Defaults to frosted neutral.
+  final Color? inactiveTrackColor;
 
   static const outerWidth = 50.0;
   static const outerHeight = 30.0;
@@ -24,11 +32,18 @@ class GlassToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final thumbSize = outerHeight - _inset * 2;
+    final onTint = activeTrackColor ??
+        AppColors.primary.withValues(alpha: isDark ? 0.32 : 0.2);
+    final offTint = inactiveTrackColor ??
+        (isDark
+            ? const Color(0xFF1C1C1E).withValues(alpha: 0.5)
+            : const Color(0xFFFEFEFE).withValues(alpha: 0.45));
 
     final track = _ToggleTrack(
       value: value,
       isDark: isDark,
       thumbSize: thumbSize,
+      trackColor: value ? onTint : offTint,
     );
 
     return Semantics(
@@ -49,12 +64,12 @@ class GlassToggle extends StatelessWidget {
                   blur: 24,
                   borderRadius: BorderRadius.circular(outerHeight / 2),
                   padding: const EdgeInsets.all(_inset),
-                  tint: value
-                      ? AppColors.primary.withValues(alpha: isDark ? 0.32 : 0.2)
-                      : (isDark
-                          ? const Color(0xFF1C1C1E).withValues(alpha: 0.5)
-                          : const Color(0xFFFEFEFE).withValues(alpha: 0.45)),
-                  child: track,
+                  tint: value ? onTint : offTint,
+                  child: _ToggleTrack(
+                    value: value,
+                    isDark: isDark,
+                    thumbSize: thumbSize,
+                  ),
                 ),
         ),
       ),
@@ -67,11 +82,13 @@ class _ToggleTrack extends StatelessWidget {
     required this.value,
     required this.isDark,
     required this.thumbSize,
+    this.trackColor,
   });
 
   final bool value;
   final bool isDark;
   final double thumbSize;
+  final Color? trackColor;
 
   @override
   Widget build(BuildContext context) {
@@ -79,38 +96,46 @@ class _ToggleTrack extends StatelessWidget {
       builder: (context, constraints) {
         final travel = constraints.maxWidth - thumbSize;
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              left: value ? travel : 0,
-              top: 0,
-              width: thumbSize,
-              height: thumbSize,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.94)
-                      : Colors.white.withValues(alpha: 0.96),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: value ? 0.18 : 0.06),
-                      blurRadius: value ? 10 : 6,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(thumbSize / 2),
+            color: trackColor,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                left: value ? travel : 0,
+                top: 0,
+                width: thumbSize,
+                height: thumbSize,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.94)
+                        : Colors.white.withValues(alpha: 0.96),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: value ? 0.18 : 0.06),
+                        blurRadius: value ? 10 : 6,
+                        offset: const Offset(0, 2),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
