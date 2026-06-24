@@ -264,6 +264,8 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   trip: trip,
                   days: state.days,
                   spots: state.spots,
+                  readOnly: widget.readOnly,
+                  onOpenPlanTab: widget.readOnly ? null : () => _tabController.animateTo(0),
                 ),
               ],
             ),

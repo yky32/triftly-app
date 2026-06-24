@@ -5,20 +5,24 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../bloc/trip_detail_bloc.dart';
+import 'map_empty_state.dart';
 import 'trip_detail_tab_scroll.dart';
 
 class MapTab extends StatefulWidget {
   final Trip trip;
   final List<TripDay> days;
   final List<Spot> spots;
+  final bool readOnly;
+  final VoidCallback? onOpenPlanTab;
 
   const MapTab({
     required this.trip,
     required this.days,
     required this.spots,
+    this.readOnly = false,
+    this.onOpenPlanTab,
     super.key,
   });
 
@@ -39,14 +43,21 @@ class _MapTabState extends State<MapTab> {
   @override
   Widget build(BuildContext context) {
     if (widget.spots.isEmpty) {
-      return const TripDetailTabScroll(
+      return TripDetailTabScroll(
         slivers: [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: EmptyState(
-              icon: Icons.map_outlined,
-              title: 'No spots yet',
-              subtitle: 'Add places in Plan to see them here',
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xxl,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: MapEmptyState(
+                trip: widget.trip,
+                readOnly: widget.readOnly,
+                onOpenPlan: widget.onOpenPlanTab,
+              ),
             ),
           ),
         ],
@@ -93,22 +104,10 @@ class _MapTabState extends State<MapTab> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                  ] else
-                    AppCard(
-                      color: AppColors.accentSurface,
-                      child: Row(
-                        children: [
-                          Icon(Icons.map_outlined, size: 32, color: AppColors.primary),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Text(
-                              'No mapped coordinates for this day yet.',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ] else ...[
+                    const MapNoCoordinatesBanner(),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   if (widget.days.isNotEmpty) ...[
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
