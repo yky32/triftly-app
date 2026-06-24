@@ -82,3 +82,7 @@ Two sheet types share the same chrome:
 - **Live** tools: Currency, Units, Time zones, Mapcode (`ToolsPage.isLive`).
 - **Coming soon** tiles: `opacity 0.38`, `Pressable(onTap: null)`, **Soon** badge — no snackbar.
 - Converter amounts: `SheetNumericHeroField` (large tabular figures + affix).
+
+## Liquid glass summary cards
+- Trip **Spend** / **Plan** today & total snapshots use frosted glass — see `liquid-glass-ui.mdc`.
+- Do **not** regress to solid `primaryDark` hero blocks for inline metrics.
