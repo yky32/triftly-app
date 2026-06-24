@@ -118,17 +118,25 @@ class _AddChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white.withValues(alpha: 0.14),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : AppColors.primary.withValues(alpha: 0.08),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onPressed,
         customBorder: const CircleBorder(),
-        child: const SizedBox(
+        child: SizedBox(
           width: 28,
           height: 28,
-          child: Icon(Icons.add_rounded, color: Colors.white, size: 18),
+          child: Icon(
+            Icons.add_rounded,
+            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+            size: 18,
+          ),
         ),
       ),
     );
