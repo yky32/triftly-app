@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-class UserProfile extends Equatable {
-  const UserProfile({
+class User extends Equatable {
+  const User({
     required this.id,
     required this.displayName,
     this.email,
@@ -17,14 +17,14 @@ class UserProfile extends Equatable {
   final String locale;
   final DateTime updatedAt;
 
-  UserProfile copyWith({
+  User copyWith({
     String? displayName,
     String? email,
     String? defaultCurrency,
     String? locale,
     DateTime? updatedAt,
   }) =>
-      UserProfile(
+      User(
         id: id,
         displayName: displayName ?? this.displayName,
         email: email ?? this.email,
@@ -42,7 +42,7 @@ class UserProfile extends Equatable {
         'updated_at': updatedAt.toIso8601String(),
       };
 
-  factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
+  factory User.fromMap(Map<String, dynamic> map) => User(
         id: map['id'] as String,
         displayName: map['display_name'] as String,
         email: map['email'] as String?,

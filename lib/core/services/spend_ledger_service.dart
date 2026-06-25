@@ -2,7 +2,7 @@ import 'package:decimal/decimal.dart';
 import '../models/spend_overview_models.dart';
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
-import '../models/user_profile.dart';
+import '../models/user.dart';
 import '../repositories/trip_repository.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../services/me_identity_service.dart';
@@ -21,7 +21,7 @@ class SpendLedgerService {
   final TripRepository _repository;
   final ProfilePreferences _preferences;
 
-  Future<GlobalSpendOverview> loadGlobalOverview({UserProfile? user}) async {
+  Future<GlobalSpendOverview> loadGlobalOverview({User? user}) async {
     final trips = _repository.allTrips();
     final details = await Future.wait(trips.map((trip) => _repository.loadDetail(trip.id)));
 
@@ -65,7 +65,7 @@ class SpendLedgerService {
   TripSpendSnapshot snapshotForTrip(
     Trip trip,
     List<Expense> expenses, {
-    UserProfile? user,
+    User? user,
     List<SettlementRecord> settlements = const [],
   }) {
     final me = MeIdentityService.buddyForTrip(
