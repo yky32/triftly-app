@@ -22,7 +22,7 @@ class AppBootstrap {
     if (Environment.hasSupabase) {
       await Supabase.initialize(
         url: Environment.supabaseUrl,
-        anonKey: Environment.supabaseAnonKey,
+        publishableKey: Environment.supabaseAnonKey,
       );
     }
 
