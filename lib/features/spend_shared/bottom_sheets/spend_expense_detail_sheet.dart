@@ -7,6 +7,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
+import '../../../../core/widgets/sheet_form_primitives.dart';
+import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
 /// Read-only expense detail before jumping to the trip Spend tab.
 class SpendExpenseDetailSheet extends StatelessWidget {
@@ -15,11 +18,9 @@ class SpendExpenseDetailSheet extends StatelessWidget {
   final SpendTransactionLine line;
 
   static Future<void> show(BuildContext context, {required SpendTransactionLine line}) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SpendExpenseDetailSheet(line: line),
+    return TriftlyBottomSheet.show<void>(
+      context,
+      child: SpendExpenseDetailSheet(line: line),
     );
   }
 
@@ -27,7 +28,6 @@ class SpendExpenseDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final expense = line.expense;
     final trip = line.trip;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final payer = trip.buddies.firstWhere(
       (b) => b.id == expense.paidById,
       orElse: () => const Buddy(id: '', name: 'Unknown'),
@@ -38,55 +38,41 @@ class SpendExpenseDetailSheet extends StatelessWidget {
     );
     final symbol = CurrencyUtils.symbolFor(line.currency);
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.lg + MediaQuery.paddingOf(context).bottom,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
+    return SheetScaffold(
+      showCloseButton: false,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                borderRadius: BorderRadius.circular(AppRadii.pill),
-              ),
-            ),
+          SheetSectionHeader(
+            title: expense.title,
+            caption: '${category.emoji} ${category.label} · ${trip.name}',
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            expense.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${category.emoji} ${category.label} · ${trip.name}',
-            style: Theme.of(context).textTheme.bodySmall,
+          SheetSoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _DetailRow(
+                  label: 'Amount',
+                  value: '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}',
+                ),
+                if (line.myShare > Decimal.zero && !line.iPaid)
+                  _DetailRow(
+                    label: 'Your share',
+                    value: '$symbol${CurrencyUtils.formatDecimal(line.myShare)}',
+                  ),
+                _DetailRow(label: 'Paid by', value: payer.name),
+                _DetailRow(label: 'Date', value: DateFormatters.shortDate(expense.createdAt)),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          _DetailRow(label: 'Amount', value: '${expense.currency} ${CurrencyUtils.formatDecimal(expense.amount)}'),
-          if (line.myShare > Decimal.zero && !line.iPaid)
-            _DetailRow(label: 'Your share', value: '$symbol${CurrencyUtils.formatDecimal(line.myShare)}'),
-          _DetailRow(label: 'Paid by', value: payer.name),
-          _DetailRow(label: 'Date', value: DateFormatters.shortDate(expense.createdAt)),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton(
+          SheetPrimaryButton(
+            label: 'Open in trip',
             onPressed: () {
               Navigator.of(context).pop();
               SpendNavigation.openTripSpend(context, trip.id);
             },
-            child: const Text('Open in trip'),
           ),
         ],
       ),

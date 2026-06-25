@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
 class TripListPage extends StatelessWidget {
   const TripListPage({super.key});
@@ -172,13 +173,9 @@ class _ViewState extends State<_View> {
   void _showCreateTrip(BuildContext context) {
     final tripListBloc = context.read<TripListBloc>();
 
-    showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => BlocProvider.value(
+    TriftlyBottomSheet.show<bool>(
+      context,
+      child: BlocProvider.value(
         value: tripListBloc,
         child: const CreateTripBottomSheet(),
       ),

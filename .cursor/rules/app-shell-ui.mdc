@@ -1,0 +1,99 @@
+---
+description: Tab-root shells, empty-state tree, global Spend wallet patterns
+globs: lib/features/1_explore/**,lib/features/3_spend/**,lib/features/4_profile/**,lib/features/5_trip_list/**/trip_list_page.dart,lib/features/2_tools/**/tools_page.dart,lib/features/spend_shared/**,lib/core/navigation/scaffold_with_nav_bar.dart,lib/core/widgets/empty_state.dart,lib/features/6_trip_detail/**/map_empty_state.dart,lib/features/6_trip_detail/**/trip_inline_empty_card.dart,lib/features/6_trip_detail/**/plan_day_empty_state.dart
+alwaysApply: false
+---
+
+# App shell & empty states
+
+## Tab-root scaffold
+
+All main tabs share the same shell so content floats above the glass nav island:
+
+```dart
+Scaffold(
+  extendBody: true,
+  backgroundColor: Colors.transparent,
+  appBar: AppBar(title: TriftlyAppBarTitle(title: '…')),
+  body: …,
+)
+```
+
+| Tab | Page | App bar actions |
+|-----|------|-----------------|
+| Explore | `explore_page.dart` | — |
+| Trips | `trip_list_page.dart` | `+` create trip, notifications |
+| Spend | `spend_page.dart` | — |
+| Tools | `tools_page.dart` | title-only |
+| Me | `profile_page.dart` | settings |
+
+- **Do not** set an opaque `Scaffold.backgroundColor` on tab roots — `scaffold_with_nav_bar.dart` paints the gradient.
+- List padding: use `AppSpacing.listBottomInset(context)` when content scrolls behind the nav island.
+- **Trip detail** is different: use `GlassIconButton` / `GlassToggle` in the app bar (see `liquid-glass-ui.mdc`), not plain `IconButton` clusters.
+
+## Empty-state decision tree
+
+Pick the lightest pattern that fits the slot:
+
+```
+Full tab / list has zero items?
+  └─ YES → EmptyState (centered icon + title + optional subtitle + CTA)
+           Examples: Trips phase filter, Spend wallet error, global Spend no trips
+
+Trip sub-tab with no data yet (Map / Plan day / etc.)?
+  └─ YES → Does the tab need a visual preview or cross-tab link?
+           ├─ YES → Glass hero empty (MapEmptyState, MapDayEmptyState, MapUnmappedHero)
+           │        Use SpendGlassShell / MapPreviewGraphic; primary CTA links to Plan or action
+           └─ NO  → TripInlineEmptyCard (Plan day slot, compact suggestions + optional action)
+                    Standard AppCard, emoji header, suggestion chips
+
+Metric / summary slot with $0?
+  └─ YES → Glass metric card with compact badge — NOT a paragraph empty state
+           Examples: SpendOverviewMetricCard, "$0 spent", badge "No expenses"
+           See liquid-glass-ui.mdc
+
+Inline stat hint on Plan (today spending)?
+  └─ YES → Pill strip (_TodaySpendInlineStrip) — never a glass island
+
+Expense rows / ledger lists?
+  └─ Empty list body only — overview row still shows $0 glass cards above
+```
+
+| Widget | When |
+|--------|------|
+| `EmptyState` | Whole-page or full-list empties (Trips, Spend wallet, errors) |
+| `TripInlineEmptyCard` | In-flow day/slot placeholders with quick-add suggestions |
+| `MapEmptyState` / `MapDayEmptyState` | Map tab — glass preview + Plan link |
+| `PlanDayEmptyState` | Plan day with no spots — emoji grid + quick ideas |
+| `SpendOverviewMetricCard` + badge | Spend tab $0 — no `SpendEmptyState` hero block |
+
+## Global Spend (`3_spend/` + `spend_shared/`)
+
+Personal wallet across trips — distinct from trip-detail Spend tab glass metrics.
+
+| Widget | Use |
+|--------|-----|
+| `SpendWalletCard` | Hero balance — teal gradient wash + frosted glass (wallet-specific, not `SpendGlassShell`) |
+| `SpendSectionTitle` | Section label + optional count (Trips, Balances, Recent) |
+| `SpendListCard` | Bordered list surface for trip rows and activity |
+| `SpendWalletTripRow` | Single trip row inside `SpendListCard` |
+| `SpendExpenseDetailSheet` | Utility sheet (pattern B) before navigating to trip Spend |
+
+- Phase filter: reuse `TripPhaseSegment` like Trips list.
+- Pull-to-refresh on `SpendOverviewBloc`.
+- **Do not** use trip-tab `SpendGlassShell` for the global wallet hero — `SpendWalletCard` owns that pattern.
+- Trip-detail Spend metrics: see `liquid-glass-ui.mdc`.
+
+## Sheets in Spend shared
+
+- Open with `TriftlyBottomSheet.show` — not raw `showModalBottomSheet`.
+- Read-only detail sheets: `SheetScaffold` + `SheetSectionHeader` + `SheetSoftCard` + `SheetPrimaryButton` (pattern B).
+
+## Reference implementations
+
+- `spend_page.dart` — tab shell + wallet layout
+- `spend_wallet_card.dart` — global wallet glass hero
+- `spend_wallet_accent.dart` — `SpendListCard`, `SpendSectionTitle`
+- `map_empty_state.dart` — glass tab empty states
+- `trip_inline_empty_card.dart` — inline Plan/Spend slots
+- `trip_list_page.dart` — `EmptyState` for filtered trip lists
