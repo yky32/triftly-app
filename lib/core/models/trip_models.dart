@@ -6,14 +6,22 @@ class Buddy extends Equatable {
   final String id;
   final String name;
   final String? avatarColor;
+  final String? userId;
+  final bool isMe;
 
   const Buddy({
     required this.id,
     required this.name,
     this.avatarColor,
+    this.userId,
+    this.isMe = false,
   });
 
-  factory Buddy.create({required String name}) {
+  factory Buddy.create({
+    required String name,
+    String? userId,
+    bool isMe = false,
+  }) {
     final colors = [
       'FF6B6B', '4ECDC4', '45B7D1', '96CEB4',
       'FFEAA7', 'DDA0DD', '74B9FF', 'A29BFE',
@@ -22,23 +30,43 @@ class Buddy extends Equatable {
       id: const Uuid().v4(),
       name: name,
       avatarColor: colors[name.hashCode % colors.length],
+      userId: userId,
+      isMe: isMe,
     );
   }
+
+  Buddy copyWith({
+    String? name,
+    String? avatarColor,
+    String? userId,
+    bool? isMe,
+  }) =>
+      Buddy(
+        id: id,
+        name: name ?? this.name,
+        avatarColor: avatarColor ?? this.avatarColor,
+        userId: userId ?? this.userId,
+        isMe: isMe ?? this.isMe,
+      );
 
   Map<String, dynamic> toMap() => {
         'id': id,
         'name': name,
         'avatar_color': avatarColor,
+        'user_id': userId,
+        'is_me': isMe,
       };
 
   factory Buddy.fromMap(Map<String, dynamic> map) => Buddy(
         id: map['id'] as String,
         name: map['name'] as String,
         avatarColor: map['avatar_color'] as String?,
+        userId: map['user_id'] as String?,
+        isMe: map['is_me'] as bool? ?? false,
       );
 
   @override
-  List<Object?> get props => [id, name, avatarColor];
+  List<Object?> get props => [id, name, avatarColor, userId, isMe];
 }
 
 enum TripPhase { upcoming, inProgress, completed }
@@ -93,7 +121,10 @@ class Trip extends Equatable {
   final List<Buddy> buddies;
   final String? ownerToken;
   final String? shareToken;
+  final String? ownerId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
+  final bool isActive;
 
   const Trip({
     required this.id,
@@ -107,7 +138,10 @@ class Trip extends Equatable {
     this.buddies = const [],
     this.ownerToken,
     this.shareToken,
+    this.ownerId,
     required this.createdAt,
+    this.updatedAt,
+    this.isActive = true,
   });
 
   int get numberOfDays => endDate.difference(startDate).inDays + 1;
@@ -167,7 +201,10 @@ class Trip extends Equatable {
         'buddies': buddies.map((b) => b.toMap()).toList(),
         'owner_token': ownerToken,
         'share_token': shareToken,
+        'owner_id': ownerId,
         'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt?.toIso8601String(),
+        'is_active': isActive,
       };
 
   factory Trip.fromMap(Map<String, dynamic> map) => Trip(
@@ -190,7 +227,12 @@ class Trip extends Equatable {
             .toList(),
         ownerToken: map['owner_token'] as String?,
         shareToken: map['share_token'] as String?,
+        ownerId: map['owner_id'] as String?,
         createdAt: DateTime.parse(map['created_at'] as String),
+        updatedAt: map['updated_at'] != null
+            ? DateTime.parse(map['updated_at'] as String)
+            : null,
+        isActive: map['is_active'] as bool? ?? true,
       );
 
   Trip copyWith({
@@ -204,6 +246,9 @@ class Trip extends Equatable {
     List<Buddy>? buddies,
     String? ownerToken,
     String? shareToken,
+    String? ownerId,
+    DateTime? updatedAt,
+    bool? isActive,
   }) =>
       Trip(
         id: id,
@@ -217,7 +262,10 @@ class Trip extends Equatable {
         buddies: buddies ?? this.buddies,
         ownerToken: ownerToken ?? this.ownerToken,
         shareToken: shareToken ?? this.shareToken,
+        ownerId: ownerId ?? this.ownerId,
         createdAt: createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        isActive: isActive ?? this.isActive,
       );
 
   @override
@@ -296,6 +344,8 @@ class Spot extends Equatable {
   final String? notes;
   final int orderIndex;
   final bool visited;
+  final bool isActive;
+  final DateTime? updatedAt;
 
   const Spot({
     required this.id,
@@ -314,6 +364,8 @@ class Spot extends Equatable {
     this.notes,
     required this.orderIndex,
     this.visited = false,
+    this.isActive = true,
+    this.updatedAt,
   });
 
   Spot copyWith({
@@ -330,6 +382,8 @@ class Spot extends Equatable {
     String? notes,
     int? orderIndex,
     bool? visited,
+    bool? isActive,
+    DateTime? updatedAt,
   }) =>
       Spot(
         id: id,
@@ -348,6 +402,8 @@ class Spot extends Equatable {
         notes: notes ?? this.notes,
         orderIndex: orderIndex ?? this.orderIndex,
         visited: visited ?? this.visited,
+        isActive: isActive ?? this.isActive,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 
   Map<String, dynamic> toMap() => {
@@ -367,6 +423,8 @@ class Spot extends Equatable {
         'notes': notes,
         'order_index': orderIndex,
         'visited': visited,
+        'is_active': isActive,
+        'updated_at': updatedAt?.toIso8601String(),
       };
 
   factory Spot.fromMap(Map<String, dynamic> map) => Spot(
@@ -388,6 +446,10 @@ class Spot extends Equatable {
         notes: map['notes'] as String?,
         orderIndex: map['order_index'] as int,
         visited: map['visited'] as bool? ?? false,
+        isActive: map['is_active'] as bool? ?? true,
+        updatedAt: map['updated_at'] != null
+            ? DateTime.parse(map['updated_at'] as String)
+            : null,
       );
 
   @override
@@ -405,6 +467,8 @@ class Expense extends Equatable {
   final String category;
   final List<ExpenseSplit> splits;
   final DateTime createdAt;
+  final bool isActive;
+  final DateTime? updatedAt;
 
   const Expense({
     required this.id,
@@ -417,6 +481,8 @@ class Expense extends Equatable {
     this.category = 'other',
     this.splits = const [],
     required this.createdAt,
+    this.isActive = true,
+    this.updatedAt,
   });
 
   @override
@@ -433,6 +499,8 @@ class Expense extends Equatable {
         'category': category,
         'splits': splits.map((s) => s.toMap()).toList(),
         'created_at': createdAt.toIso8601String(),
+        'is_active': isActive,
+        'updated_at': updatedAt?.toIso8601String(),
       };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
@@ -449,6 +517,10 @@ class Expense extends Equatable {
                 .toList() ??
             [],
         createdAt: DateTime.parse(map['created_at'] as String),
+        isActive: map['is_active'] as bool? ?? true,
+        updatedAt: map['updated_at'] != null
+            ? DateTime.parse(map['updated_at'] as String)
+            : null,
       );
 
   Expense copyWith({
@@ -460,6 +532,8 @@ class Expense extends Equatable {
     String? category,
     List<ExpenseSplit>? splits,
     DateTime? createdAt,
+    bool? isActive,
+    DateTime? updatedAt,
   }) =>
       Expense(
         id: id,
@@ -472,6 +546,8 @@ class Expense extends Equatable {
         category: category ?? this.category,
         splits: splits ?? this.splits,
         createdAt: createdAt ?? this.createdAt,
+        isActive: isActive ?? this.isActive,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 }
 
