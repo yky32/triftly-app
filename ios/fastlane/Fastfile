@@ -241,6 +241,23 @@ def distribution_identity_installed?
   output.include?("Apple Distribution") && output.include?("3G34999H3A")
 end
 
+def configure_ci_keychain_for_codesign!
+  return unless ENV["CI"]
+
+  keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
+  sh("security unlock-keychain -p '' '#{keychain}'", log: false)
+  sh(
+    "security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k '' '#{keychain}'",
+    log: false
+  )
+  UI.success("✅ Keychain configured for non-interactive codesign on CI")
+rescue => ex
+  UI.user_error!(
+    "Failed to configure keychain for codesign on CI: #{ex.message}. " \
+    "Archive may hang until the workflow times out."
+  )
+end
+
 def import_distribution_certificate_for_ci!
   return false unless ENV["CI"]
 
@@ -257,6 +274,8 @@ def import_distribution_certificate_for_ci!
     keychain_name: "login.keychain-db",
     keychain_password: ""
   )
+
+  configure_ci_keychain_for_codesign!
 
   File.delete(p12_path) if File.exist?(p12_path)
   UI.success("✅ Imported distribution certificate from CI secret")
