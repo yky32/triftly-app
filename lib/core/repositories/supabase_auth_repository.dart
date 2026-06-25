@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../environment.dart';
-import '../models/user_profile.dart';
+import '../models/user.dart';
 import '../services/profile_preferences.dart';
 import 'auth_repository.dart';
 import 'local_auth_repository.dart';
@@ -16,17 +16,17 @@ class SupabaseAuthRepository implements AuthRepository {
 
   final ProfilePreferences _preferences;
   final LocalAuthRepository _local;
-  final _controller = StreamController<UserProfile?>.broadcast();
-  UserProfile? _user;
+  final _controller = StreamController<User?>.broadcast();
+  User? _user;
 
   bool get _useSupabase =>
-      Environment.hasSupabase && Supabase.instance.isInitialized;
+      Environment.hasSupabase && supabase.Supabase.instance.isInitialized;
 
   @override
-  Stream<UserProfile?> get authStateChanges => _controller.stream;
+  Stream<User?> get authStateChanges => _controller.stream;
 
   @override
-  UserProfile? get currentUser => _user;
+  User? get currentUser => _user;
 
   @override
   bool get isSignedIn => _user != null;
@@ -39,46 +39,46 @@ class SupabaseAuthRepository implements AuthRepository {
       return;
     }
 
-    final session = Supabase.instance.client.auth.currentSession;
+    final session = supabase.Supabase.instance.client.auth.currentSession;
     if (session?.user != null) {
-      _user = _profileFromUser(session!.user);
+      _user = _userFromAuth(session!.user);
       _controller.add(_user);
     }
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final user = data.session?.user;
-      _user = user == null ? null : _profileFromUser(user);
+    supabase.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final authUser = data.session?.user;
+      _user = authUser == null ? null : _userFromAuth(authUser);
       _controller.add(_user);
     });
   }
 
-  UserProfile _profileFromUser(User user) => UserProfile(
-        id: user.id,
-        displayName: user.userMetadata?['display_name'] as String? ??
-            user.email?.split('@').first ??
+  User _userFromAuth(supabase.User authUser) => User(
+        id: authUser.id,
+        displayName: authUser.userMetadata?['display_name'] as String? ??
+            authUser.email?.split('@').first ??
             'Traveler',
-        email: user.email,
+        email: authUser.email,
         defaultCurrency: _preferences.defaultCurrency,
         updatedAt: DateTime.now(),
       );
 
   @override
-  Future<UserProfile?> signInWithEmailOtp(String email) async {
+  Future<User?> signInWithEmailOtp(String email) async {
     if (!_useSupabase) return _local.signInWithEmailOtp(email);
-    await Supabase.instance.client.auth.signInWithOtp(email: email);
+    await supabase.Supabase.instance.client.auth.signInWithOtp(email: email);
     return null;
   }
 
   @override
   Future<void> verifyEmailOtp({required String email, required String token}) async {
     if (!_useSupabase) return _local.verifyEmailOtp(email: email, token: token);
-    final response = await Supabase.instance.client.auth.verifyOTP(
-      type: OtpType.email,
+    final response = await supabase.Supabase.instance.client.auth.verifyOTP(
+      type: supabase.OtpType.email,
       email: email,
       token: token,
     );
-    final user = response.user;
-    if (user != null) {
-      _user = _profileFromUser(user);
+    final authUser = response.user;
+    if (authUser != null) {
+      _user = _userFromAuth(authUser);
       _controller.add(_user);
     }
   }
@@ -86,17 +86,17 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signOut() async {
     if (!_useSupabase) return _local.signOut();
-    await Supabase.instance.client.auth.signOut();
+    await supabase.Supabase.instance.client.auth.signOut();
     _user = null;
     _controller.add(null);
   }
 
   @override
-  Future<void> updateProfile(UserProfile profile) async {
-    _user = profile;
-    await _preferences.setDefaultCurrency(profile.defaultCurrency);
+  Future<void> updateProfile(User user) async {
+    _user = user;
+    await _preferences.setDefaultCurrency(user.defaultCurrency);
     if (_useSupabase) {
-      await Supabase.instance.client.from('profiles').upsert(profile.toMap());
+      await supabase.Supabase.instance.client.from('profiles').upsert(user.toMap());
     }
     _controller.add(_user);
   }

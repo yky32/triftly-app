@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
-import '../models/user_profile.dart';
+import '../models/user.dart';
 import '../services/profile_preferences.dart';
 import 'auth_repository.dart';
 
@@ -9,14 +9,14 @@ class LocalAuthRepository implements AuthRepository {
   LocalAuthRepository(this._preferences);
 
   final ProfilePreferences _preferences;
-  final _controller = StreamController<UserProfile?>.broadcast();
-  UserProfile? _user;
+  final _controller = StreamController<User?>.broadcast();
+  User? _user;
 
   @override
-  Stream<UserProfile?> get authStateChanges => _controller.stream;
+  Stream<User?> get authStateChanges => _controller.stream;
 
   @override
-  UserProfile? get currentUser => _user;
+  User? get currentUser => _user;
 
   @override
   bool get isSignedIn => _user != null;
@@ -25,17 +25,17 @@ class LocalAuthRepository implements AuthRepository {
   Future<void> initialize() async {}
 
   @override
-  Future<UserProfile?> signInWithEmailOtp(String email) async {
-    final profile = UserProfile(
+  Future<User?> signInWithEmailOtp(String email) async {
+    final user = User(
       id: 'local-${const Uuid().v4()}',
       displayName: email.split('@').first,
       email: email,
       defaultCurrency: _preferences.defaultCurrency,
       updatedAt: DateTime.now(),
     );
-    _user = profile;
+    _user = user;
     _controller.add(_user);
-    return profile;
+    return user;
   }
 
   @override
@@ -48,9 +48,9 @@ class LocalAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> updateProfile(UserProfile profile) async {
-    _user = profile;
-    await _preferences.setDefaultCurrency(profile.defaultCurrency);
+  Future<void> updateProfile(User user) async {
+    _user = user;
+    await _preferences.setDefaultCurrency(user.defaultCurrency);
     _controller.add(_user);
   }
 }
