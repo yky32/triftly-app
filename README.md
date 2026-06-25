@@ -73,10 +73,11 @@ lib/
 
 ```bash
 flutter pub get
-flutter run --dart-define=ENV=dev
+cp env/.env.local.example env/.env.local   # fill from GitHub secrets
+./tool/dart_defines.sh dev flutter run
 ```
 
-Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`).
+Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`). See `env/README.md`.
 
 ---
 
@@ -95,9 +96,9 @@ Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`).
 
 - **iOS deployment:** Fastlane → TestFlight (`bundle exec fastlane ios upload_testflight`)
 - **Android deployment:** TBD (Play Console)
-- GitHub Actions workflow: `.github/workflows/deploy-testflight.yml`
-- Secrets: `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_CONTENT`
-- Never put real credentials in `ios/fastlane/.env.default`
+- GitHub Actions: `.github/workflows/deploy-testflight.yml`, `.github/workflows/migrate-supabase.yml`
+- **Secrets:** single source of truth in GitHub — see `env/README.md`
+- Never put credentials in committed `env/.env.*` files or `ios/fastlane/.env.default`
 
 ---
 

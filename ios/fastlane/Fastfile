@@ -161,10 +161,8 @@ def env_file_suffix(env_value)
   end
 end
 
-def load_env_file_vars(env_value)
-  path = File.join(PROJECT_ROOT, "env", ".env.#{env_file_suffix(env_value)}")
-  vars = {}
-  return vars unless File.exist?(path)
+def parse_env_file(path, vars)
+  return unless File.exist?(path)
 
   File.foreach(path) do |line|
     line = line.strip
@@ -173,8 +171,14 @@ def load_env_file_vars(env_value)
 
     key = Regexp.last_match(1)
     val = Regexp.last_match(2).gsub(/\A["']|["']\z/, "")
-    vars[key] = val
+    vars[key] = val unless val.empty?
   end
+end
+
+def load_env_file_vars(env_value)
+  vars = {}
+  parse_env_file(File.join(PROJECT_ROOT, "env", ".env.#{env_file_suffix(env_value)}"), vars)
+  parse_env_file(File.join(PROJECT_ROOT, "env", ".env.local"), vars)
   vars
 end
 

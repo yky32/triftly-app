@@ -48,6 +48,7 @@ app.*.map.json
 ios/fastlane/.env
 **/fastlane/report.xml
 env/env/.env.*
+env/.env.local
 
 # Local Hive cache (dev runtime)
 *.hive

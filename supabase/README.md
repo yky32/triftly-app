@@ -39,41 +39,32 @@ In **Authentication → Providers**, enable **Email** (magic link / OTP).
 
 ## 3. App keys (client-safe only)
 
-From **Project Settings → API**:
+Stored in **GitHub repository secrets** — not in committed env files.
 
-| Variable | Where to use | Never commit |
-|----------|----------------|--------------|
-| `SUPABASE_URL` | Flutter `--dart-define`, GitHub secret | — |
-| `SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`) | Flutter `--dart-define`, `env/.env.*` | — |
-| `sb_secret_…` / `service_role` | Server / Edge Functions only | **Do not** put in the app or git |
+| Secret | Where to get it |
+|--------|------------------|
+| `SUPABASE_URL` | Project Settings → API |
+| `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API (`sb_publishable_…`) |
+| `GOOGLE_MAPS_API_KEY` | Google Cloud Console |
+
+Never put `sb_secret_…` / `service_role` in the app or git.
 
 ## 4. Local run
 
-Set `SUPABASE_URL` in `env/.env.dev`, then:
+Copy `env/.env.local.example` → `env/.env.local` and fill the same values as GitHub secrets, then:
 
 ```bash
 ./tool/dart_defines.sh dev flutter run
 ```
 
-Or pass defines manually:
-
-```bash
-flutter run \
-  --dart-define=ENV=dev \
-  --dart-define=SUPABASE_URL=https://YOUR_REF.supabase.co \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-```
-
 ## 5. TestFlight / CI
 
-GitHub repository secrets:
+All app keys live in GitHub repository secrets (see `env/README.md`):
 
-- `SUPABASE_URL` — migrations + TestFlight
-- `SUPABASE_PUBLISHABLE_KEY` — TestFlight only
-- `SUPABASE_ACCESS_TOKEN` — migrations only
-- `SUPABASE_DB_PASSWORD` — migrations only
+- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `GOOGLE_MAPS_API_KEY` — TestFlight
+- `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` — migrations only
 
-The deploy workflow passes URL + publishable key into `flutter build ipa` via Fastlane.
+The deploy workflow passes secrets into `flutter build ipa` via Fastlane.
 
 ## 6. Smoke test
 

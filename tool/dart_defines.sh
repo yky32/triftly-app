@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Reads env/.env.<env> and appends --dart-define flags for Flutter builds.
+# Reads env/.env.<env> + env/.env.local and appends --dart-define flags for Flutter.
+# CI: secrets are injected as shell env vars (GitHub Actions).
+# Local: copy env/.env.local.example → env/.env.local and fill values.
+#
 # Usage: ./tool/dart_defines.sh dev flutter run
 #        ./tool/dart_defines.sh prod flutter build ipa --release
 
@@ -9,11 +12,14 @@ ENV_NAME="${1:-dev}"
 shift
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="$ROOT/env/.env.$ENV_NAME"
+DART_DEFINE_KEYS=(SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY GOOGLE_MAPS_API_KEY)
 
-DEFINES=(--dart-define="ENV=$ENV_NAME")
+declare -A VALUES
 
-if [[ -f "$ENV_FILE" ]]; then
+read_env_file() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%%#*}"
     line="$(echo "$line" | xargs)"
@@ -24,20 +30,27 @@ if [[ -f "$ENV_FILE" ]]; then
     val="${val#\"}"
     val="${val%\'}"
     val="${val#\'}"
-    case "$key" in
-      SUPABASE_URL|SUPABASE_PUBLISHABLE_KEY|SUPABASE_ANON_KEY|GOOGLE_MAPS_API_KEY)
-        if [[ -n "$val" && "$val" != *"YOUR_PROJECT_REF"* && "$val" != *"..." ]]; then
-          DEFINES+=(--dart-define="$key=$val")
-        fi
-        ;;
-    esac
-  done < "$ENV_FILE"
-fi
+    for allowed in "${DART_DEFINE_KEYS[@]}"; do
+      if [[ "$key" == "$allowed" && -n "$val" && "$val" != *"YOUR_PROJECT_REF"* && "$val" != *"..." ]]; then
+        VALUES["$key"]="$val"
+      fi
+    done
+  done < "$file"
+}
 
-for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY GOOGLE_MAPS_API_KEY; do
+read_env_file "$ROOT/env/.env.$ENV_NAME"
+read_env_file "$ROOT/env/.env.local"
+
+for key in "${DART_DEFINE_KEYS[@]}"; do
   if [[ -n "${!key:-}" ]]; then
-    DEFINES+=(--dart-define="$key=${!key}")
+    VALUES["$key"]="${!key}"
   fi
+done
+
+DEFINES=(--dart-define="ENV=$ENV_NAME")
+for key in "${DART_DEFINE_KEYS[@]}"; do
+  val="${VALUES[$key]:-}"
+  [[ -n "$val" ]] && DEFINES+=(--dart-define="$key=$val")
 done
 
 cd "$ROOT"
