@@ -14,29 +14,28 @@ class SheetSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleStyle = TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.3,
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+    );
+    final captionStyle = TextStyle(
+      fontSize: 13,
+      height: 1.35,
+      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+    );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    if (caption == null) {
+      return Text(title, style: titleStyle);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-            ),
-          ),
-        ),
-        if (caption != null)
-          Text(
-            caption!,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-            ),
-          ),
+        Text(title, style: titleStyle),
+        const SizedBox(height: 4),
+        Text(caption!, style: captionStyle),
       ],
     );
   }

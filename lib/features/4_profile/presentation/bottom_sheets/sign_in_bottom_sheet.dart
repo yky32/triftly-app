@@ -98,6 +98,10 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: SheetIconFieldRow(
               icon: _awaitingCode ? Icons.pin_outlined : Icons.mail_outline_rounded,
               field: SheetInlineField(

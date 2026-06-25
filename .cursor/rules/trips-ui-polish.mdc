@@ -47,7 +47,7 @@ Two sheet types share the same chrome:
 
 | Widget | Use |
 |--------|-----|
-| `SheetSectionHeader` | In-body title + optional caption |
+| `SheetSectionHeader` | In-body title + optional caption (caption stacks below title) |
 | `SheetSoftCard` | Grouped form / tool content |
 | `SheetHeroField` | Primary named input (forms) |
 | `SheetInlineField` | Borderless text/number input |
