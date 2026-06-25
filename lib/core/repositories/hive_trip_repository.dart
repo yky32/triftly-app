@@ -80,6 +80,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     final updated = trip.copyWith(updatedAt: DateTime.now());
     _store.updateCreatedTrip(updated);
     await _persistTrip(updated);
+    await _persistDetail(trip.id);
     notifyListeners();
   }
 
