@@ -22,7 +22,7 @@ class AppBootstrap {
     if (Environment.hasSupabase) {
       await Supabase.initialize(
         url: Environment.supabaseUrl,
-        publishableKey: Environment.supabaseAnonKey,
+        publishableKey: Environment.supabaseClientKey,
       );
     }
 
@@ -40,6 +40,7 @@ class AppBootstrap {
 
     auth.authStateChanges.listen((user) async {
       if (user != null && !user.id.startsWith('local-')) {
+        await tripRepository.migrateLocalTripsToCloud(user);
         await tripRepository.pullFromSupabase(user.id);
       }
     });

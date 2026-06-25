@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
+import '../services/trip_store.dart';
 
 /// Pure Postgres ↔ domain mapping for Supabase trip sync.
 class SupabaseTripMapper {
@@ -240,4 +241,49 @@ class SupabaseTripMapper {
         paidAt: DateTime.parse(row['paid_at'] as String),
         isActive: row['is_active'] as bool? ?? true,
       );
+
+  static ({Trip trip, TripDetailData detail}) sharedBundleFromMap(
+    Map<String, dynamic> bundle,
+  ) {
+    final buddies = (bundle['buddies'] as List? ?? [])
+        .map((r) => buddyFromRow(Map<String, dynamic>.from(r as Map)))
+        .toList();
+    final trip = tripFromRow(
+      Map<String, dynamic>.from(bundle['trip'] as Map),
+      buddies,
+    );
+
+    final days = (bundle['days'] as List? ?? [])
+        .map((r) => dayFromRow(Map<String, dynamic>.from(r as Map)))
+        .toList()
+      ..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+
+    final spots = (bundle['spots'] as List? ?? [])
+        .map((r) => spotFromRow(Map<String, dynamic>.from(r as Map)))
+        .toList();
+
+    final expenses = <Expense>[];
+    for (final raw in bundle['expenses'] as List? ?? []) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final splitsRaw = row['splits'] as List? ?? [];
+      final splits = splitsRaw
+          .map((r) => splitFromRow(Map<String, dynamic>.from(r as Map)))
+          .toList();
+      expenses.add(expenseFromRow(row, splits));
+    }
+
+    final settlements = (bundle['settlements'] as List? ?? [])
+        .map((r) => settlementFromRow(Map<String, dynamic>.from(r as Map)))
+        .toList();
+
+    return (
+      trip: trip,
+      detail: TripDetailData(
+        days: days,
+        spots: spots,
+        expenses: expenses,
+        settlements: settlements,
+      ),
+    );
+  }
 }

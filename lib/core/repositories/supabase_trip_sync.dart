@@ -26,9 +26,12 @@ class SupabaseTripSync {
 
   bool get _canSync => Environment.hasSupabase;
 
+  bool _isCloudOwnerId(String? ownerId) =>
+      ownerId != null && !ownerId.startsWith('local-');
+
   bool _shouldSyncTrip(Trip trip) =>
       _canSync &&
-      trip.ownerId != null &&
+      _isCloudOwnerId(trip.ownerId) &&
       !TripStore.isMockTripId(trip.id);
 
   Future<void> upsertTrip(Trip trip) async {
@@ -192,5 +195,32 @@ class SupabaseTripSync {
       expenses: expenses,
       settlements: settlements,
     );
+  }
+
+  Future<Trip?> hydrateSharedTripByToken(
+    String token,
+    TripStore store,
+    TripHiveCache cache,
+  ) async {
+    if (!_canSync) return null;
+
+    try {
+      final bundle = await client.rpc('get_shared_trip_bundle', params: {
+        'p_token': token,
+      });
+      if (bundle == null) return null;
+
+      final parsed = SupabaseTripMapper.sharedBundleFromMap(
+        Map<String, dynamic>.from(bundle as Map),
+      );
+      store.upsertCreatedTrip(parsed.trip);
+      store.restoreDetail(parsed.trip.id, parsed.detail);
+      await cache.saveTrip(parsed.trip);
+      await cache.saveDetail(parsed.trip.id, parsed.detail);
+      return parsed.trip;
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.hydrateSharedTripByToken failed: $e\n$st');
+      return null;
+    }
   }
 }

@@ -143,6 +143,47 @@ end
 
 scrub_apple_id_auth_for_ci!
 
+def env_file_suffix(env_value)
+  case env_value
+  when "prod" then "prod"
+  when "stag" then "stag"
+  else "dev"
+  end
+end
+
+def load_env_file_vars(env_value)
+  path = File.join(PROJECT_ROOT, "env", ".env.#{env_file_suffix(env_value)}")
+  vars = {}
+  return vars unless File.exist?(path)
+
+  File.foreach(path) do |line|
+    line = line.strip
+    next if line.empty? || line.start_with?("#")
+    next unless line =~ /\A([A-Za-z_][A-Za-z0-9_]*)=(.*)\z/
+
+    key = Regexp.last_match(1)
+    val = Regexp.last_match(2).gsub(/\A["']|["']\z/, "")
+    vars[key] = val
+  end
+  vars
+end
+
+def flutter_dart_define_args(env_value)
+  vars = load_env_file_vars(env_value)
+  %w[SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY GOOGLE_MAPS_API_KEY].each do |key|
+    env_val = ENV[key]
+    vars[key] = env_val if env_val && !env_val.empty?
+  end
+
+  args = ["--dart-define=ENV=#{env_value}"]
+  vars.each do |key, val|
+    next if val.nil? || val.empty?
+    next if val.include?("YOUR_PROJECT_REF") || val.end_with?("...")
+    args << "--dart-define=#{key}=#{val}"
+  end
+  args.join(" ")
+end
+
 def build_app_store_connect_api_key
   params = app_store_connect_api_key_params
   return nil unless params
@@ -589,13 +630,15 @@ platform :ios do
       end
 
       export_plist = write_ci_export_options_plist!
+      dart_defines = flutter_dart_define_args(env_value)
       UI.message("📦 Building IPA via flutter build ipa (ENV=#{env_value})...")
-      sh("cd #{PROJECT_ROOT} && flutter build ipa --release --dart-define=ENV=#{env_value} --export-options-plist=#{export_plist}")
+      sh("cd #{PROJECT_ROOT} && flutter build ipa --release #{dart_defines} --export-options-plist=#{export_plist}")
       ensure_runner_ipa_path!
     else
       # Step 1: Build Flutter artifacts (no codesign — gym handles signing)
+      dart_defines = flutter_dart_define_args(env_value)
       UI.message("🔧 Step 1/2: Building Flutter artifacts (ENV=#{env_value})...")
-      sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign --dart-define=ENV=#{env_value}")
+      sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign #{dart_defines}")
 
       # Step 2: Archive + export IPA using gym with xcodebuild auth flags
       UI.message("📦 Step 2/2: Archiving and exporting IPA via gym...")

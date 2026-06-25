@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/models/trip_models.dart';
 import '../../../../core/repositories/hive_trip_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -8,35 +9,78 @@ import '../../../../core/widgets/triftly_motion.dart';
 import 'trip_detail_page.dart';
 
 /// Public read-only trip view at `/s/:token` (DESIGN_SPEC P1).
-class SharedTripViewPage extends StatelessWidget {
+class SharedTripViewPage extends StatefulWidget {
   const SharedTripViewPage({required this.shareToken, super.key});
 
   final String shareToken;
 
   @override
+  State<SharedTripViewPage> createState() => _SharedTripViewPageState();
+}
+
+class _SharedTripViewPageState extends State<SharedTripViewPage> {
+  late Future<SharedTripLoadResult> _loadFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuture = _loadTrip();
+  }
+
+  Future<SharedTripLoadResult> _loadTrip() async {
+    final repo = HiveTripRepository.instance;
+    final local = repo.tripByShareToken(widget.shareToken);
+    if (local != null) return SharedTripLoadResult.found(local);
+
+    final remote = await repo.hydrateSharedTrip(widget.shareToken);
+    if (remote != null) return SharedTripLoadResult.found(remote);
+    return SharedTripLoadResult.notFound;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final trip = HiveTripRepository.instance.tripByShareToken(shareToken);
+    return FutureBuilder<SharedTripLoadResult>(
+      future: _loadFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    if (trip == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: EmptyState(
-          icon: Icons.link_off_rounded,
-          title: 'Trip not found',
-          subtitle: 'This share link may have expired or been removed.',
-          action: () => context.go('/plan'),
-          actionLabel: 'Go to trips',
-        ),
-      );
-    }
+        final result = snapshot.data;
+        if (result == null || result.trip == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: EmptyState(
+              icon: Icons.link_off_rounded,
+              title: 'Trip not found',
+              subtitle: 'This share link may have expired or been removed.',
+              action: () => context.go('/plan'),
+              actionLabel: 'Go to trips',
+            ),
+          );
+        }
 
-    return Column(
-      children: [
-        Expanded(child: TripDetailPage(tripId: trip.id, readOnly: true)),
-        _DownloadBanner(onTap: () => context.go('/plan')),
-      ],
+        final trip = result.trip!;
+        return Column(
+          children: [
+            Expanded(child: TripDetailPage(tripId: trip.id, readOnly: true)),
+            _DownloadBanner(onTap: () => context.go('/plan')),
+          ],
+        );
+      },
     );
   }
+}
+
+class SharedTripLoadResult {
+  const SharedTripLoadResult._({this.trip});
+
+  final Trip? trip;
+
+  static const notFound = SharedTripLoadResult._();
+  static SharedTripLoadResult found(Trip trip) => SharedTripLoadResult._(trip: trip);
 }
 
 class _DownloadBanner extends StatelessWidget {
