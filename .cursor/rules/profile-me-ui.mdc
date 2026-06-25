@@ -56,9 +56,9 @@ Utility sheet — pattern B from `trips-ui-polish.mdc`:
 
 Same utility pattern as appearance:
 
-- `SheetSectionHeader` + `SheetSoftCard` + `SheetIconFieldRow` / `SheetInlineField` (no `labelText` / `ListTile`)
-- `SheetPrimaryButton` for Continue / Verify — **not** `FilledButton` or `TextButton`
-- Spacing via `AppSpacing` — no magic numbers
+- `SheetSectionHeader` + `SheetSoftCard(padding: zero)`
+- Field in `SheetIconFieldRow` / `SheetInlineField` (no `labelText` / `ListTile`)
+- **Continue** as `SheetCardActionRow` inside the card (chevron row — matches Me settings), **not** `SheetPrimaryButton`
 
 ## Default currency sheet (`default_currency_bottom_sheet.dart`)
 

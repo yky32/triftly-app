@@ -79,6 +79,10 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     }
   }
 
+  VoidCallback get _submit => _awaitingCode ? _verifyCode : _submitEmail;
+
+  String get _actionLabel => _awaitingCode ? 'Verify' : 'Continue';
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -98,23 +102,39 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            child: SheetIconFieldRow(
-              icon: _awaitingCode ? Icons.pin_outlined : Icons.mail_outline_rounded,
-              field: SheetInlineField(
-                controller: _awaitingCode ? _codeController : _emailController,
-                hint: _awaitingCode ? 'Verification code' : 'Email address',
-                keyboardType: _awaitingCode
-                    ? TextInputType.number
-                    : TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                onChanged: () {
-                  if (_error != null) setState(() => _error = null);
-                },
-              ),
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: SheetIconFieldRow(
+                    icon: _awaitingCode ? Icons.pin_outlined : Icons.mail_outline_rounded,
+                    field: SheetInlineField(
+                      controller: _awaitingCode ? _codeController : _emailController,
+                      hint: _awaitingCode ? 'Verification code' : 'Email address',
+                      keyboardType: _awaitingCode
+                          ? TextInputType.number
+                          : TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      onChanged: () {
+                        if (_error != null) setState(() => _error = null);
+                      },
+                    ),
+                  ),
+                ),
+                const SheetSoftListDivider(),
+                SheetCardActionRow(
+                  label: _actionLabel,
+                  loading: _submitting,
+                  onPressed: _submit,
+                ),
+              ],
             ),
           ),
           if (_error != null) ...[
@@ -127,12 +147,6 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          SheetPrimaryButton(
-            label: _awaitingCode ? 'Verify' : 'Continue',
-            enabled: !_submitting,
-            onPressed: _awaitingCode ? _verifyCode : _submitEmail,
-          ),
         ],
       ),
     );

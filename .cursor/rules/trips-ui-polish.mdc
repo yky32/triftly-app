@@ -55,7 +55,8 @@ Two sheet types share the same chrome:
 | `SheetCurrencyChipPicker` | Flag + symbol chips only |
 | `SheetChoiceChipRow` | 2–3 mode segments |
 | `SheetNumericHeroField` | Large amount / result with symbol affix |
-| `SheetPrimaryButton` | Utility sheet CTA |
+| `SheetPrimaryButton` | Utility sheet CTA (gradient; tools, share, pickers) |
+| `SheetCardActionRow` | In-card footer row with chevron (sign-in Continue) |
 | `SheetOptionRow` | Selectable list rows (appearance, currency, menus) |
 | `SheetSoftListDivider` | Indented divider inside zero-padding `SheetSoftCard` |
 | `SheetCompactAction` | Small in-row action chip (Paid, Everyone) |
