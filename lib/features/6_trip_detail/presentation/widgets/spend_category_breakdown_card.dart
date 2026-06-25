@@ -6,7 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import 'spend_overview_metric_card.dart';
+import '../../../../core/widgets/spend_glass_shell.dart';
 
 class SpendCategoryBreakdownCard extends StatefulWidget {
   const SpendCategoryBreakdownCard({

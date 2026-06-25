@@ -3,7 +3,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import 'spend_overview_metric_card.dart';
+import '../../../../core/widgets/spend_glass_shell.dart';
 
 /// Empty Map tab — glass preview plus inline link to Plan.
 class MapEmptyState extends StatelessWidget {
