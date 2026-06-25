@@ -46,6 +46,16 @@ class SupabaseTripSync {
               .toList(),
         );
       }
+
+      final detail = _store.detailSync(trip.id);
+      final days = (detail != null && detail.days.isNotEmpty)
+          ? detail.days
+          : SupabaseTripMapper.daysForTrip(trip);
+      if (days.isNotEmpty) {
+        await client.from('trip_days').upsert(
+          days.map(SupabaseTripMapper.dayToRow).toList(),
+        );
+      }
     } catch (e, st) {
       debugPrint('SupabaseTripSync.upsertTrip failed: $e\n$st');
     }

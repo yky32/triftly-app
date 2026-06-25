@@ -14,6 +14,20 @@ class SupabaseTripMapper {
     return '$y-$m-$d';
   }
 
+  static List<TripDay> daysForTrip(Trip trip) {
+    final total = trip.numberOfDays;
+    return List.generate(total, (i) {
+      final dayNumber = i + 1;
+      return TripDay(
+        id: '${trip.id}-d$dayNumber',
+        tripId: trip.id,
+        dayNumber: dayNumber,
+        title: TripDay.defaultTitle(dayNumber, total),
+        date: trip.startDate.add(Duration(days: i)),
+      );
+    });
+  }
+
   static Map<String, dynamic> tripToRow(Trip trip) => {
         'id': trip.id,
         'owner_id': trip.ownerId,

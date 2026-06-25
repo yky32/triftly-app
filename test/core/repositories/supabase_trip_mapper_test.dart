@@ -27,6 +27,13 @@ void main() {
       updatedAt: DateTime(2026, 1, 2, 12),
     );
 
+    test('daysForTrip matches trip length', () {
+      final days = SupabaseTripMapper.daysForTrip(trip);
+      expect(days.length, trip.numberOfDays);
+      expect(days.first.dayNumber, 1);
+      expect(days.last.id, '${trip.id}-d${trip.numberOfDays}');
+    });
+
     test('tripToRow uses date-only fields', () {
       final row = SupabaseTripMapper.tripToRow(trip);
       expect(row['start_date'], '2026-03-01');
