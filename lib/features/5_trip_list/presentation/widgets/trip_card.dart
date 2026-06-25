@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/models/trip_models.dart';
+import '../../../../core/services/trip_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/destination_flags.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
+import '../../bloc/trip_list_bloc.dart';
+import '../bottom_sheets/edit_trip_bottom_sheet.dart';
 
 class TripCard extends StatelessWidget {
   final Trip trip;
@@ -73,6 +77,7 @@ class TripCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (!TripStore.isMockTripId(trip.id)) _TripMenu(trip: trip),
                 _StatusBadge(trip: trip),
               ],
             ),
@@ -141,6 +146,53 @@ class TripCard extends StatelessWidget {
     return '${months[date.month - 1]} ${date.day}';
   }
 }
+
+class _TripMenu extends StatelessWidget {
+  const _TripMenu({required this.trip});
+
+  final Trip trip;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_TripMenuAction>(
+      icon: Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary, size: 20),
+      onSelected: (action) => _handleAction(context, action),
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: _TripMenuAction.edit, child: Text('Edit trip')),
+        PopupMenuItem(value: _TripMenuAction.delete, child: Text('Delete trip')),
+      ],
+    );
+  }
+
+  Future<void> _handleAction(BuildContext context, _TripMenuAction action) async {
+    final bloc = context.read<TripListBloc>();
+    switch (action) {
+      case _TripMenuAction.edit:
+        await EditTripBottomSheet.show(
+          context,
+          trip: trip,
+          onSaved: (updated) => bloc.add(TripListTripUpdated(trip: updated)),
+        );
+      case _TripMenuAction.delete:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete trip?'),
+            content: Text('“${trip.name}” will be removed from your list.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          bloc.add(TripListTripDeleted(tripId: trip.id));
+        }
+    }
+  }
+}
+
+enum _TripMenuAction { edit, delete }
 
 class _BuddyDots extends StatelessWidget {
   final List<Buddy> buddies;

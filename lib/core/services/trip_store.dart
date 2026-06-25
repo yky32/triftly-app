@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:decimal/decimal.dart';
 import 'package:uuid/uuid.dart';
+import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
 import 'split_calculator.dart';
 
@@ -28,21 +29,25 @@ class TripDetailData {
     required this.days,
     required this.spots,
     required this.expenses,
+    this.settlements = const [],
   });
 
   final List<TripDay> days;
   final List<Spot> spots;
   final List<Expense> expenses;
+  final List<SettlementRecord> settlements;
 
   TripDetailData copyWith({
     List<TripDay>? days,
     List<Spot>? spots,
     List<Expense>? expenses,
+    List<SettlementRecord>? settlements,
   }) =>
       TripDetailData(
         days: days ?? this.days,
         spots: spots ?? this.spots,
         expenses: expenses ?? this.expenses,
+        settlements: settlements ?? this.settlements,
       );
 }
 
@@ -56,17 +61,21 @@ class TripStore extends ChangeNotifier {
   final List<Trip> _createdTrips = [];
   final Map<String, TripDetailData> _sessionDetails = {};
 
-  static const _mockTripIds = {
+  static const mockTripIds = {
     'trip-tokyo',
     'trip-taipei',
     'trip-bangkok',
     'trip-osaka',
   };
 
+  static bool isMockTripId(String id) => mockTripIds.contains(id);
+
   List<Trip> allTrips() {
     final mock = _mockTrips();
     final mockIds = mock.map((t) => t.id).toSet();
-    final created = _createdTrips.where((t) => !mockIds.contains(t.id)).toList();
+    final created = _createdTrips
+        .where((t) => !mockIds.contains(t.id) && t.isActive)
+        .toList();
     return [...created, ...mock];
   }
 
@@ -89,6 +98,32 @@ class TripStore extends ChangeNotifier {
     _createdTrips.insert(0, trip);
   }
 
+  void updateCreatedTrip(Trip trip) {
+    upsertCreatedTrip(trip);
+    final detail = _sessionDetails[trip.id];
+    if (detail != null) {
+      _sessionDetails[trip.id] = TripDetailData(
+        days: _daysForTrip(trip),
+        spots: detail.spots,
+        expenses: detail.expenses,
+        settlements: detail.settlements,
+      );
+    }
+  }
+
+  void deactivateCreatedTrip(String tripId) {
+    final index = _createdTrips.indexWhere((t) => t.id == tripId);
+    if (index < 0) return;
+    _createdTrips[index] = _createdTrips[index].copyWith(
+      isActive: false,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void restoreDetail(String tripId, TripDetailData detail) {
+    _sessionDetails[tripId] = detail;
+  }
+
   Future<TripDetailData?> loadDetail(String tripId) async {
     await Future.delayed(const Duration(milliseconds: 200));
 
@@ -96,7 +131,7 @@ class TripStore extends ChangeNotifier {
     if (trip == null) return null;
 
     final seeded = _seedDetail(trip);
-    if (_mockTripIds.contains(tripId)) {
+    if (mockTripIds.contains(tripId)) {
       _sessionDetails[tripId] = seeded;
     } else {
       _sessionDetails.putIfAbsent(tripId, () => seeded);
@@ -130,9 +165,12 @@ class TripStore extends ChangeNotifier {
   void removeExpense(String tripId, String expenseId) {
     final detail = _sessionDetails[tripId];
     if (detail == null) return;
-    _sessionDetails[tripId] = detail.copyWith(
-      expenses: detail.expenses.where((e) => e.id != expenseId).toList(),
-    );
+    final expenses = detail.expenses
+        .map((e) => e.id == expenseId
+            ? e.copyWith(isActive: false, updatedAt: DateTime.now())
+            : e)
+        .toList();
+    _sessionDetails[tripId] = detail.copyWith(expenses: expenses);
     _notifyLedgerChanged();
   }
 
@@ -141,6 +179,24 @@ class TripStore extends ChangeNotifier {
     if (detail == null) return;
     final spots = detail.spots.map((s) => s.id == spot.id ? spot : s).toList();
     _sessionDetails[tripId] = detail.copyWith(spots: spots);
+  }
+
+  void removeSpot(String tripId, String spotId) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+    final spots = detail.spots
+        .map((s) => s.id == spotId ? s.copyWith(isActive: false, updatedAt: DateTime.now()) : s)
+        .toList();
+    _sessionDetails[tripId] = detail.copyWith(spots: spots);
+  }
+
+  void addSettlement(String tripId, SettlementRecord record) {
+    final detail = _sessionDetails[tripId];
+    if (detail == null) return;
+    _sessionDetails[tripId] = detail.copyWith(
+      settlements: [...detail.settlements, record],
+    );
+    _notifyLedgerChanged();
   }
 
   void reorderSpotsInDay(String tripId, String dayId, int oldIndex, int newIndex) {

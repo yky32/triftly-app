@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/services/trip_store.dart';
+import '../../../../core/repositories/hive_trip_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state.dart';
@@ -15,7 +15,7 @@ class SharedTripViewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trip = TripStore.instance.tripByShareToken(shareToken);
+    final trip = HiveTripRepository.instance.tripByShareToken(shareToken);
 
     if (trip == null) {
       return Scaffold(

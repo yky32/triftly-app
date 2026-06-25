@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -7,76 +10,164 @@ import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../bottom_sheets/appearance_bottom_sheet.dart';
+import '../bottom_sheets/default_currency_bottom_sheet.dart';
+import '../bottom_sheets/sign_in_bottom_sheet.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String _versionLabel = '…';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() => _versionLabel = '${info.version} (${info.buildNumber})');
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
+    final session = AppBootstrap.userSession;
 
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Me')),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          AppSpacing.listBottomInset(context),
-        ),
+      body: ListenableBuilder(
+        listenable: session,
+        builder: (context, _) {
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.listBottomInset(context),
+            ),
+            children: [
+              _IdentityCard(session: session),
+              const SizedBox(height: AppSpacing.xl),
+              const SectionHeader(title: 'Preferences'),
+              ListenableBuilder(
+                listenable: themeController,
+                builder: (context, _) {
+                  return _SettingsGroup(children: [
+                    _SettingsTile(
+                      title: 'Currency',
+                      value: session.defaultCurrency,
+                      onTap: () => DefaultCurrencyBottomSheet.show(
+                        context,
+                        selected: session.defaultCurrency,
+                      ),
+                    ),
+                    _SettingsTile(
+                      title: 'Appearance',
+                      value: themeController.label,
+                      onTap: () => AppearanceBottomSheet.show(context),
+                    ),
+                    _SettingsTile(
+                      title: 'Language',
+                      value: 'English',
+                      subtitle: 'Coming soon',
+                      enabled: false,
+                      showChevron: false,
+                      onTap: () {},
+                    ),
+                  ]);
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              const SectionHeader(title: 'Data'),
+              _SettingsGroup(children: [
+                _SettingsTile(
+                  title: 'Export trips',
+                  subtitle: session.isSignedIn ? null : 'Available after sign in',
+                  enabled: false,
+                  showChevron: false,
+                  onTap: () {},
+                ),
+                _SettingsTile(
+                  title: 'Clear offline data',
+                  subtitle: session.isSignedIn ? null : 'Available after sign in',
+                  enabled: false,
+                  showChevron: false,
+                  onTap: () {},
+                ),
+              ]),
+              const SizedBox(height: AppSpacing.xl),
+              const SectionHeader(title: 'About'),
+              _SettingsGroup(children: [
+                _SettingsTile(
+                  title: 'Version',
+                  value: _versionLabel,
+                  showChevron: false,
+                  onTap: () {},
+                ),
+                _SettingsTile(title: 'WY Limited', showChevron: false, onTap: () {}),
+              ]),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _IdentityCard extends StatelessWidget {
+  const _IdentityCard({required this.session});
+
+  final UserSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final user = session.currentUser;
+    final isSignedIn = user != null;
+
+    return AppCard(
+      child: Row(
         children: [
-          AppCard(
-            child: Row(
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primaryMuted,
+            child: Icon(
+              isSignedIn ? Icons.verified_user_outlined : Icons.person_rounded,
+              size: 28,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.primaryMuted,
-                  child: const Icon(Icons.person_rounded, size: 28, color: AppColors.primaryDark),
+                Text(
+                  isSignedIn ? user.displayName : 'Guest',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
                 ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Wayne', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18)),
-                      Text('Sign in to sync trips', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
+                Text(
+                  isSignedIn ? (user.email ?? 'Signed in') : 'Sign in to sync trips',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                TextButton(onPressed: () {}, child: const Text('Sign in')),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
-          const SectionHeader(title: 'Preferences'),
-          ListenableBuilder(
-            listenable: themeController,
-            builder: (context, _) {
-              return _SettingsGroup(children: [
-                _SettingsTile(title: 'Currency', value: 'HKD', onTap: () {}),
-                _SettingsTile(
-                  title: 'Appearance',
-                  value: themeController.label,
-                  onTap: () => AppearanceBottomSheet.show(context),
-                ),
-                _SettingsTile(title: 'Language', value: 'English', onTap: () {}),
-              ]);
-            },
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          const SectionHeader(title: 'Data'),
-          _SettingsGroup(children: [
-            _SettingsTile(title: 'Export trips', onTap: () {}),
-            _SettingsTile(title: 'Clear offline data', onTap: () {}),
-          ]),
-          const SizedBox(height: AppSpacing.xl),
-          const SectionHeader(title: 'About'),
-          _SettingsGroup(children: [
-            _SettingsTile(title: 'Version', value: '1.1.0', onTap: () {}),
-            _SettingsTile(title: 'WY Limited', onTap: () {}),
-          ]),
+          if (isSignedIn)
+            TextButton(onPressed: session.signOut, child: const Text('Sign out'))
+          else
+            TextButton(
+              onPressed: () => SignInBottomSheet.show(context),
+              child: const Text('Sign in'),
+            ),
         ],
       ),
     );
@@ -112,27 +203,53 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.title, this.value, required this.onTap});
+  const _SettingsTile({
+    required this.title,
+    this.value,
+    this.subtitle,
+    this.enabled = true,
+    this.showChevron = true,
+    required this.onTap,
+  });
 
   final String title;
   final String? value;
+  final String? subtitle;
+  final bool enabled;
+  final bool showChevron;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Pressable(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 16),
-        child: Row(
-          children: [
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyLarge)),
-            if (value != null) Text(value!, style: Theme.of(context).textTheme.bodySmall),
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: enabled ? null : AppColors.textTertiary,
+                      ),
+                ),
+                if (subtitle != null)
+                  Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+          if (value != null) Text(value!, style: Theme.of(context).textTheme.bodySmall),
+          if (showChevron && enabled) ...[
             const SizedBox(width: 4),
             Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
           ],
-        ),
+        ],
       ),
     );
+
+    if (!enabled) return Opacity(opacity: 0.55, child: content);
+    return Pressable(onTap: onTap, child: content);
   }
 }

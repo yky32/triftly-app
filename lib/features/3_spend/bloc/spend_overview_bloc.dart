@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/models/spend_overview_models.dart';
+import '../../../core/repositories/hive_trip_repository.dart';
 import '../../../core/services/spend_ledger_service.dart';
-import '../../../core/services/trip_store.dart';
+import '../../../core/services/user_session.dart';
 
 part 'spend_overview_event.dart';
 part 'spend_overview_state.dart';
@@ -10,19 +11,24 @@ part 'spend_overview_state.dart';
 class SpendOverviewBloc extends Bloc<SpendOverviewEvent, SpendOverviewState> {
   SpendOverviewBloc({
     SpendLedgerService? ledger,
-    TripStore? store,
-  })  : _ledger = ledger ?? SpendLedgerService(),
-        _store = store ?? TripStore.instance,
+    HiveTripRepository? repository,
+    UserSession? session,
+  })  : _ledger = ledger ?? SpendLedgerService(repository: repository),
+        _repository = repository ?? HiveTripRepository.instance,
+        _session = session,
         super(const SpendOverviewState()) {
     on<SpendOverviewLoadRequested>(_onLoad);
     on<SpendOverviewReloadRequested>(_onLoad);
-    _store.addListener(_onStoreChanged);
+    _repository.addListener(_onRepoChanged);
+    _session?.addListener(_onSessionChanged);
   }
 
   final SpendLedgerService _ledger;
-  final TripStore _store;
+  final HiveTripRepository _repository;
+  final UserSession? _session;
 
-  void _onStoreChanged() => add(const SpendOverviewReloadRequested());
+  void _onRepoChanged() => add(const SpendOverviewReloadRequested());
+  void _onSessionChanged() => add(const SpendOverviewReloadRequested());
 
   Future<void> _onLoad(
     SpendOverviewEvent event,
@@ -30,7 +36,7 @@ class SpendOverviewBloc extends Bloc<SpendOverviewEvent, SpendOverviewState> {
   ) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     try {
-      final overview = await _ledger.loadGlobalOverview();
+      final overview = await _ledger.loadGlobalOverview(user: _session?.currentUser);
       emit(state.copyWith(isLoading: false, overview: overview));
     } catch (e) {
       emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
@@ -39,7 +45,8 @@ class SpendOverviewBloc extends Bloc<SpendOverviewEvent, SpendOverviewState> {
 
   @override
   Future<void> close() {
-    _store.removeListener(_onStoreChanged);
+    _repository.removeListener(_onRepoChanged);
+    _session?.removeListener(_onSessionChanged);
     return super.close();
   }
 }

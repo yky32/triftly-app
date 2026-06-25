@@ -430,6 +430,7 @@ class _SpotActionsMenu extends StatelessWidget {
         ),
         const PopupMenuItem(value: _SpotAction.expense, child: Text('Add expense')),
         const PopupMenuItem(value: _SpotAction.edit, child: Text('Edit spot')),
+        const PopupMenuItem(value: _SpotAction.delete, child: Text('Delete spot')),
       ],
     );
   }
@@ -462,8 +463,11 @@ class _SpotActionsMenu extends StatelessWidget {
             child: AddSpotBottomSheet(editSpot: spot),
           ),
         );
+      case _SpotAction.delete:
+        HapticFeedback.mediumImpact();
+        bloc.add(TripDetailSpotRemoved(spotId: spot.id));
     }
   }
 }
 
-enum _SpotAction { maps, visited, expense, edit }
+enum _SpotAction { maps, visited, expense, edit, delete }
