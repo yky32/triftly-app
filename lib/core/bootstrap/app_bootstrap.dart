@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../environment.dart';
@@ -23,6 +24,17 @@ class AppBootstrap {
       await Supabase.initialize(
         url: Environment.supabaseUrl,
         publishableKey: Environment.supabaseClientKey,
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'Supabase ready: ${Environment.supabaseUrl}',
+        );
+      }
+    } else if (kDebugMode) {
+      debugPrint(
+        'Supabase OFF — run via ./tool/dart_defines.sh dev flutter run '
+        'or VS Code launch "triftly (dev + Supabase)". '
+        'Sign-in uses local guest mode only.',
       );
     }
 

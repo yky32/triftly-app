@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/environment.dart';
 import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -165,6 +166,18 @@ class _IdentityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = session.currentUser;
     final isSignedIn = user != null;
+    final isCloudGuest = isSignedIn && user.id.startsWith('local-');
+
+    String subtitle;
+    if (isCloudGuest) {
+      subtitle = 'Local only — Supabase not configured';
+    } else if (isSignedIn) {
+      subtitle = user.email ?? 'Signed in';
+    } else if (!Environment.hasSupabase) {
+      subtitle = 'Run with dart_defines for cloud sign-in';
+    } else {
+      subtitle = 'Sign in to sync trips';
+    }
 
     return AppCard(
       child: Row(
@@ -188,7 +201,7 @@ class _IdentityCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
                 ),
                 Text(
-                  isSignedIn ? (user.email ?? 'Signed in') : 'Sign in to sync trips',
+                  subtitle,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

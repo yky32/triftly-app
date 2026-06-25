@@ -49,6 +49,7 @@ ios/fastlane/.env
 **/fastlane/report.xml
 env/env/.env.*
 env/.env.local
+env/dart_defines.json
 
 # Local Hive cache (dev runtime)
 *.hive

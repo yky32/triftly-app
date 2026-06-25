@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "triftly (dev + Supabase)",
+      "request": "launch",
+      "type": "dart",
+      "preLaunchTask": "sync-dart-defines",
+      "toolArgs": [
+        "--dart-define-from-file=${workspaceFolder}/env/dart_defines.json"
+      ]
+    }
+  ]
+}

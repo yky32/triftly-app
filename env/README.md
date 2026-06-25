@@ -26,10 +26,19 @@ Committed `env/.env.dev` / `.stag` / `.prod` hold only non-secret metadata (`APP
 ```bash
 cp env/.env.local.example env/.env.local
 # Paste the same values as GitHub secrets
+```
+
+Run with Supabase (required for cloud sign-in):
+
+```bash
 ./tool/dart_defines.sh dev flutter run
 ```
 
-`env/.env.local` is gitignored. Shell env vars override `.env.local` (same precedence as CI).
+Or use VS Code / Cursor launch: **triftly (dev + Supabase)**.
+
+Plain `flutter run` without dart-defines → **no Supabase calls** (local guest sign-in only).
+
+`env/.env.local` and `env/dart_defines.json` are gitignored.
 
 ## CI
 
