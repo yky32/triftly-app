@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/models/settlement_record.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -23,12 +24,14 @@ class SpendTab extends StatelessWidget {
   final Trip trip;
   final List<TripDay> days;
   final List<Expense> expenses;
+  final List<SettlementRecord> settlements;
   final bool readOnly;
 
   const SpendTab({
     required this.trip,
     required this.days,
     required this.expenses,
+    this.settlements = const [],
     this.readOnly = false,
     super.key,
   });
@@ -156,6 +159,8 @@ class SpendTab extends StatelessWidget {
                 _SettlementCard(
                   trip: trip,
                   expenses: expenses,
+                  settlements: settlements,
+                  readOnly: readOnly,
                 ),
               ]),
             ),
@@ -525,10 +530,14 @@ class _SettlementCard extends StatelessWidget {
   const _SettlementCard({
     required this.trip,
     required this.expenses,
+    required this.settlements,
+    required this.readOnly,
   });
 
   final Trip trip;
   final List<Expense> expenses;
+  final List<SettlementRecord> settlements;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -536,6 +545,7 @@ class _SettlementCard extends StatelessWidget {
       expenses: expenses,
       buddies: trip.buddies,
       settleCurrency: trip.defaultCurrency,
+      recordedSettlements: settlements,
     );
     final symbol = CurrencyUtils.symbolFor(trip.defaultCurrency);
 
@@ -566,7 +576,13 @@ class _SettlementCard extends StatelessWidget {
     }
 
     return AppCard(
-      onTap: () => SettlementBottomSheet.show(context, trip: trip, expenses: expenses),
+      onTap: () => SettlementBottomSheet.show(
+        context,
+        trip: trip,
+        expenses: expenses,
+        settlements: settlements,
+        readOnly: readOnly,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

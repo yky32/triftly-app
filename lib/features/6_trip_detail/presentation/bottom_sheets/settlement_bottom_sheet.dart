@@ -1,5 +1,8 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
+import '../../../../core/models/settlement_record.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/split_calculator.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -9,27 +12,70 @@ import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
+import '../../bloc/trip_detail_bloc.dart';
 
 class SettlementBottomSheet extends StatelessWidget {
   const SettlementBottomSheet({
     required this.trip,
     required this.expenses,
+    required this.settlements,
+    this.readOnly = false,
     super.key,
   });
 
   final Trip trip;
   final List<Expense> expenses;
+  final List<SettlementRecord> settlements;
+  final bool readOnly;
 
   static Future<void> show(
     BuildContext context, {
     required Trip trip,
     required List<Expense> expenses,
+    required List<SettlementRecord> settlements,
+    bool readOnly = false,
   }) {
     return TriftlyBottomSheet.show(
       context,
-      child: SettlementBottomSheet(trip: trip, expenses: expenses),
+      child: BlocProvider.value(
+        value: context.read<TripDetailBloc>(),
+        child: SettlementBottomSheet(
+          trip: trip,
+          expenses: expenses,
+          settlements: settlements,
+          readOnly: readOnly,
+        ),
+      ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TripDetailBloc, TripDetailState>(
+      builder: (context, state) {
+        return _SettlementBody(
+          trip: trip,
+          expenses: expenses,
+          settlements: state.settlements,
+          readOnly: readOnly,
+        );
+      },
+    );
+  }
+}
+
+class _SettlementBody extends StatelessWidget {
+  const _SettlementBody({
+    required this.trip,
+    required this.expenses,
+    required this.settlements,
+    required this.readOnly,
+  });
+
+  final Trip trip;
+  final List<Expense> expenses;
+  final List<SettlementRecord> settlements;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +95,9 @@ class SettlementBottomSheet extends StatelessWidget {
       expenses: expenses,
       buddies: trip.buddies,
       settleCurrency: currency,
+      recordedSettlements: settlements,
     );
-    final balances = _buddyBalances(expenses);
+    final balances = _buddyBalances(expenses, settlements);
     final allSettled = transactions.isEmpty;
 
     return SheetScaffold(
@@ -147,6 +194,46 @@ class SettlementBottomSheet extends StatelessWidget {
                                 fontFeatures: const [FontFeature.tabularFigures()],
                               ),
                         ),
+                        if (!readOnly) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          TextButton(
+                            onPressed: () => _recordPayment(context, t),
+                            child: const Text('Paid'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+          if (settlements.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
+            const SheetSectionHeader(title: 'Recorded', caption: 'Marked as paid'),
+            const SizedBox(height: AppSpacing.md),
+            SheetSoftCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Column(
+                children: settlements.map((record) {
+                  final from = _buddyName(record.fromBuddyId);
+                  final to = _buddyName(record.toBuddyId);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: AppColors.success, size: 18),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(child: Text('$from → $to')),
+                        Text(
+                          '$symbol${CurrencyUtils.formatDecimal(record.amount)}',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
                       ],
                     ),
                   );
@@ -206,13 +293,29 @@ class SettlementBottomSheet extends StatelessWidget {
     );
   }
 
+  void _recordPayment(BuildContext context, SettlementTransaction transaction) {
+    final record = SettlementRecord(
+      id: const Uuid().v4(),
+      tripId: trip.id,
+      fromBuddyId: transaction.fromId,
+      toBuddyId: transaction.toId,
+      amount: transaction.amount,
+      currency: trip.defaultCurrency,
+      paidAt: DateTime.now(),
+    );
+    context.read<TripDetailBloc>().add(TripDetailSettlementRecorded(record: record));
+  }
+
   String _buddyName(String id) {
     return trip.buddies
         .firstWhere((b) => b.id == id, orElse: () => Buddy(id: id, name: '?'))
         .name;
   }
 
-  Map<String, Decimal> _buddyBalances(List<Expense> expenses) {
+  Map<String, Decimal> _buddyBalances(
+    List<Expense> expenses,
+    List<SettlementRecord> settlements,
+  ) {
     final balances = <String, Decimal>{};
     for (final buddy in trip.buddies) {
       balances[buddy.id] = Decimal.zero;
@@ -225,6 +328,17 @@ class SettlementBottomSheet extends StatelessWidget {
         balances[split.buddyId] =
             (balances[split.buddyId] ?? Decimal.zero) - split.shareAmount;
       }
+    }
+    for (final record in settlements) {
+      final amount = CurrencyConversion.toTripCurrency(
+        amount: record.amount,
+        currency: record.currency,
+        tripCurrency: trip.defaultCurrency,
+      );
+      balances[record.fromBuddyId] =
+          (balances[record.fromBuddyId] ?? Decimal.zero) + amount;
+      balances[record.toBuddyId] =
+          (balances[record.toBuddyId] ?? Decimal.zero) - amount;
     }
     return balances;
   }

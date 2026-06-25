@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
 import '../utils/currency_conversion.dart';
 
@@ -178,6 +179,7 @@ class SplitCalculator {
     required List<Expense> expenses,
     required List<Buddy> buddies,
     required String settleCurrency,
+    List<SettlementRecord> recordedSettlements = const [],
   }) {
     final balances = <String, Decimal>{};
     for (final buddy in buddies) {
@@ -192,6 +194,18 @@ class SplitCalculator {
         balances[split.buddyId] =
             (balances[split.buddyId] ?? Decimal.zero) - split.shareAmount;
       }
+    }
+
+    for (final record in recordedSettlements.where((s) => s.isActive)) {
+      final amount = CurrencyConversion.toTripCurrency(
+        amount: record.amount,
+        currency: record.currency,
+        tripCurrency: settleCurrency,
+      );
+      balances[record.fromBuddyId] =
+          (balances[record.fromBuddyId] ?? Decimal.zero) + amount;
+      balances[record.toBuddyId] =
+          (balances[record.toBuddyId] ?? Decimal.zero) - amount;
     }
 
     return _minimizeTransactions(balances);

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/bootstrap/app_scope.dart';
+import '../../../../core/models/trip_models.dart';
+import '../../../../core/services/trip_store.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -10,6 +13,7 @@ import '../../../../core/widgets/glass_icon_button.dart';
 import '../../../../core/widgets/glass_toggle.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
+import '../../../5_trip_list/presentation/bottom_sheets/edit_trip_bottom_sheet.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
 import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
@@ -34,7 +38,8 @@ class TripDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TripDetailBloc(tripId: tripId)..add(TripDetailLoadRequested()),
+      create: (context) =>
+          AppScopeBlocs.createTripDetailBloc(tripId)..add(TripDetailLoadRequested()),
       child: _View(readOnly: readOnly, initialTabIndex: initialTabIndex),
     );
   }
@@ -96,7 +101,10 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TripDetailBloc, TripDetailState>(
+    return BlocListener<TripDetailBloc, TripDetailState>(
+      listenWhen: (prev, next) => next.deleted && !prev.deleted,
+      listener: (context, state) => _handleBack(context),
+      child: BlocBuilder<TripDetailBloc, TripDetailState>(
       builder: (context, state) {
         if (state.isLoading) return const _LoadingView();
         if (state.trip == null) {
@@ -158,6 +166,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                           onChanged: (value) => setState(() => _summaryExpanded = value),
                         ),
                       ),
+                      if (!widget.readOnly && !TripStore.isMockTripId(trip.id))
+                        GlassIconButton(
+                          icon: Icons.more_horiz_rounded,
+                          tooltip: 'Trip options',
+                          bare: true,
+                          size: 30,
+                          onPressed: () => _showTripMenu(context, trip),
+                        ),
                       if (!widget.readOnly)
                         GlassIconButton(
                           icon: Icons.ios_share_rounded,
@@ -257,6 +273,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   trip: trip,
                   days: state.days,
                   expenses: state.expenses,
+                  settlements: state.settlements,
                   readOnly: widget.readOnly,
                 ),
                 MapTab(
@@ -270,12 +287,60 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
               ],
             ),
           ),
-          ),
+        ),
         );
       },
+    ),
     );
   }
+
+  Future<void> _showTripMenu(BuildContext context, Trip trip) async {
+    final action = await showModalBottomSheet<_TripDetailMenuAction>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit trip'),
+              onTap: () => Navigator.pop(ctx, _TripDetailMenuAction.edit),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: AppColors.error),
+              title: Text('Delete trip', style: TextStyle(color: AppColors.error)),
+              onTap: () => Navigator.pop(ctx, _TripDetailMenuAction.delete),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted || action == null) return;
+
+    final bloc = context.read<TripDetailBloc>();
+    switch (action) {
+      case _TripDetailMenuAction.edit:
+        await EditTripBottomSheet.show(context, trip: trip);
+      case _TripDetailMenuAction.delete:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete trip?'),
+            content: Text('“${trip.name}” will be removed from your list.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          bloc.add(const TripDetailTripDeleted());
+        }
+    }
+  }
 }
+
+enum _TripDetailMenuAction { edit, delete }
 
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
