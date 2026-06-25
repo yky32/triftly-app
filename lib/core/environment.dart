@@ -17,6 +17,12 @@ class Environment {
     defaultValue: 'your-anon-key',
   );
 
+  static bool get hasSupabase =>
+      supabaseUrl.isNotEmpty &&
+      !supabaseUrl.contains('your-project') &&
+      supabaseAnonKey.isNotEmpty &&
+      supabaseAnonKey != 'your-anon-key';
+
   // Google Maps
   static const String googleMapsApiKey = String.fromEnvironment(
     'GOOGLE_MAPS_API_KEY',
