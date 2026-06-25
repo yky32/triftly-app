@@ -39,9 +39,9 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     });
     try {
       final session = AppBootstrap.userSession;
-      final profile = await session.signInWithEmail(email);
+      final user = await session.signInWithEmail(email);
       if (!mounted) return;
-      if (Environment.hasSupabase && profile == null) {
+      if (Environment.hasSupabase && user == null) {
         setState(() {
           _awaitingCode = true;
           _submitting = false;

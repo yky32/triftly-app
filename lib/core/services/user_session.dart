@@ -38,7 +38,7 @@ class UserSession extends ChangeNotifier {
   Future<void> setDefaultCurrency(String code) async {
     await _preferences.setDefaultCurrency(code);
     if (_user != null) {
-      await _auth.updateProfile(_user!.copyWith(
+      await _auth.updateUser(_user!.copyWith(
         defaultCurrency: code,
         updatedAt: DateTime.now(),
       ));

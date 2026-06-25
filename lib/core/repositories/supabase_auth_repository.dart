@@ -92,7 +92,7 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> updateProfile(User user) async {
+  Future<void> updateUser(User user) async {
     _user = user;
     await _preferences.setDefaultCurrency(user.defaultCurrency);
     if (_useSupabase) {
