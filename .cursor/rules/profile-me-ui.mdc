@@ -54,11 +54,11 @@ Utility sheet — pattern B from `trips-ui-polish.mdc`:
 
 ## Sign-in sheet (`sign_in_bottom_sheet.dart`)
 
-Same utility pattern as appearance:
+Utility sheet chrome with form-style confirm:
 
-- `SheetSectionHeader` + `SheetSoftCard(padding: zero)`
-- Field in `SheetIconFieldRow` / `SheetInlineField` (no `labelText` / `ListTile`)
-- **Continue** as `SheetCardActionRow` inside the card (chevron row — matches Me settings), **not** `SheetPrimaryButton`
+- `SheetSectionHeader` + `SheetSoftCard` + `SheetIconFieldRow` / `SheetInlineField`
+- `SwipeToConfirm` (**Slide to sign in** / **Slide to verify**) — same as create trip, not `SheetPrimaryButton`
+- Spacing via `AppSpacing` — no magic numbers
 
 ## Default currency sheet (`default_currency_bottom_sheet.dart`)
 
