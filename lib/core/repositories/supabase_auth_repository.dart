@@ -42,6 +42,7 @@ class SupabaseAuthRepository implements AuthRepository {
     final session = supabase.Supabase.instance.client.auth.currentSession;
     if (session?.user != null) {
       _user = _userFromAuth(session!.user);
+      await _upsertProfile(_user!);
       _controller.add(_user);
     }
     supabase.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -49,6 +50,11 @@ class SupabaseAuthRepository implements AuthRepository {
       _user = authUser == null ? null : _userFromAuth(authUser);
       _controller.add(_user);
     });
+  }
+
+  Future<void> _upsertProfile(User user) async {
+    if (!_useSupabase) return;
+    await supabase.Supabase.instance.client.from('profiles').upsert(user.toMap());
   }
 
   User _userFromAuth(supabase.User authUser) => User(
@@ -79,6 +85,7 @@ class SupabaseAuthRepository implements AuthRepository {
     final authUser = response.user;
     if (authUser != null) {
       _user = _userFromAuth(authUser);
+      await _upsertProfile(_user!);
       _controller.add(_user);
     }
   }
