@@ -6,13 +6,18 @@ begin
   if to_regclass('public.profiles') is not null
      and to_regclass('public.users') is null then
     alter table public.profiles rename to users;
+    drop policy if exists "profiles_self" on public.users;
+    if not exists (
+      select 1 from pg_policies
+      where schemaname = 'public'
+        and tablename = 'users'
+        and policyname = 'users_self'
+    ) then
+      create policy "users_self" on public.users
+        for all using (auth.uid() = id);
+    end if;
   end if;
 end $$;
-
-drop policy if exists "profiles_self" on public.users;
-
-create policy "users_self" on public.users
-  for all using (auth.uid() = id);
 
 create or replace function public.handle_new_user()
 returns trigger
