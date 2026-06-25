@@ -16,6 +16,16 @@ FASTLANE_DIR = File.dirname(__FILE__)
 IOS_DIR = File.expand_path("..", FASTLANE_DIR)
 PROJECT_ROOT = File.expand_path("..", IOS_DIR)
 
+require "shellwords"
+
+# Keys passed to Flutter via --dart-define (must match lib/core/environment.dart).
+FLUTTER_DART_DEFINE_KEYS = %w[
+  SUPABASE_URL
+  SUPABASE_PUBLISHABLE_KEY
+  SUPABASE_ANON_KEY
+  GOOGLE_MAPS_API_KEY
+].freeze
+
 # PATH that prefers system Ruby 2.6 (avoids Homebrew Ruby 3.4 when running bundle/pod from fastlane)
 def path_for_system_ruby
   "/usr/bin:/usr/local/bin:#{ENV['PATH']}"
@@ -170,18 +180,20 @@ end
 
 def flutter_dart_define_args(env_value)
   vars = load_env_file_vars(env_value)
-  %w[SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY GOOGLE_MAPS_API_KEY].each do |key|
+  FLUTTER_DART_DEFINE_KEYS.each do |key|
     env_val = ENV[key]
     vars[key] = env_val if env_val && !env_val.empty?
   end
 
   args = ["--dart-define=ENV=#{env_value}"]
-  vars.each do |key, val|
+  FLUTTER_DART_DEFINE_KEYS.each do |key|
+    val = vars[key]
     next if val.nil? || val.empty?
     next if val.include?("YOUR_PROJECT_REF") || val.end_with?("...")
+
     args << "--dart-define=#{key}=#{val}"
   end
-  args.join(" ")
+  Shellwords.shelljoin(args)
 end
 
 def build_app_store_connect_api_key
