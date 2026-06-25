@@ -41,7 +41,6 @@ class SpendTab extends StatelessWidget {
         : TodaySpendCard(
             trip: trip,
             todayDay: todayDay,
-            compact: true,
             todayTotal: TodayPlanUtils.todaySpendingTotal(
               trip: trip,
               days: days,
@@ -60,10 +59,8 @@ class SpendTab extends StatelessWidget {
       return _SpendOverviewRow(
         todayCard: todayCard,
         summaryCard: _SummaryCard(
-          compact: true,
           totalSpending: totalSpending,
           currency: trip.defaultCurrency,
-          expenses: expenses,
           emptyBadgeLabel: emptyBadgeLabel,
         ),
       );
@@ -396,15 +393,11 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.totalSpending,
     required this.currency,
-    required this.expenses,
-    this.compact = false,
     this.emptyBadgeLabel,
   });
 
   final Decimal totalSpending;
   final String currency;
-  final List<Expense> expenses;
-  final bool compact;
   final String? emptyBadgeLabel;
 
   @override
@@ -413,40 +406,11 @@ class _SummaryCard extends StatelessWidget {
     final symbol = CurrencyUtils.symbolFor(currency);
     final amountText = '$symbol${CurrencyUtils.formatDecimal(totalSpending)}';
 
-    if (compact) {
-      return SpendOverviewMetricCard(
-        label: 'Trip total',
-        amount: amountText,
-        meta: converted,
-        badgeLabel: emptyBadgeLabel,
-      );
-    }
-
-    return AppCard(
-      color: AppColors.primaryDark,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Total Spending', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
-          const SizedBox(height: 4),
-          Text(
-            amountText,
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5),
-          ),
-          if (converted != null) ...[
-            const SizedBox(height: 2),
-            Text(converted, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
-          ],
-          if (expenses.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            SpendCategoryBreakdownCard(
-              expenses: expenses,
-              tripCurrency: currency,
-            ),
-          ],
-        ],
-      ),
+    return SpendOverviewMetricCard(
+      label: 'Trip total',
+      amount: amountText,
+      meta: converted,
+      badgeLabel: emptyBadgeLabel,
     );
   }
 }

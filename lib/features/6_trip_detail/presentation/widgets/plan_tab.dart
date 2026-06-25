@@ -9,6 +9,7 @@ import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/add_spot_bottom_sheet.dart';
@@ -196,13 +197,9 @@ class PlanTab extends StatelessWidget {
     if (readOnly) return;
     final tripDetailBloc = context.read<TripDetailBloc>();
 
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => BlocProvider.value(
+    TriftlyBottomSheet.show(
+      context,
+      child: BlocProvider.value(
         value: tripDetailBloc,
         child: AddSpotBottomSheet(editSpot: editSpot, initialCategory: initialCategory),
       ),
@@ -458,13 +455,9 @@ class _SpotActionsMenu extends StatelessWidget {
               : bloc.state.days[bloc.state.selectedDayIndex].id,
         );
       case _SpotAction.edit:
-        showModalBottomSheet(
-          context: context,
-          useRootNavigator: true,
-          isScrollControlled: true,
-          showDragHandle: false,
-          backgroundColor: Colors.transparent,
-          builder: (sheetContext) => BlocProvider.value(
+        TriftlyBottomSheet.show(
+          context,
+          child: BlocProvider.value(
             value: bloc,
             child: AddSpotBottomSheet(editSpot: spot),
           ),

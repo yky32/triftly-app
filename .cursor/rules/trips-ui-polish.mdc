@@ -86,3 +86,7 @@ Two sheet types share the same chrome:
 ## Liquid glass summary cards
 - Trip **Spend** / **Plan** today & total snapshots use frosted glass — see `liquid-glass-ui.mdc`.
 - Do **not** regress to solid `primaryDark` hero blocks for inline metrics.
+
+## Tab shells & empty states
+- Tab-root pages use transparent scaffold + `extendBody` — see `app-shell-ui.mdc`.
+- Global Spend wallet patterns (`SpendWalletCard`, `SpendListCard`) live in `3_spend/` — not trip-tab glass shells.

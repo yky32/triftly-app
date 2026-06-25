@@ -51,9 +51,18 @@ Frosted, light surfaces for trip summaries, metrics, and inline stats. **Do not*
 | Settlement / form sheets | ❌ `SheetSoftCard` (see `trips-ui-polish.mdc`) |
 | Bottom nav island | ✅ `GlassSurface` pill |
 
+## Empty states on glass surfaces
+
+For the full decision tree (when to use `EmptyState` vs glass heroes vs inline cards), see `app-shell-ui.mdc`. On glass metric slots specifically:
+
+- Show **`$0 spent`**, not paragraph copy
+- Badge: `No expenses` / `No spending` — pill on `surfaceElevated`
+- Map / unmapped heroes use `MapEmptyState` glass preview — not `EmptyState`
+
 ## Reference implementations
 
 - `spend_overview_metric_card.dart` — shell + metric card
 - `spend_category_breakdown_card.dart` — collapsible breakdown
 - `today_spend_card.dart` / `today_plan_card.dart` — Plan & Spend today rows
 - `trip_detail_page.dart` — `GlassToggle` + `GlassIconButton` app bar cluster
+- `app-shell-ui.mdc` — tab shells, global Spend wallet, empty-state tree
