@@ -1,4 +1,18 @@
--- Auto-create public.users row when a user signs up via Supabase Auth.
+-- Run only if you already applied an older schema that used public.profiles.
+-- Fresh installs: use 001 with public.users directly — skip this file.
+
+do $$
+begin
+  if to_regclass('public.profiles') is not null
+     and to_regclass('public.users') is null then
+    alter table public.profiles rename to users;
+  end if;
+end $$;
+
+drop policy if exists "profiles_self" on public.users;
+
+create policy "users_self" on public.users
+  for all using (auth.uid() = id);
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -24,8 +38,3 @@ begin
   return new;
 end;
 $$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();

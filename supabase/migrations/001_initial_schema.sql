@@ -1,6 +1,6 @@
 -- Triftly initial schema (Supabase Postgres + RLS)
 
-create table if not exists profiles (
+create table if not exists users (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
   email text,
@@ -11,7 +11,7 @@ create table if not exists profiles (
 
 create table if not exists trips (
   id uuid primary key,
-  owner_id uuid references profiles(id),
+  owner_id uuid references users(id),
   name text not null,
   destination text not null,
   start_date date not null,
@@ -25,7 +25,7 @@ create table if not exists trips (
 
 create table if not exists trip_members (
   trip_id uuid references trips(id) on delete cascade,
-  user_id uuid references profiles(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
   role text not null check (role in ('owner', 'editor', 'viewer')),
   primary key (trip_id, user_id)
 );
@@ -43,7 +43,7 @@ create table if not exists buddies (
   trip_id uuid references trips(id) on delete cascade,
   name text not null,
   avatar_color text,
-  user_id uuid references profiles(id),
+  user_id uuid references users(id),
   is_me boolean not null default false
 );
 
@@ -84,11 +84,11 @@ create table if not exists settlement_records (
   is_active boolean not null default true
 );
 
-alter table profiles enable row level security;
+alter table users enable row level security;
 alter table trips enable row level security;
 alter table trip_members enable row level security;
 
-create policy "profiles_self" on profiles
+create policy "users_self" on users
   for all using (auth.uid() = id);
 
 create policy "trips_owner" on trips

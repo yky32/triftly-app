@@ -9,6 +9,10 @@ In the Supabase SQL editor (or CLI), run in order:
 3. `migrations/003_auth_profile_trigger.sql`
 4. `migrations/004_shared_trip_bundle.sql`
 
+If you previously ran migrations that created `public.profiles`, also run:
+
+5. `migrations/005_rename_profiles_to_users.sql`
+
 ## 2. Auth
 
 In **Authentication → Providers**, enable **Email** (magic link / OTP).
@@ -53,5 +57,5 @@ The deploy workflow passes them into `flutter build ipa` via Fastlane.
 
 1. Me → Sign in → email OTP
 2. Create a trip while signed in
-3. Confirm rows in **Table Editor** (`trips`, `buddies`, `trip_days`)
+3. Confirm rows in **Table Editor** (`users`, `trips`, `buddies`, `trip_days`)
 4. Sign in on a second device → trips pull down
