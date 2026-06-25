@@ -398,35 +398,212 @@ class SheetSoftDivider extends StatelessWidget {
   }
 }
 
-/// Full-width primary action for utility sheets (lookup, apply, etc.).
-class SheetPrimaryButton extends StatelessWidget {
-  const SheetPrimaryButton({
+/// Indented divider between rows in a zero-padding [SheetSoftCard].
+class SheetSoftListDivider extends StatelessWidget {
+  const SheetSoftListDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Divider(
+      height: 1,
+      indent: AppSpacing.lg,
+      endIndent: AppSpacing.lg,
+      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+    );
+  }
+}
+
+/// Selectable list row — appearance picker, currency list, trip menu, etc.
+class SheetOptionRow extends StatelessWidget {
+  const SheetOptionRow({
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+    this.icon,
+    this.leading,
+    this.selected = false,
+    this.showCheck = true,
+    this.destructive = false,
+    super.key,
+  }) : assert(icon != null || leading != null);
+
+  final String title;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget? leading;
+  final bool selected;
+  final bool showCheck;
+  final bool destructive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = destructive
+        ? AppColors.error
+        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary);
+
+    return Pressable(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
+        child: Row(
+          children: [
+            leading ?? _IconTile(icon: icon!, selected: selected, destructive: destructive, isDark: isDark),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: titleColor,
+                        ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ],
+              ),
+            ),
+            if (showCheck)
+              if (selected)
+                const Icon(Icons.check_circle_rounded, size: 22, color: AppColors.primary)
+              else
+                Icon(
+                  Icons.circle_outlined,
+                  size: 22,
+                  color: AppColors.textTertiary.withValues(alpha: 0.5),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IconTile extends StatelessWidget {
+  const _IconTile({
+    required this.icon,
+    required this.selected,
+    required this.destructive,
+    required this.isDark,
+  });
+
+  final IconData icon;
+  final bool selected;
+  final bool destructive;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: selected
+            ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
+            : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+      ),
+      child: Icon(
+        icon,
+        size: 20,
+        color: destructive
+            ? AppColors.error
+            : (selected ? AppColors.primaryDark : AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+/// Compact in-row action chip for utility sheets (e.g. Paid, Everyone).
+class SheetCompactAction extends StatelessWidget {
+  const SheetCompactAction({
     required this.label,
     required this.onPressed,
+    this.icon,
     super.key,
   });
 
   final String label;
   final VoidCallback onPressed;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Pressable(
       onTap: onPressed,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          color: AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.08),
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
         ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: AppColors.primaryDark),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width primary action for utility sheets (lookup, apply, etc.).
+class SheetPrimaryButton extends StatelessWidget {
+  const SheetPrimaryButton({
+    required this.label,
+    required this.onPressed,
+    this.enabled = true,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Pressable(
+        onTap: enabled ? onPressed : null,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
           ),
         ),
       ),

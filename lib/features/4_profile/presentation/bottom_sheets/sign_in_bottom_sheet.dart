@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
@@ -79,6 +81,8 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SheetScaffold(
       showCloseButton: false,
       child: Column(
@@ -92,40 +96,38 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
                     ? 'Magic link or one-time code'
                     : 'Local guest session for now',
           ),
-          const SizedBox(height: 12),
-          if (!_awaitingCode)
-            SheetSoftCard(
-              child: TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: InputBorder.none,
-                ),
-              ),
-            )
-          else
-            SheetSoftCard(
-              child: TextField(
-                controller: _codeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Verification code',
-                  border: InputBorder.none,
-                ),
+          const SizedBox(height: AppSpacing.md),
+          SheetSoftCard(
+            child: SheetIconFieldRow(
+              icon: _awaitingCode ? Icons.pin_outlined : Icons.mail_outline_rounded,
+              field: SheetInlineField(
+                controller: _awaitingCode ? _codeController : _emailController,
+                hint: _awaitingCode ? 'Verification code' : 'Email address',
+                keyboardType: _awaitingCode
+                    ? TextInputType.number
+                    : TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                onChanged: () {
+                  if (_error != null) setState(() => _error = null);
+                },
               ),
             ),
+          ),
           if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _error!,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.error : Theme.of(context).colorScheme.error,
+              ),
+            ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           SheetPrimaryButton(
             label: _awaitingCode ? 'Verify' : 'Continue',
-            onPressed: _submitting
-                ? () {}
-                : (_awaitingCode ? _verifyCode : _submitEmail),
+            enabled: !_submitting,
+            onPressed: _awaitingCode ? _verifyCode : _submitEmail,
           ),
         ],
       ),

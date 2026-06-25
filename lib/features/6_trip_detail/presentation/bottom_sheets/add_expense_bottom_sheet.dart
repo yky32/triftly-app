@@ -259,14 +259,9 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SheetSectionHeader(
-            title: _isEditing ? 'Edit expense' : 'Add expense',
-            caption: _isEditing ? 'Update amount or split' : 'Track group spending',
-          ),
-          const SizedBox(height: AppSpacing.lg),
           SheetHeroField(
-            label: 'What for?',
-            hint: 'Lunch at Ichiran',
+            label: _isEditing ? 'Expense' : 'What for?',
+            hint: _isEditing ? widget.editExpense!.title : 'Lunch at Ichiran',
             controller: _titleController,
             onChanged: () => setState(() {}),
           ),
@@ -363,7 +358,9 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
                         ),
                       ),
                       if (_splitBuddyIds.length < widget.trip.buddies.length)
-                        TextButton.icon(
+                        SheetCompactAction(
+                          label: 'Everyone',
+                          icon: Icons.select_all_rounded,
                           onPressed: () {
                             HapticFeedback.selectionClick();
                             setState(() {
@@ -373,16 +370,6 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
                               _ensureConfigControllers();
                             });
                           },
-                          icon: const Icon(Icons.select_all_rounded, size: 16),
-                          label: const Text('Everyone'),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xs,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
                         ),
                     ],
                   ),

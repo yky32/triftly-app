@@ -56,6 +56,9 @@ Two sheet types share the same chrome:
 | `SheetChoiceChipRow` | 2–3 mode segments |
 | `SheetNumericHeroField` | Large amount / result with symbol affix |
 | `SheetPrimaryButton` | Utility sheet CTA |
+| `SheetOptionRow` | Selectable list rows (appearance, currency, menus) |
+| `SheetSoftListDivider` | Indented divider inside zero-padding `SheetSoftCard` |
+| `SheetCompactAction` | Small in-row action chip (Paid, Everyone) |
 | `SheetResultBanner` | Converted / lookup result |
 
 ## Segment control (`trip_phase_segment.dart`)
