@@ -29,7 +29,7 @@ Two sheet types share the same chrome:
 ### A. Form sheets (create trip, add spot)
 - `SheetScaffold(showCloseButton: false)` — **no** scaffold `title` / `subtitle`
 - Drag handle **inside** `SheetScaffold` (default)
-- Hero field at top (`SheetHeroField` or create-trip `_HeroNameField`)
+- Hero field at top (`SheetHeroField`)
 - Sections: `SheetSectionHeader` + `SheetSoftCard`
 - Fields: borderless (`SheetInlineField`, `SheetIconFieldRow`) — **no** `OutlineInputBorder`
 - Submit: `SwipeToConfirm` — **not** `FilledButton` / `SheetPrimaryButton`
@@ -65,6 +65,7 @@ Two sheet types share the same chrome:
 ## New Trip sheet (`create_trip_bottom_sheet.dart`)
 - App bar **+** opens sheet. `SwipeToConfirm` label **"Slide to create trip"**.
 - `BlocProvider.value(value: tripListBloc)` required.
+- Uses shared primitives: `SheetHeroField`, `SheetSectionHeader`, `SheetSoftCard`, `SheetIconFieldRow`, `SheetCurrencyChipPicker`.
 
 ## Add Spot sheet (`add_spot_bottom_sheet.dart`)
 - Same chrome as create trip. `SwipeToConfirm` **"Slide to add spot"**.

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../core/constants/currency_options.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/trip_date_picker_sheet.dart';
 import '../../../../core/widgets/trip_time_picker_sheet.dart';
@@ -54,8 +54,6 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
     final tripLength = _tripLengthDays;
 
     return SheetScaffold(
@@ -63,45 +61,26 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _HeroNameField(controller: _nameController, onChanged: () => setState(() {})),
+          SheetHeroField(
+            label: 'New Trip Name',
+            hint: 'Tokyo 2026',
+            controller: _nameController,
+            onChanged: () => setState(() {}),
+          ),
           const SizedBox(height: AppSpacing.xl),
-          _SectionHeader(title: 'Where & when'),
+          const SheetSectionHeader(title: 'Where & when'),
           const SizedBox(height: AppSpacing.md),
-          _SoftCard(
+          SheetSoftCard(
             child: Column(
               children: [
-                Row(
-                  children: [
-                    const _LocationIconTile(),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: TextField(
-                        controller: _destinationController,
-                        onChanged: (_) => setState(() {}),
-                        textInputAction: TextInputAction.next,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Where are you going?',
-                          hintStyle: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: tertiary,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                  ],
+                SheetIconFieldRow(
+                  icon: Icons.location_on_outlined,
+                  field: SheetInlineField(
+                    controller: _destinationController,
+                    hint: 'Where are you going?',
+                    onChanged: () => setState(() {}),
+                    textInputAction: TextInputAction.next,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 IntrinsicHeight(
@@ -135,13 +114,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Divider(
-                    height: 1,
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  ),
-                ),
+                const SheetSoftDivider(),
                 const _FlightColumnHeaders(),
                 const SizedBox(height: AppSpacing.xs),
                 _FlightLegRow(
@@ -152,13 +125,7 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                   toController: _outboundToController,
                   onPickDepart: () => _pickFlightDepart(context, isOutbound: true),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Divider(
-                    height: 1,
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  ),
-                ),
+                const SheetSoftDivider(),
                 _FlightLegRow(
                   isOutbound: false,
                   flightNoController: _returnFlightNoController,
@@ -171,9 +138,9 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          const _SectionHeader(title: 'Currency'),
+          const SheetSectionHeader(title: 'Currency'),
           const SizedBox(height: AppSpacing.md),
-          _CurrencyPicker(
+          SheetCurrencyChipPicker(
             selected: _currency,
             onSelected: (code) {
               HapticFeedback.selectionClick();
@@ -181,12 +148,12 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
             },
           ),
           const SizedBox(height: AppSpacing.xl),
-          _SectionHeader(
+          const SheetSectionHeader(
             title: 'Travel buddies',
             caption: 'Optional',
           ),
           const SizedBox(height: AppSpacing.md),
-          _SoftCard(
+          SheetSoftCard(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,25 +173,13 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                 ],
                 Row(
                   children: [
-                    Icon(Icons.people_outline_rounded, size: 22, color: tertiary),
+                    const SheetIconTile(icon: Icons.people_outline_rounded),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: TextField(
+                      child: SheetInlineField(
                         controller: _buddyNameController,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Add a name and press return',
-                          hintStyle: TextStyle(fontSize: 14, color: tertiary),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+                        hint: 'Add a name and press return',
+                        textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _addBuddy(),
                       ),
                     ),
@@ -411,163 +366,6 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
     if (!mounted) return;
 
     Navigator.of(context, rootNavigator: true).pop(true);
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.caption});
-
-  final String title;
-  final String? caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-            ),
-          ),
-        ),
-        if (caption != null)
-          Text(
-            caption!,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SoftCard extends StatelessWidget {
-  const _SoftCard({required this.child, this.padding});
-
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _HeroNameField extends StatelessWidget {
-  const _HeroNameField({required this.controller, required this.onChanged});
-
-  final TextEditingController controller;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF134E4A), const Color(0xFF1E1E20)]
-              : [AppColors.primaryMuted, const Color(0xFFF7F5F2)],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'New Trip Name',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isDark ? AppColors.textSecondaryDark : AppColors.primaryDark,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: controller,
-            onChanged: (_) => onChanged(),
-            textInputAction: TextInputAction.next,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.6,
-              height: 1.15,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Tokyo 2026',
-              hintStyle: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.6,
-                color: tertiary.withValues(alpha: 0.75),
-              ),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LocationIconTile extends StatelessWidget {
-  const _LocationIconTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevatedDark : AppColors.primaryMuted.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        Icons.location_on_outlined,
-        size: 22,
-        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
-      ),
-    );
   }
 }
 
@@ -1009,91 +807,6 @@ class _DateRangeConnector extends StatelessWidget {
             size: 18,
             color: hasRange ? AppColors.primaryDark : AppColors.primary,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CurrencyPicker extends StatelessWidget {
-  const _CurrencyPicker({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String selected;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: CurrencyOptions.all.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (context, index) {
-          final option = CurrencyOptions.all[index];
-          return _CurrencyChip(
-            option: option,
-            isSelected: option.code == selected,
-            onTap: () => onSelected(option.code),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CurrencyChip extends StatelessWidget {
-  const _CurrencyChip({
-    required this.option,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final CurrencyOption option;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Pressable(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.1)
-              : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(option.flag, style: const TextStyle(fontSize: 20, height: 1)),
-            const SizedBox(height: 2),
-            Text(
-              option.symbol,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1,
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
-              ),
-            ),
-          ],
         ),
       ),
     );
