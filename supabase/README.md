@@ -1,17 +1,37 @@
 # Supabase setup (Triftly)
 
-## 1. Run migrations
+## 1. Migrations (automatic on `main`)
 
-In the Supabase SQL editor (or CLI), run in order:
+Pushes to `main` that touch `supabase/migrations/**` run the **Supabase migrations** GitHub Action (`.github/workflows/migrate-supabase.yml`). You can also trigger it manually under **Actions → Supabase migrations → Run workflow**.
+
+### GitHub secrets (migrations)
+
+| Secret | Where to get it |
+|--------|------------------|
+| `SUPABASE_URL` | Already set (`https://….supabase.co`) |
+| `SUPABASE_ACCESS_TOKEN` | [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) → Generate |
+| `SUPABASE_DB_PASSWORD` | Project **Settings → Database** → Database password (set on project create) |
+
+### Manual / local (optional)
+
+```bash
+npx supabase link --project-ref YOUR_REF
+npx supabase db push
+```
+
+Migration order:
 
 1. `migrations/001_initial_schema.sql`
 2. `migrations/002_sync_columns_and_rls.sql`
 3. `migrations/003_auth_profile_trigger.sql`
 4. `migrations/004_shared_trip_bundle.sql`
+5. `migrations/005_rename_profiles_to_users.sql` — only if `public.profiles` already exists
 
-If you previously ran migrations that created `public.profiles`, also run:
+**Already ran SQL by hand?** Mark versions as applied so CI does not re-run them:
 
-5. `migrations/005_rename_profiles_to_users.sql`
+```bash
+npx supabase migration repair --status applied 001 002 003 004
+```
 
 ## 2. Auth
 
@@ -46,12 +66,14 @@ flutter run \
 
 ## 5. TestFlight / CI
 
-Add GitHub repository secrets:
+GitHub repository secrets:
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_URL` — migrations + TestFlight
+- `SUPABASE_PUBLISHABLE_KEY` — TestFlight only
+- `SUPABASE_ACCESS_TOKEN` — migrations only
+- `SUPABASE_DB_PASSWORD` — migrations only
 
-The deploy workflow passes them into `flutter build ipa` via Fastlane.
+The deploy workflow passes URL + publishable key into `flutter build ipa` via Fastlane.
 
 ## 6. Smoke test
 
