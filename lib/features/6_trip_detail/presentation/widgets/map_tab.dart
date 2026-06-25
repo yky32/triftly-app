@@ -5,7 +5,6 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/section_header.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import 'map_empty_state.dart';
 import 'trip_detail_tab_scroll.dart';
@@ -71,6 +70,7 @@ class _MapTabState extends State<MapTab> {
         final mappedSpots = visibleSpots
             .where((s) => s.latitude != null && s.longitude != null)
             .toList();
+        final scopeLabel = _scopeLabel(dayIndex);
 
         return TripDetailTabScroll(
           key: widget.key,
@@ -83,80 +83,104 @@ class _MapTabState extends State<MapTab> {
                 AppSpacing.listBottomInset(context),
               ),
               sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (mappedSpots.isNotEmpty) ...[
-                    ClipRRect(
-                      borderRadius: AppRadii.card,
-                      child: SizedBox(
-                        height: 280,
-                        child: GoogleMap(
-                          initialCameraPosition: _initialCamera(mappedSpots),
-                          markers: _buildMarkers(mappedSpots),
-                          polylines: _buildPolyline(mappedSpots),
-                          onMapCreated: (controller) {
-                            _mapController = controller;
-                            _fitBounds(mappedSpots);
-                          },
-                          myLocationButtonEnabled: false,
-                          zoomControlsEnabled: false,
-                          mapToolbarEnabled: false,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ] else ...[
-                    const MapNoCoordinatesBanner(),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                  if (widget.days.isNotEmpty) ...[
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.sm),
-                            child: FilterChip(
-                              label: const Text('All days'),
-                              selected: _showAllDays,
-                              onSelected: (_) => setState(() => _showAllDays = true),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.sm),
-                            child: FilterChip(
-                              label: const Text('Selected day'),
-                              selected: !_showAllDays,
-                              onSelected: (_) => setState(() => _showAllDays = false),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-                  SectionHeader(
-                    title:
-                        '${_showAllDays ? 'All spots' : "Today's route"} · ${mappedSpots.length} of ${visibleSpots.length} mapped',
-                  ),
-                  ...visibleSpots.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final spot = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _SpotListTile(
-                        index: index,
-                        spot: spot,
-                        day: _dayForSpot(spot),
-                      ),
-                    );
-                  }),
-                ]),
+                delegate: SliverChildListDelegate(_buildContent(
+                  dayIndex: dayIndex,
+                  scopeLabel: scopeLabel,
+                  visibleSpots: visibleSpots,
+                  mappedSpots: mappedSpots,
+                )),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  List<Widget> _buildContent({
+    required int? dayIndex,
+    required String scopeLabel,
+    required List<Spot> visibleSpots,
+    required List<Spot> mappedSpots,
+  }) {
+    final items = <Widget>[];
+
+    if (widget.days.isNotEmpty) {
+      items.add(_MapDayScopeChips(
+        showAllDays: _showAllDays,
+        onAllDays: () => setState(() => _showAllDays = true),
+        onSelectedDay: () => setState(() => _showAllDays = false),
+      ));
+      items.add(const SizedBox(height: AppSpacing.md));
+    }
+
+    if (visibleSpots.isEmpty) {
+      items.add(MapDayEmptyState(
+        dayLabel: scopeLabel,
+        onOpenPlan: widget.onOpenPlanTab,
+      ));
+      return items;
+    }
+
+    if (mappedSpots.isNotEmpty) {
+      items.add(
+        ClipRRect(
+          borderRadius: AppRadii.card,
+          child: SizedBox(
+            height: 280,
+            child: GoogleMap(
+              initialCameraPosition: _initialCamera(mappedSpots),
+              markers: _buildMarkers(mappedSpots),
+              polylines: _buildPolyline(mappedSpots),
+              onMapCreated: (controller) {
+                _mapController = controller;
+                _fitBounds(mappedSpots);
+              },
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
+            ),
+          ),
+        ),
+      );
+      items.add(const SizedBox(height: AppSpacing.sm));
+      items.add(MapRouteStatusHeader(
+        scopeLabel: scopeLabel,
+        mappedCount: mappedSpots.length,
+        totalCount: visibleSpots.length,
+      ));
+    } else {
+      items.add(MapUnmappedHero(
+        spotCount: visibleSpots.length,
+        scopeLabel: scopeLabel,
+      ));
+    }
+
+    if (visibleSpots.isNotEmpty) {
+      items.add(const SizedBox(height: AppSpacing.lg));
+      items.add(_StopsListLabel(count: visibleSpots.length));
+      items.add(const SizedBox(height: AppSpacing.sm));
+      items.addAll(visibleSpots.asMap().entries.map((entry) {
+        final index = entry.key;
+        final spot = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: _SpotListTile(
+            index: index,
+            spot: spot,
+            day: _dayForSpot(spot),
+          ),
+        );
+      }));
+    }
+
+    return items;
+  }
+
+  String _scopeLabel(int? dayIndex) {
+    if (_showAllDays || dayIndex == null) return 'All days';
+    if (widget.days.length > dayIndex) return widget.days[dayIndex].displayTitleLine;
+    return 'This day';
   }
 
   List<Spot> _visibleSpots(int? dayIndex) {
@@ -269,6 +293,61 @@ class _MapTabState extends State<MapTab> {
   }
 }
 
+class _MapDayScopeChips extends StatelessWidget {
+  const _MapDayScopeChips({
+    required this.showAllDays,
+    required this.onAllDays,
+    required this.onSelectedDay,
+  });
+
+  final bool showAllDays;
+  final VoidCallback onAllDays;
+  final VoidCallback onSelectedDay;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('All days'),
+            selected: showAllDays,
+            onSelected: (_) => onAllDays(),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FilterChip(
+            label: const Text('Selected day'),
+            selected: !showAllDays,
+            onSelected: (_) => onSelectedDay(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StopsListLabel extends StatelessWidget {
+  const _StopsListLabel({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Text(
+      'STOPS · $count',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+            letterSpacing: 0.45,
+          ),
+    );
+  }
+}
+
 class _SpotListTile extends StatelessWidget {
   const _SpotListTile({
     required this.index,
@@ -280,8 +359,11 @@ class _SpotListTile extends StatelessWidget {
   final Spot spot;
   final TripDay? day;
 
+  bool get _hasPin => spot.latitude != null && spot.longitude != null;
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final category = SpotCategory.values.firstWhere(
       (c) => c.value == spot.category,
       orElse: () => SpotCategory.other,
@@ -317,6 +399,15 @@ class _SpotListTile extends StatelessWidget {
               ],
             ),
           ),
+          if (!_hasPin)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                Icons.location_off_outlined,
+                size: 18,
+                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+              ),
+            ),
           if (spot.visited)
             const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
         ],
