@@ -1,0 +1,94 @@
+---
+description: Card surfaces and section title taxonomy — when to use which header/card
+globs: lib/core/widgets/app_card.dart,lib/core/widgets/section_header.dart,lib/features/5_trip_list/**/trip_card.dart,lib/features/3_spend/presentation/widgets/spend_wallet_accent.dart,lib/core/widgets/sheet_form_primitives.dart
+alwaysApply: false
+---
+
+# Cards & section titles
+
+Three layers — pick the widget that matches the surface:
+
+| Layer | Card | Section title |
+|-------|------|-----------------|
+| **Page** (tab roots) | `AppCard`, `TripCard` | `SectionHeader` |
+| **Global Spend** | `SpendListCard` | `SpendSectionTitle` |
+| **Bottom sheet** | `SheetSoftCard` | `SheetSectionHeader` |
+
+## Cards
+
+### `AppCard` — default content surface
+
+Use for grouped content on tab pages and inside trip tabs:
+
+- Settings groups (`profile_page.dart` `_SettingsGroup`)
+- Explore / Tools section bodies
+- Expense rows, spot detail blocks, inline empty cards (`TripInlineEmptyCard`)
+- `cardBackground(context)` + `AppShadows.card`
+
+**Not** for trip list rows — use `TripCard`.
+
+### `TripCard` — trip list row
+
+Use **only** on the Trips list (`trip_list_page.dart`):
+
+- Custom `Container` decoration (same bg/shadow intent as `AppCard` but trip-specific layout)
+- Flag emoji tile, phase badge, flight legs, tap → `context.go('/plan/${trip.id}')`
+- Wrapped in `Pressable` — do not nest inside `AppCard`
+
+### `SpendListCard` — global Spend lists
+
+Use on the **global Spend** tab and `spend_recent_all_page.dart`:
+
+- Bordered list shell for trip rows, balances, recent activity
+- Pair with `SpendSectionTitle` — not `SectionHeader`
+- See `app-shell-ui.mdc`
+
+### `SheetSoftCard` — sheet panels only
+
+Form and utility bottom sheets — see `trips-ui-polish.mdc`. Never on tab page bodies.
+
+### `SpendGlassShell` — metrics only
+
+Frosted metric snapshots (trip Spend/Plan/Map, global wallet hero). **Not** for settings, lists, or forms. See `liquid-glass-ui.mdc`.
+
+## Section titles
+
+### `SectionHeader` — page sections
+
+```dart
+SectionHeader(title: 'Preferences', action: …, actionLabel: 'See all')
+```
+
+- Tab pages: Trips (implicit via segment), Tools, Explore, **Me**
+- `titleMedium` 17px w600, optional trailing text action in `primary`
+- **No** count chip — use subtitle in copy or a separate row
+
+### `SpendSectionTitle` — global Spend sections
+
+- Teal accent bar + bold title + optional muted count
+- Sections: Trips, Balances, Recent on `spend_page.dart`
+- Do not use on trip-detail Spend tab (use glass card headers or list grouping instead)
+
+### `SheetSectionHeader` — bottom sheet body titles
+
+- First content block inside `SheetScaffold` (pattern A or B)
+- `title` + optional `caption` — replaces sheet AppBar title
+- Tools, settlement, appearance, expense detail, create trip (when migrated)
+
+## Quick decision
+
+```
+Inside a bottom sheet?     → SheetSectionHeader + SheetSoftCard
+Global Spend list section? → SpendSectionTitle + SpendListCard
+Trip in Trips list?        → TripCard (no SectionHeader per row)
+Other tab page section?    → SectionHeader + AppCard
+Metric / $ snapshot?        → SpendGlassShell (not AppCard)
+```
+
+## Reference
+
+- `trip_card.dart` — list row
+- `app_card.dart` — generic card
+- `section_header.dart` — page sections
+- `spend_wallet_accent.dart` — `SpendSectionTitle`, `SpendListCard`
+- `sheet_form_primitives.dart` — `SheetSectionHeader`, `SheetSoftCard`

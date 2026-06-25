@@ -67,3 +67,4 @@ For the full decision tree (when to use `EmptyState` vs glass heroes vs inline c
 - `today_spend_card.dart` / `today_plan_card.dart` — Plan & Spend today rows
 - `trip_detail_page.dart` — `GlassToggle` + `GlassIconButton` app bar cluster
 - `app-shell-ui.mdc` — tab shells, global Spend wallet, empty-state tree
+- `ui-cards-and-sections.mdc` — `AppCard` vs `TripCard`, section title taxonomy
