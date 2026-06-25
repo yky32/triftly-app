@@ -101,3 +101,28 @@ final class TripDetailSpotUpdated extends TripDetailEvent {
   @override
   List<Object?> get props => [spotId, name, address, category];
 }
+
+final class TripDetailSpotRemoved extends TripDetailEvent {
+  final String spotId;
+  const TripDetailSpotRemoved({required this.spotId});
+  @override
+  List<Object?> get props => [spotId];
+}
+
+final class TripDetailTripUpdated extends TripDetailEvent {
+  final Trip trip;
+  const TripDetailTripUpdated({required this.trip});
+  @override
+  List<Object?> get props => [trip];
+}
+
+final class TripDetailTripDeleted extends TripDetailEvent {
+  const TripDetailTripDeleted();
+}
+
+final class TripDetailSettlementRecorded extends TripDetailEvent {
+  final SettlementRecord record;
+  const TripDetailSettlementRecorded({required this.record});
+  @override
+  List<Object?> get props => [record];
+}

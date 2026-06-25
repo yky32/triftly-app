@@ -1,36 +1,55 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
-import '../../../../core/services/trip_store.dart';
+import '../../../../core/repositories/hive_trip_repository.dart';
+import '../../../../core/repositories/trip_repository.dart';
 
 part 'trip_list_event.dart';
 part 'trip_list_state.dart';
 
 class TripListBloc extends Bloc<TripListEvent, TripListState> {
-  TripListBloc() : super(const TripListState()) {
+  TripListBloc({TripRepository? repository})
+      : _repository = repository ?? HiveTripRepository.instance,
+        super(const TripListState()) {
     on<TripListLoadRequested>(_onLoadRequested);
     on<TripListTripCreated>(_onTripCreated);
+    on<TripListTripUpdated>(_onTripUpdated);
+    on<TripListTripDeleted>(_onTripDeleted);
   }
 
-  final _store = TripStore.instance;
+  final TripRepository _repository;
 
   Future<void> _onLoadRequested(
     TripListLoadRequested event,
     Emitter<TripListState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    // TODO: Load from Supabase + Hive cache, merge with TripStore
-    await Future.delayed(const Duration(milliseconds: 500));
-    emit(state.copyWith(isLoading: false, trips: _store.allTrips()));
+    await Future.delayed(const Duration(milliseconds: 200));
+    emit(state.copyWith(isLoading: false, trips: _repository.allTrips()));
   }
 
   Future<void> _onTripCreated(
     TripListTripCreated event,
     Emitter<TripListState> emit,
   ) async {
-    // TODO: Save to Supabase + Hive cache
-    _store.upsertCreatedTrip(event.trip);
-    emit(state.copyWith(trips: _store.allTrips()));
+    await _repository.upsertTrip(event.trip);
+    emit(state.copyWith(trips: _repository.allTrips()));
+  }
+
+  Future<void> _onTripUpdated(
+    TripListTripUpdated event,
+    Emitter<TripListState> emit,
+  ) async {
+    await _repository.updateTrip(event.trip);
+    emit(state.copyWith(trips: _repository.allTrips()));
+  }
+
+  Future<void> _onTripDeleted(
+    TripListTripDeleted event,
+    Emitter<TripListState> emit,
+  ) async {
+    await _repository.deactivateTrip(event.tripId);
+    emit(state.copyWith(trips: _repository.allTrips()));
   }
 }
 
