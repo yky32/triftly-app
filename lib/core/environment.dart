@@ -12,16 +12,34 @@ class Environment {
     'SUPABASE_URL',
     defaultValue: 'https://your-project.supabase.co',
   );
+
+  /// New opaque publishable key (`sb_publishable_…`). Preferred over legacy anon JWT.
+  static const String supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: '',
+  );
+
+  /// Legacy anon JWT — still accepted when publishable key is unset.
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
     defaultValue: 'your-anon-key',
   );
 
-  static bool get hasSupabase =>
-      supabaseUrl.isNotEmpty &&
-      !supabaseUrl.contains('your-project') &&
-      supabaseAnonKey.isNotEmpty &&
-      supabaseAnonKey != 'your-anon-key';
+  static String get supabaseClientKey {
+    if (supabasePublishableKey.isNotEmpty) return supabasePublishableKey;
+    return supabaseAnonKey;
+  }
+
+  static bool get hasSupabase {
+    final urlOk =
+        supabaseUrl.isNotEmpty && !supabaseUrl.contains('your-project');
+    final key = supabaseClientKey;
+    final keyOk = key.isNotEmpty &&
+        key != 'your-anon-key' &&
+        !key.startsWith('sb_publishable_...') &&
+        (key.startsWith('sb_publishable_') || key.startsWith('eyJ'));
+    return urlOk && keyOk;
+  }
 
   // Google Maps
   static const String googleMapsApiKey = String.fromEnvironment(
