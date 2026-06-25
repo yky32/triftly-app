@@ -48,3 +48,4 @@ app.*.map.json
 ios/fastlane/.env
 **/fastlane/report.xml
 env/env/.env.*
+/*.hive
