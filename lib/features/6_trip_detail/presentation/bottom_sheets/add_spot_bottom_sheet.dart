@@ -7,7 +7,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/spot_time_utils.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
-import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/trip_time_picker_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
@@ -72,8 +71,10 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SheetScaffold(
-      showCloseButton: false,
+    return SheetScaffold.swipeForm(
+      swipeLabel: _isEditing ? 'Slide to save spot' : 'Slide to add spot',
+      swipeEnabled: _canAdd && !_isSubmitting,
+      onSwipeConfirmed: _submitSpot,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -137,12 +138,6 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          SwipeToConfirm(
-            label: _isEditing ? 'Slide to save spot' : 'Slide to add spot',
-            enabled: _canAdd && !_isSubmitting,
-            onConfirmed: _submitSpot,
           ),
         ],
       ),

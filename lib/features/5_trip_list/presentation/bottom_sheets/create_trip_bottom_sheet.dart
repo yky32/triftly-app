@@ -12,7 +12,6 @@ import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/trip_date_picker_sheet.dart';
 import '../../../../core/widgets/trip_time_picker_sheet.dart';
-import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_list_bloc.dart';
 
@@ -59,8 +58,10 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
   Widget build(BuildContext context) {
     final tripLength = _tripLengthDays;
 
-    return SheetScaffold(
-      showCloseButton: false,
+    return SheetScaffold.swipeForm(
+      swipeLabel: 'Slide to create trip',
+      swipeEnabled: _canCreate && !_isSubmitting,
+      onSwipeConfirmed: _createTrip,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -162,15 +163,20 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (_buddies.isNotEmpty) ...[
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: _buddies
-                        .map((b) => _BuddyChip(
-                              buddy: b,
-                              onRemove: () => setState(() => _buddies.remove(b)),
-                            ))
-                        .toList(),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 132),
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: _buddies
+                            .map((b) => _BuddyChip(
+                                  buddy: b,
+                                  onRemove: () => setState(() => _buddies.remove(b)),
+                                ))
+                            .toList(),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -202,12 +208,6 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          SwipeToConfirm(
-            label: 'Slide to create trip',
-            enabled: _canCreate && !_isSubmitting,
-            onConfirmed: _createTrip,
           ),
         ],
       ),

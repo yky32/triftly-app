@@ -12,7 +12,6 @@ import '../../../../core/utils/currency_conversion.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
-import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../bloc/trip_detail_bloc.dart';
@@ -254,8 +253,10 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
     final bloc = context.watch<TripDetailBloc>();
     final days = bloc.state.days;
 
-    return SheetScaffold(
-      showCloseButton: false,
+    return SheetScaffold.swipeForm(
+      swipeLabel: _isEditing ? 'Slide to save expense' : 'Slide to add expense',
+      swipeEnabled: _canSubmit && !_isSubmitting,
+      onSwipeConfirmed: _submitExpense,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -417,12 +418,6 @@ class _AddExpenseBottomSheetState extends State<AddExpenseBottomSheet> {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.xxl),
-          SwipeToConfirm(
-            label: _isEditing ? 'Slide to save expense' : 'Slide to add expense',
-            enabled: _canSubmit && !_isSubmitting,
-            onConfirmed: _submitExpense,
-          ),
         ],
       ),
     );

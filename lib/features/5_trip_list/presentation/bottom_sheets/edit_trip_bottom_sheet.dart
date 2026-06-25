@@ -4,7 +4,6 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
-import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../../../core/widgets/trip_date_picker_sheet.dart';
 import '../../../6_trip_detail/bloc/trip_detail_bloc.dart';
@@ -106,8 +105,10 @@ class _EditTripBottomSheetState extends State<EditTripBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SheetScaffold(
-      showCloseButton: false,
+    return SheetScaffold.swipeForm(
+      swipeLabel: 'Slide to save changes',
+      swipeEnabled: _canSave && !_submitting,
+      onSwipeConfirmed: _save,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -153,12 +154,6 @@ class _EditTripBottomSheetState extends State<EditTripBottomSheet> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          SwipeToConfirm(
-            label: 'Slide to save changes',
-            enabled: _canSave && !_submitting,
-            onConfirmed: _save,
           ),
         ],
       ),

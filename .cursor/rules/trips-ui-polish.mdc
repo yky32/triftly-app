@@ -32,7 +32,8 @@ Two sheet types share the same chrome:
 - Hero field at top (`SheetHeroField`)
 - Sections: `SheetSectionHeader` + `SheetSoftCard`
 - Fields: borderless (`SheetInlineField`, `SheetIconFieldRow`) — **no** `OutlineInputBorder`
-- Submit: `SwipeToConfirm` — **not** `FilledButton` / `SheetPrimaryButton`
+- Submit: `SheetScaffold.swipeForm` (pins `SwipeToConfirm` in footer) — **not** inline in scroll body
+- Submit control: `SwipeToConfirm` — **not** `FilledButton` / `SheetPrimaryButton`
 - Trip sheets outside page `BlocProvider`: wrap with `BlocProvider.value`
 
 ### B. Utility sheets (tools, settlement, pickers)
