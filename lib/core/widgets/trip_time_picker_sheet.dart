@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'sheet_form_primitives.dart';
 import 'triftly_motion.dart';
 
 /// Travel-themed time picker — bottom sheet with drum wheels and quick presets.
@@ -279,14 +280,7 @@ class _TripTimePickerSheetState extends State<TripTimePickerSheet> {
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xl + bottomInset),
-            child: FilledButton(
-              onPressed: _confirm,
-              style: FilledButton.styleFrom(
-                backgroundColor: _accent,
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: const Text('Set time', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
+            child: SheetPrimaryButton(label: 'Set time', onPressed: _confirm),
           ),
         ],
       ),

@@ -14,6 +14,7 @@ import '../../../../core/widgets/glass_toggle.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../5_trip_list/presentation/bottom_sheets/edit_trip_bottom_sheet.dart';
+import '../bottom_sheets/trip_detail_menu_sheet.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
 import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
@@ -295,33 +296,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _showTripMenu(BuildContext context, Trip trip) async {
-    final action = await showModalBottomSheet<_TripDetailMenuAction>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit trip'),
-              onTap: () => Navigator.pop(ctx, _TripDetailMenuAction.edit),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: AppColors.error),
-              title: Text('Delete trip', style: TextStyle(color: AppColors.error)),
-              onTap: () => Navigator.pop(ctx, _TripDetailMenuAction.delete),
-            ),
-          ],
-        ),
-      ),
-    );
+    final action = await TripDetailMenuSheet.show(context);
     if (!context.mounted || action == null) return;
 
     final bloc = context.read<TripDetailBloc>();
     switch (action) {
-      case _TripDetailMenuAction.edit:
+      case TripDetailMenuAction.edit:
         await EditTripBottomSheet.show(context, trip: trip);
-      case _TripDetailMenuAction.delete:
+      case TripDetailMenuAction.delete:
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -339,8 +321,6 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
     }
   }
 }
-
-enum _TripDetailMenuAction { edit, delete }
 
 class _LoadingView extends StatelessWidget {
   const _LoadingView();

@@ -114,25 +114,15 @@ class _SettlementBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Trip total',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$symbol${CurrencyUtils.formatDecimal(total)}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                SheetNumericHeroField(
+                  label: 'Trip total',
+                  leadingAffix: symbol,
+                  value: CurrencyUtils.formatDecimal(total),
+                  readOnly: true,
                 ),
                 if (CurrencyUtils.approximateHkd(amount: total, currency: currency)
                     case final converted?) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(converted, style: Theme.of(context).textTheme.bodySmall),
                 ],
                 if (allSettled) ...[
@@ -196,9 +186,9 @@ class _SettlementBody extends StatelessWidget {
                         ),
                         if (!readOnly) ...[
                           const SizedBox(width: AppSpacing.sm),
-                          TextButton(
+                          SheetCompactAction(
+                            label: 'Paid',
                             onPressed: () => _recordPayment(context, t),
-                            child: const Text('Paid'),
                           ),
                         ],
                       ],

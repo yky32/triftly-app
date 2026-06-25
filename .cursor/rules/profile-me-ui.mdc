@@ -48,9 +48,24 @@ Utility sheet — pattern B from `trips-ui-polish.mdc`:
 - Open: `AppearanceBottomSheet.show(context)` via `TriftlyBottomSheet.show`
 - `SheetScaffold(showCloseButton: false)`
 - `SheetSectionHeader(title: 'Appearance', caption: 'Choose a theme')`
-- Options in `SheetSoftCard(padding: zero)` with dividers between rows
-- Each option: icon tile + title/subtitle + checkmark when selected
+- Options in `SheetSoftCard(padding: zero)` with `SheetSoftListDivider` between rows
+- Each option: `SheetOptionRow` (icon tile + title/subtitle + checkmark when selected)
 - Persist via `ThemeController` / `ThemeScope.of(context)` — **not** `setState` on the page alone
+
+## Sign-in sheet (`sign_in_bottom_sheet.dart`)
+
+Same utility pattern as appearance:
+
+- `SheetSectionHeader` + `SheetSoftCard` + `SheetIconFieldRow` / `SheetInlineField` (no `labelText` / `ListTile`)
+- `SheetPrimaryButton` for Continue / Verify — **not** `FilledButton` or `TextButton`
+- Spacing via `AppSpacing` — no magic numbers
+
+## Default currency sheet (`default_currency_bottom_sheet.dart`)
+
+Same list pattern as appearance:
+
+- `SheetOptionRow` with flag emoji `leading`, code title, symbol · label subtitle
+- `SheetSoftListDivider` between rows — **not** `ListTile` / bare `Divider`
 
 ## Do not
 
@@ -61,4 +76,6 @@ Utility sheet — pattern B from `trips-ui-polish.mdc`:
 ## Reference
 
 - `profile_page.dart` — identity card, settings groups, section headers
-- `appearance_bottom_sheet.dart` — theme picker sheet
+- `appearance_bottom_sheet.dart` — theme picker sheet (reference utility pattern)
+- `sign_in_bottom_sheet.dart` — sign-in utility sheet
+- `default_currency_bottom_sheet.dart` — currency picker list
