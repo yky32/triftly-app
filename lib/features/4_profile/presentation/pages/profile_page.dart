@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -33,6 +34,38 @@ class _ProfilePageState extends State<ProfilePage> {
     final info = await PackageInfo.fromPlatform();
     if (!mounted) return;
     setState(() => _versionLabel = '${info.version} (${info.buildNumber})');
+  }
+
+  Future<void> _exportTrips(BuildContext context) async {
+    final json = await AppBootstrap.tripRepository.exportCreatedTripsJson();
+    if (!context.mounted) return;
+    await Share.share(json, subject: 'Triftly trips export');
+  }
+
+  Future<void> _confirmClearOfflineData(BuildContext context, UserSession session) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear offline data?'),
+        content: const Text(
+          'Removes cached trips from this device. Cloud trips will be downloaded again if you are signed in.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Clear')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final user = session.currentUser;
+    final cloudUserId =
+        user != null && !user.id.startsWith('local-') ? user.id : null;
+    await AppBootstrap.tripRepository.clearOfflineData(cloudUserId: cloudUserId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Offline trip cache cleared')),
+    );
   }
 
   @override
@@ -91,17 +124,17 @@ class _ProfilePageState extends State<ProfilePage> {
               _SettingsGroup(children: [
                 _SettingsTile(
                   title: 'Export trips',
-                  subtitle: session.isSignedIn ? null : 'Available after sign in',
-                  enabled: false,
-                  showChevron: false,
-                  onTap: () {},
+                  subtitle: session.isSignedIn ? null : 'Sign in to export',
+                  enabled: session.isSignedIn,
+                  showChevron: session.isSignedIn,
+                  onTap: () => _exportTrips(context),
                 ),
                 _SettingsTile(
                   title: 'Clear offline data',
-                  subtitle: session.isSignedIn ? null : 'Available after sign in',
-                  enabled: false,
-                  showChevron: false,
-                  onTap: () {},
+                  subtitle: session.isSignedIn ? null : 'Sign in to clear cache',
+                  enabled: session.isSignedIn,
+                  showChevron: session.isSignedIn,
+                  onTap: () => _confirmClearOfflineData(context, session),
                 ),
               ]),
               const SizedBox(height: AppSpacing.xl),

@@ -120,6 +120,17 @@ class TripStore extends ChangeNotifier {
     );
   }
 
+  void clearCreatedTrips() {
+    final createdIds = _createdTrips.map((t) => t.id).toList();
+    _createdTrips.clear();
+    for (final id in createdIds) {
+      _sessionDetails.remove(id);
+    }
+  }
+
+  List<Trip> createdTripsOnly() =>
+      _createdTrips.where((t) => t.isActive && !isMockTripId(t.id)).toList();
+
   void restoreDetail(String tripId, TripDetailData detail) {
     _sessionDetails[tripId] = detail;
   }

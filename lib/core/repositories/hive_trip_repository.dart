@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import '../data/trip_hive_cache.dart';
 import '../models/settlement_record.dart';
@@ -152,6 +154,37 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
 
   Future<void> pullFromSupabase(String userId) async {
     await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
+    notifyListeners();
+  }
+
+  Future<String> exportCreatedTripsJson() async {
+    final entries = <Map<String, dynamic>>[];
+    for (final trip in _store.createdTripsOnly()) {
+      var detail = _store.detailSync(trip.id);
+      detail ??= await _store.loadDetail(trip.id);
+      if (detail == null) continue;
+      entries.add({
+        'trip': trip.toMap(),
+        'detail': {
+          'days': detail.days.map((d) => d.toMap()).toList(),
+          'spots': detail.spots.map((s) => s.toMap()).toList(),
+          'expenses': detail.expenses.map((e) => e.toMap()).toList(),
+          'settlements': detail.settlements.map((r) => r.toMap()).toList(),
+        },
+      });
+    }
+    return const JsonEncoder.withIndent('  ').convert({
+      'exported_at': DateTime.now().toIso8601String(),
+      'trips': entries,
+    });
+  }
+
+  Future<void> clearOfflineData({String? cloudUserId}) async {
+    _store.clearCreatedTrips();
+    await _cache.clearAll();
+    if (cloudUserId != null) {
+      await pullFromSupabase(cloudUserId);
+    }
     notifyListeners();
   }
 }

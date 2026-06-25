@@ -64,4 +64,9 @@ class TripHiveCache {
     await _trips?.delete(tripId);
     await _details?.delete(tripId);
   }
+
+  Future<void> clearAll() async {
+    await _trips?.clear();
+    await _details?.clear();
+  }
 }
