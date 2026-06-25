@@ -49,6 +49,24 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Verify app secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          missing=()
+          for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY GOOGLE_MAPS_API_KEY; do
+            if [ -z "${!key}" ]; then
+              missing+=("$key")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing GitHub secrets: ${missing[*]}"
+            exit 1
+          fi
+          echo "✅ App secrets present"
+
       - name: Setup App Store Connect API key
         env:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}

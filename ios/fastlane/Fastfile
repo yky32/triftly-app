@@ -26,6 +26,17 @@ FLUTTER_DART_DEFINE_KEYS = %w[
   GOOGLE_MAPS_API_KEY
 ].freeze
 
+# Required on CI — injected from GitHub repository secrets only (never env files).
+CI_REQUIRED_DART_DEFINE_KEYS = %w[
+  SUPABASE_URL
+  SUPABASE_PUBLISHABLE_KEY
+  GOOGLE_MAPS_API_KEY
+].freeze
+
+def ci_build?
+  ENV["CI"] == "true"
+end
+
 # PATH that prefers system Ruby 2.6 (avoids Homebrew Ruby 3.4 when running bundle/pod from fastlane)
 def path_for_system_ruby
   "/usr/bin:/usr/local/bin:#{ENV['PATH']}"
@@ -177,17 +188,29 @@ end
 
 def load_env_file_vars(env_value)
   vars = {}
-  parse_env_file(File.join(PROJECT_ROOT, "env", ".env.#{env_file_suffix(env_value)}"), vars)
-  parse_env_file(File.join(PROJECT_ROOT, "env", ".env.local"), vars)
+  if ci_build?
+    CI_REQUIRED_DART_DEFINE_KEYS.each do |key|
+      val = ENV[key]
+      vars[key] = val if val && !val.empty?
+    end
+    missing = CI_REQUIRED_DART_DEFINE_KEYS.reject { |key| vars[key] && !vars[key].empty? }
+    unless missing.empty?
+      UI.user_error!(
+        "TestFlight CI requires GitHub secrets (not env files): #{missing.join(', ')}"
+      )
+    end
+  else
+    parse_env_file(File.join(PROJECT_ROOT, "env", ".env.local"), vars)
+    FLUTTER_DART_DEFINE_KEYS.each do |key|
+      env_val = ENV[key]
+      vars[key] = env_val if env_val && !env_val.empty?
+    end
+  end
   vars
 end
 
 def flutter_dart_define_args(env_value)
   vars = load_env_file_vars(env_value)
-  FLUTTER_DART_DEFINE_KEYS.each do |key|
-    env_val = ENV[key]
-    vars[key] = env_val if env_val && !env_val.empty?
-  end
 
   args = ["--dart-define=ENV=#{env_value}"]
   FLUTTER_DART_DEFINE_KEYS.each do |key|

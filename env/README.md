@@ -2,38 +2,38 @@
 
 **Single source of truth:** [GitHub repository secrets](https://github.com/yky32/triftly-app/settings/secrets/actions).
 
-Committed `env/.env.*` files hold only non-secret structure (e.g. `APP_ENV`). Do not put API keys or Supabase credentials in git.
+Pre-launch: **one** Supabase project and API keys for both local dev and TestFlight.
 
-## GitHub secrets (app + backend)
+| Layer | Where keys come from |
+|-------|----------------------|
+| **TestFlight (CI)** | GitHub secrets only — env files are never read |
+| **Local dev** | `env/.env.local` — must match GitHub secrets exactly |
 
-| Secret | Used by |
-|--------|---------|
-| `SUPABASE_URL` | Migrations CI, TestFlight |
-| `SUPABASE_PUBLISHABLE_KEY` | TestFlight |
-| `GOOGLE_MAPS_API_KEY` | TestFlight |
-| `SUPABASE_ACCESS_TOKEN` | Migrations CI only |
-| `SUPABASE_DB_PASSWORD` | Migrations CI only |
+Committed `env/.env.dev` / `.stag` / `.prod` hold only non-secret metadata (`APP_ENV`). No API keys in git.
 
-## Local development
+## GitHub secrets
 
-GitHub does not allow exporting secret values. For local runs, copy the example once:
+| Secret | TestFlight | Local | Migrations |
+|--------|------------|-------|------------|
+| `SUPABASE_URL` | ✓ | mirror in `.env.local` | ✓ |
+| `SUPABASE_PUBLISHABLE_KEY` | ✓ | mirror in `.env.local` | — |
+| `GOOGLE_MAPS_API_KEY` | ✓ | mirror in `.env.local` | — |
+| `SUPABASE_ACCESS_TOKEN` | — | — | ✓ |
+| `SUPABASE_DB_PASSWORD` | — | — | ✓ |
+
+## Local setup (once)
 
 ```bash
 cp env/.env.local.example env/.env.local
-# Fill values (same as GitHub secrets)
-```
-
-Then:
-
-```bash
+# Paste the same values as GitHub secrets
 ./tool/dart_defines.sh dev flutter run
 ```
 
-`env/.env.local` is gitignored. Shell environment variables override both files (same as CI).
+`env/.env.local` is gitignored. Shell env vars override `.env.local` (same precedence as CI).
 
 ## CI
 
-- **TestFlight** — `.github/workflows/deploy-testflight.yml` injects secrets into Fastlane → `--dart-define`
+- **TestFlight** — `.github/workflows/deploy-testflight.yml` validates secrets, then Fastlane passes them as `--dart-define` (skips all env files when `CI=true`)
 - **Supabase migrations** — `.github/workflows/migrate-supabase.yml`
 
 See also `supabase/README.md`.

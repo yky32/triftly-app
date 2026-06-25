@@ -205,9 +205,9 @@ if [ "$choice" -eq 5 ]; then
     echo -e "${BOLD}${CYAN}Select Environment:${NC}"
     echo -e "${YELLOW}────────────────────────────────────────────────────────────${NC}"
     echo ""
-    echo -e "  ${GREEN}[1]${NC} ${BOLD}dev${NC}     - Development environment (env/.env.dev)"
-    echo -e "  ${GREEN}[2]${NC} ${BOLD}stag${NC}   - Staging environment (env/.env.stag)"
-    echo -e "  ${GREEN}[3]${NC} ${BOLD}prod${NC}   - Production environment (env/.env.prod) ${BOLD}[Default for TestFlight]${NC}"
+    echo -e "  ${GREEN}[1]${NC} ${BOLD}dev${NC}     - Development (keys from env/.env.local)"
+    echo -e "  ${GREEN}[2]${NC} ${BOLD}stag${NC}   - Staging (keys from env/.env.local)"
+    echo -e "  ${GREEN}[3]${NC} ${BOLD}prod${NC}   - Production ${BOLD}[TestFlight uses GitHub secrets]${NC}"
     echo ""
     echo -e "${BOLD}${CYAN}Enter environment choice [1-3] (default: 3 for prod):${NC} "
     read -r env_choice
@@ -235,7 +235,7 @@ if [ "$choice" -eq 5 ]; then
     
     echo ""
     echo -e "${BOLD}${GREEN}Environment selected:${NC} ${BOLD}$env_value${NC}"
-    echo -e "${CYAN}Will use:${NC} env/.env.$env_value"
+    echo -e "${CYAN}Will use:${NC} env/.env.local for keys (CI uses GitHub secrets)"
     echo ""
     
     # Add env parameter to the lane command
