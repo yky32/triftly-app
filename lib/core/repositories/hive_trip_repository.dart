@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import '../data/trip_hive_cache.dart';
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
+import '../models/user.dart';
+import '../services/local_trip_migration.dart';
 import '../services/trip_store.dart';
 import 'supabase_trip_sync.dart';
 import 'trip_repository.dart';
@@ -155,6 +157,37 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   Future<void> pullFromSupabase(String userId) async {
     await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
     notifyListeners();
+  }
+
+  Future<void> migrateLocalTripsToCloud(User user) async {
+    for (final trip in _store.createdTripsOnly()) {
+      if (!LocalTripMigration.needsMigration(trip)) continue;
+
+      final migrated = LocalTripMigration.assignOwner(trip, user);
+      _store.upsertCreatedTrip(migrated);
+      await _cache.saveTrip(migrated);
+
+      var detail = _store.detailSync(trip.id);
+      detail ??= await _store.loadDetail(trip.id);
+      if (detail == null) continue;
+
+      await _supabaseSync?.upsertTrip(migrated);
+      await _supabaseSync?.upsertDetail(trip.id, detail);
+    }
+    notifyListeners();
+  }
+
+  Future<Trip?> hydrateSharedTrip(String shareToken) async {
+    final local = _store.tripByShareToken(shareToken);
+    if (local != null) return local;
+
+    final remote = await _supabaseSync?.hydrateSharedTripByToken(
+      shareToken,
+      _store,
+      _cache,
+    );
+    if (remote != null) notifyListeners();
+    return remote;
   }
 
   Future<String> exportCreatedTripsJson() async {

@@ -7,6 +7,7 @@ In the Supabase SQL editor (or CLI), run in order:
 1. `migrations/001_initial_schema.sql`
 2. `migrations/002_sync_columns_and_rls.sql`
 3. `migrations/003_auth_profile_trigger.sql`
+4. `migrations/004_shared_trip_bundle.sql`
 
 ## 2. Auth
 
