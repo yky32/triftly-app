@@ -52,3 +52,4 @@ env/env/.env.*
 # Local Hive cache (dev runtime)
 *.hive
 *.hive.lock
+*.lock
