@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/user_profile.dart';
+import '../models/user.dart';
 import '../repositories/auth_repository.dart';
 import '../services/profile_preferences.dart';
 
@@ -19,15 +19,15 @@ class UserSession extends ChangeNotifier {
 
   final AuthRepository _auth;
   final ProfilePreferences _preferences;
-  late final StreamSubscription<UserProfile?> _subscription;
-  UserProfile? _user;
+  late final StreamSubscription<User?> _subscription;
+  User? _user;
 
-  UserProfile? get currentUser => _user;
+  User? get currentUser => _user;
   bool get isSignedIn => _user != null;
   String get defaultCurrency =>
       _user?.defaultCurrency ?? _preferences.defaultCurrency;
 
-  Future<UserProfile?> signInWithEmail(String email) =>
+  Future<User?> signInWithEmail(String email) =>
       _auth.signInWithEmailOtp(email);
 
   Future<void> verifyEmailOtp({required String email, required String token}) =>
@@ -38,7 +38,7 @@ class UserSession extends ChangeNotifier {
   Future<void> setDefaultCurrency(String code) async {
     await _preferences.setDefaultCurrency(code);
     if (_user != null) {
-      await _auth.updateProfile(_user!.copyWith(
+      await _auth.updateUser(_user!.copyWith(
         defaultCurrency: code,
         updatedAt: DateTime.now(),
       ));
