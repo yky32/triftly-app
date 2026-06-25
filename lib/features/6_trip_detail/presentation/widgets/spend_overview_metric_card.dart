@@ -1,44 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/glass_surface.dart';
+import '../../../../core/widgets/spend_glass_shell.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-
-/// Frosted spend shell — matches overview metric cards.
-class SpendGlassShell extends StatelessWidget {
-  const SpendGlassShell({
-    required this.child,
-    this.padding,
-    super.key,
-  });
-
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-
-  static Color tint(bool isDark) {
-    if (isDark) {
-      return const Color(0xFF2A2A2C).withValues(alpha: 0.62);
-    }
-    return Color.lerp(
-      const Color(0xFFFAFAF8),
-      AppColors.primaryMuted,
-      0.08,
-    )!.withValues(alpha: 0.94);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GlassSurface(
-      borderRadius: AppRadii.card,
-      blur: 22,
-      padding: padding,
-      tint: tint(isDark),
-      child: child,
-    );
-  }
-}
 
 /// Shared compact hero metric used in the Spend tab overview row.
 class SpendOverviewMetricCard extends StatelessWidget {

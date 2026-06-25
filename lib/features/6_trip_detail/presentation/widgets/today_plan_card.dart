@@ -7,7 +7,7 @@ import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import 'spend_overview_metric_card.dart';
+import '../../../../core/widgets/spend_glass_shell.dart';
 
 /// Today summary on Plan tab — glass "Up next" plus inline spend strip.
 class TodayPlanCard extends StatelessWidget {

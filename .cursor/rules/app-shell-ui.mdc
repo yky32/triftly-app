@@ -73,7 +73,7 @@ Personal wallet across trips — distinct from trip-detail Spend tab glass metri
 
 | Widget | Use |
 |--------|-----|
-| `SpendWalletCard` | Hero balance — teal gradient wash + frosted glass (wallet-specific, not `SpendGlassShell`) |
+| `SpendWalletCard` | Global wallet hero — `SpendGlassShell` + shared metric typography (not teal gradient blocks) |
 | `SpendSectionTitle` | Section label + optional count (Trips, Balances, Recent) |
 | `SpendListCard` | Bordered list surface for trip rows and activity |
 | `SpendWalletTripRow` | Single trip row inside `SpendListCard` |
@@ -81,7 +81,7 @@ Personal wallet across trips — distinct from trip-detail Spend tab glass metri
 
 - Phase filter: reuse `TripPhaseSegment` like Trips list.
 - Pull-to-refresh on `SpendOverviewBloc`.
-- **Do not** use trip-tab `SpendGlassShell` for the global wallet hero — `SpendWalletCard` owns that pattern.
+- Global wallet hero uses the same `SpendGlassShell` as trip Spend metrics — see `liquid-glass-ui.mdc`.
 - Trip-detail Spend metrics: see `liquid-glass-ui.mdc`.
 
 ## Sheets in Spend shared

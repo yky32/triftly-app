@@ -1,6 +1,6 @@
 ---
 description: Liquid glass UI — frosted cards, metrics, app bar controls
-globs: lib/core/widgets/glass_*.dart,lib/features/6_trip_detail/**/spend_*.dart,lib/features/6_trip_detail/**/today_*.dart,lib/features/3_spend/**
+globs: lib/core/widgets/glass_*.dart,lib/core/widgets/spend_glass_shell.dart,lib/features/6_trip_detail/**/spend_*.dart,lib/features/6_trip_detail/**/today_*.dart,lib/features/6_trip_detail/**/map_empty_state.dart,lib/features/3_spend/**
 alwaysApply: false
 ---
 
@@ -13,7 +13,7 @@ Frosted, light surfaces for trip summaries, metrics, and inline stats. **Do not*
 | Widget | Use |
 |--------|-----|
 | `GlassSurface` | Low-level frosted shell (blur + gradient + border). Nav island, toggles. |
-| `SpendGlassShell` | **Card-radius** glass for trip Spend/Plan stats. Reuse before inventing new shells. |
+| `SpendGlassShell` | **Card-radius** glass for trip + global Spend metrics. Lives in `core/widgets/spend_glass_shell.dart`. |
 | `GlassIconButton` / `GlassToggle` | App bar tool clusters (bare mode + optional track tints). |
 | `SpendOverviewMetricCard` | Side-by-side metric halves (Today / Total). |
 
@@ -62,6 +62,7 @@ For the full decision tree (when to use `EmptyState` vs glass heroes vs inline c
 ## Reference implementations
 
 - `spend_overview_metric_card.dart` — shell + metric card
+- `spend_wallet_card.dart` — global wallet hero on `SpendGlassShell`
 - `spend_category_breakdown_card.dart` — collapsible breakdown
 - `today_spend_card.dart` / `today_plan_card.dart` — Plan & Spend today rows
 - `trip_detail_page.dart` — `GlassToggle` + `GlassIconButton` app bar cluster
