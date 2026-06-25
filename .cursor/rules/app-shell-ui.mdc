@@ -92,8 +92,10 @@ Personal wallet across trips — distinct from trip-detail Spend tab glass metri
 ## Reference implementations
 
 - `spend_page.dart` — tab shell + wallet layout
-- `spend_wallet_card.dart` — global wallet glass hero
+- `spend_wallet_card.dart` — global wallet hero
 - `spend_wallet_accent.dart` — `SpendListCard`, `SpendSectionTitle`
 - `map_empty_state.dart` — glass tab empty states
 - `trip_inline_empty_card.dart` — inline Plan/Spend slots
 - `trip_list_page.dart` — `EmptyState` for filtered trip lists
+- `trip_card.dart` — trip list rows — see `ui-cards-and-sections.mdc`
+- `profile_page.dart` — Me tab — see `profile-me-ui.mdc`

@@ -12,6 +12,8 @@ Do not regress these patterns when editing Trips or Tools.
 
 Use `TriftlyBottomSheet.show(context, child: …)` — **not** raw `showModalBottomSheet`.
 
+**Exception:** `TripDatePickerSheet.show` and `TripTimePickerSheet.show` are the public API for pickers — they wrap `showModalBottomSheet` internally with the correct flags. Callers must use `.show`, never `showDatePicker` / `showTimePicker` / a raw modal.
+
 Required modal flags (handled by helper):
 - `showDragHandle: false`
 - `useRootNavigator: true`
@@ -72,8 +74,14 @@ Two sheet types share the same chrome:
 - Chips: **flag + symbol** only (e.g. 🇯🇵 ¥). No country name on chips.
 
 ## Date / time pickers
-- `TripDatePickerSheet.show` — not `showDatePicker`
-- `TripTimePickerSheet.show` for spot / flight times
+- `TripDatePickerSheet.show` — not `showDatePicker` (picker sheet owns the modal launcher)
+- `TripTimePickerSheet.show` for spot / flight times (same exception as date picker)
+- Picker UI is travel-themed custom chrome — not Material `showDatePicker`
+
+## Related rules
+- Cards & section titles: `ui-cards-and-sections.mdc` (`TripCard`, `SectionHeader`, `SheetSectionHeader`)
+- Tab shells & empty states: `app-shell-ui.mdc`
+- Profile / Me: `profile-me-ui.mdc`
 
 ## Tools tab (`2_tools/`)
 - Nav label **Tools**; page title **Tools** (title-only AppBar).
@@ -89,4 +97,6 @@ Two sheet types share the same chrome:
 
 ## Tab shells & empty states
 - Tab-root pages use transparent scaffold + `extendBody` — see `app-shell-ui.mdc`.
-- Global Spend wallet patterns (`SpendWalletCard`, `SpendListCard`) live in `3_spend/` — not trip-tab glass shells.
+- Global Spend wallet patterns (`SpendWalletCard`, `SpendListCard`) — see `app-shell-ui.mdc` + `liquid-glass-ui.mdc`.
+- Cards & section titles (`TripCard`, `SectionHeader`, …) — see `ui-cards-and-sections.mdc`.
+- Profile / Me settings — see `profile-me-ui.mdc`.

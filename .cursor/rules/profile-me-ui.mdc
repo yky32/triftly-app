@@ -1,0 +1,64 @@
+---
+description: Profile / Me tab — settings groups, identity card, appearance sheet
+globs: lib/features/4_profile/**,lib/core/theme/theme_controller.dart
+alwaysApply: false
+---
+
+# Profile / Me UI
+
+The **Me** tab is a settings surface — solid cards and list groups, **not** liquid glass metrics.
+
+## Tab shell
+
+Follow `app-shell-ui.mdc`:
+
+- `Scaffold(extendBody: true, backgroundColor: Colors.transparent)`
+- `TriftlyAppBarTitle(title: 'Me')` — no glass app bar actions
+- Body: `ListView` with `AppSpacing.listBottomInset(context)` bottom padding
+
+## Page structure
+
+```
+[ Identity AppCard — avatar, name, sign-in CTA ]
+[ SectionHeader — Preferences ]
+[ _SettingsGroup AppCard — tiles with dividers ]
+[ SectionHeader — Data ]
+[ _SettingsGroup … ]
+[ SectionHeader — About ]
+[ _SettingsGroup … ]
+```
+
+| Block | Widget | Notes |
+|-------|--------|-------|
+| Identity | `AppCard` + `CircleAvatar` | `primaryMuted` avatar bg, `primaryDark` icon |
+| Section labels | `SectionHeader` | Page-level only — **not** `SheetSectionHeader` |
+| Settings rows | `_SettingsGroup` → `AppCard(padding: zero)` | `Divider` between tiles, `borderLight` / `borderDark` |
+| Row tap | `Pressable` + chevron | Title `bodyLarge`, value `bodySmall`, `textTertiary` chevron |
+
+## Settings tile pattern
+
+- One row = title (+ optional trailing value) + `Icons.chevron_right_rounded`
+- Horizontal padding `AppSpacing.lg`, vertical **16**
+- No switches inline unless the control is the whole row (e.g. future toggles)
+
+## Appearance sheet (`appearance_bottom_sheet.dart`)
+
+Utility sheet — pattern B from `trips-ui-polish.mdc`:
+
+- Open: `AppearanceBottomSheet.show(context)` via `TriftlyBottomSheet.show`
+- `SheetScaffold(showCloseButton: false)`
+- `SheetSectionHeader(title: 'Appearance', caption: 'Choose a theme')`
+- Options in `SheetSoftCard(padding: zero)` with dividers between rows
+- Each option: icon tile + title/subtitle + checkmark when selected
+- Persist via `ThemeController` / `ThemeScope.of(context)` — **not** `setState` on the page alone
+
+## Do not
+
+- Use `SpendGlassShell` or wallet-style heroes on Me
+- Use `SheetSectionHeader` on the page body (sheets only)
+- Use `FilledButton` for settings navigation — `TextButton` / `Pressable` rows only
+
+## Reference
+
+- `profile_page.dart` — identity card, settings groups, section headers
+- `appearance_bottom_sheet.dart` — theme picker sheet
