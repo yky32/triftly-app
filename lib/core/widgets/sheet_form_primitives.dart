@@ -326,6 +326,7 @@ class SheetInlineField extends StatelessWidget {
     this.textInputAction,
     this.keyboardType,
     this.maxLines = 1,
+    this.onSubmitted,
     super.key,
   });
 
@@ -335,6 +336,7 @@ class SheetInlineField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final TextInputType? keyboardType;
   final int maxLines;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -344,6 +346,7 @@ class SheetInlineField extends StatelessWidget {
     final field = TextField(
       controller: controller,
       onChanged: onChanged == null ? null : (_) => onChanged!(),
+      onSubmitted: onSubmitted,
       textInputAction: textInputAction,
       keyboardType: keyboardType,
       maxLines: maxLines,
