@@ -31,7 +31,7 @@ class MapEmptyState extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _MapPreviewGraphic(),
+              const MapPreviewGraphic(),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 readOnly ? 'No places mapped' : 'Your map is waiting',
@@ -84,39 +84,206 @@ class MapEmptyState extends StatelessWidget {
   }
 }
 
-/// Shown when spots exist but none have coordinates for the current filter.
-class MapNoCoordinatesBanner extends StatelessWidget {
-  const MapNoCoordinatesBanner({super.key});
+/// Shown when the current day filter has no planned stops.
+class MapDayEmptyState extends StatelessWidget {
+  const MapDayEmptyState({
+    required this.dayLabel,
+    this.onOpenPlan,
+    super.key,
+  });
+
+  final String dayLabel;
+  final VoidCallback? onOpenPlan;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.location_off_outlined,
-            size: 16,
-            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SpendGlassShell(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              Icon(
+                Icons.map_outlined,
+                size: 36,
+                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Nothing on the map yet',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'No stops planned for $dayLabel.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'No coordinates for this day — edit a spot to add a location',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-            ),
+        ),
+        if (onOpenPlan != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _PlanLinkStrip(destination: '', onOpenPlan: onOpenPlan!),
+        ],
+      ],
+    );
+  }
+}
+
+/// Spots exist but none have map coordinates for the current filter.
+class MapUnmappedHero extends StatelessWidget {
+  const MapUnmappedHero({
+    required this.spotCount,
+    required this.scopeLabel,
+    super.key,
+  });
+
+  final int spotCount;
+  final String scopeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final stopsLabel = '$spotCount ${spotCount == 1 ? 'stop' : 'stops'}';
+
+    return SpendGlassShell(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const MapPreviewGraphic(compact: true),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      scopeLabel.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            letterSpacing: 0.45,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add pins to see your route',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$stopsLabel planned — edit a spot to drop a location.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                  ],
+                ),
+              ),
+              _StatusBadge(label: 'No pins'),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact glass status under the live map.
+class MapRouteStatusHeader extends StatelessWidget {
+  const MapRouteStatusHeader({
+    required this.scopeLabel,
+    required this.mappedCount,
+    required this.totalCount,
+    super.key,
+  });
+
+  final String scopeLabel;
+  final int mappedCount;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final needsPins = mappedCount < totalCount;
+
+    return SpendGlassShell(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  scopeLabel.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        letterSpacing: 0.45,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$mappedCount on map',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          if (needsPins)
+            _StatusBadge(label: '+${totalCount - mappedCount} need pins')
+          else
+            _StatusBadge(label: 'Route ready', positive: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, this.positive = false});
+
+  final String label;
+  final bool positive;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: positive
+            ? AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.1)
+            : (isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(
+          color: positive
+              ? AppColors.primary.withValues(alpha: 0.35)
+              : (isDark ? AppColors.borderDark : AppColors.borderLight),
+        ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: positive
+                  ? (isDark ? AppColors.primaryLight : AppColors.primaryDark)
+                  : (isDark ? AppColors.textTertiaryDark : AppColors.textTertiary),
+              fontWeight: FontWeight.w600,
+              fontSize: 10,
+            ),
       ),
     );
   }
@@ -225,17 +392,20 @@ class _FeatureChip extends StatelessWidget {
   }
 }
 
-class _MapPreviewGraphic extends StatelessWidget {
-  const _MapPreviewGraphic();
+class MapPreviewGraphic extends StatelessWidget {
+  const MapPreviewGraphic({this.compact = false, super.key});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final height = compact ? 96.0 : 132.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadii.md),
       child: SizedBox(
-        height: 132,
+        height: height,
         width: double.infinity,
         child: CustomPaint(
           painter: _MapGridPainter(isDark: isDark),
@@ -244,12 +414,12 @@ class _MapPreviewGraphic extends StatelessWidget {
             children: [
               Positioned(
                 left: 28,
-                top: 36,
+                top: compact ? 24 : 36,
                 child: _MapPin(tint: AppColors.categoryColor(SpotCategory.food), isDark: isDark),
               ),
               Positioned(
                 right: 36,
-                top: 28,
+                top: compact ? 18 : 28,
                 child: _MapPin(
                   tint: AppColors.categoryColor(SpotCategory.attraction),
                   isDark: isDark,
@@ -258,7 +428,7 @@ class _MapPreviewGraphic extends StatelessWidget {
               ),
               Positioned(
                 left: 52,
-                bottom: 24,
+                bottom: compact ? 16 : 24,
                 child: _MapPin(tint: AppColors.categoryColor(SpotCategory.shopping), isDark: isDark),
               ),
             ],
