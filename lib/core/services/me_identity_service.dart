@@ -1,11 +1,11 @@
 import '../models/trip_models.dart';
-import '../models/user_profile.dart';
+import '../models/user.dart';
 import 'profile_preferences.dart';
 
 /// Resolves which buddy represents the signed-in traveler on a trip.
 abstract final class MeIdentityService {
   static String displayName({
-    UserProfile? user,
+    User? user,
     ProfilePreferences? preferences,
   }) {
     if (user != null) return user.displayName;
@@ -14,7 +14,7 @@ abstract final class MeIdentityService {
 
   static Buddy? buddyForTrip(
     Trip trip, {
-    UserProfile? user,
+    User? user,
     ProfilePreferences? preferences,
   }) {
     if (user != null) {
@@ -37,7 +37,7 @@ abstract final class MeIdentityService {
 
   /// Buddy row for the current user when creating a trip.
   static Buddy creatorBuddy({
-    required UserProfile? user,
+    required User? user,
     required ProfilePreferences preferences,
   }) {
     if (user != null) {
