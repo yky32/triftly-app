@@ -9,5 +9,5 @@ abstract class AuthRepository {
   Future<User?> signInWithEmailOtp(String email);
   Future<void> verifyEmailOtp({required String email, required String token});
   Future<void> signOut();
-  Future<void> updateProfile(User user);
+  Future<void> updateUser(User user);
 }
