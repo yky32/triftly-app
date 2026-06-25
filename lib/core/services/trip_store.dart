@@ -56,6 +56,9 @@ class TripStore extends ChangeNotifier {
 
   static final TripStore instance = TripStore._();
 
+  /// Demo trips (Tokyo, Taipei, …). Off for real user data + Supabase sync.
+  static const bool includeMockTrips = false;
+
   void _notifyLedgerChanged() => notifyListeners();
 
   final List<Trip> _createdTrips = [];
@@ -71,12 +74,13 @@ class TripStore extends ChangeNotifier {
   static bool isMockTripId(String id) => mockTripIds.contains(id);
 
   List<Trip> allTrips() {
+    final created = _createdTrips.where((t) => t.isActive).toList();
+    if (!includeMockTrips) return created;
+
     final mock = _mockTrips();
     final mockIds = mock.map((t) => t.id).toSet();
-    final created = _createdTrips
-        .where((t) => !mockIds.contains(t.id) && t.isActive)
-        .toList();
-    return [...created, ...mock];
+    final userCreated = created.where((t) => !mockIds.contains(t.id)).toList();
+    return [...userCreated, ...mock];
   }
 
   Trip? tripById(String id) {
@@ -142,7 +146,7 @@ class TripStore extends ChangeNotifier {
     if (trip == null) return null;
 
     final seeded = _seedDetail(trip);
-    if (mockTripIds.contains(tripId)) {
+    if (includeMockTrips && mockTripIds.contains(tripId)) {
       _sessionDetails[tripId] = seeded;
     } else {
       _sessionDetails.putIfAbsent(tripId, () => seeded);
@@ -239,6 +243,8 @@ class TripStore extends ChangeNotifier {
   }
 
   TripDetailData _seedDetail(Trip trip) {
+    if (!includeMockTrips) return _emptyDetail(trip);
+
     return switch (trip.id) {
       'trip-tokyo' => _tokyoDetail(trip),
       'trip-taipei' => _taipeiDetail(trip),
