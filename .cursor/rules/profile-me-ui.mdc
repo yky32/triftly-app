@@ -57,7 +57,7 @@ Utility sheet — pattern B from `trips-ui-polish.mdc`:
 Utility sheet chrome with form-style confirm:
 
 - `SheetSectionHeader` + `SheetSoftCard` + `SheetIconFieldRow` / `SheetInlineField`
-- `SwipeToConfirm` (**Slide to sign in** / **Slide to verify**) — same as create trip, not `SheetPrimaryButton`
+- `SheetScaffold.swipeForm(compact: true)` + `SwipeToConfirm` (**Slide to sign in** / **Slide to verify**)
 - Spacing via `AppSpacing` — no magic numbers
 
 ## Default currency sheet (`default_currency_bottom_sheet.dart`)

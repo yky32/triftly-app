@@ -13,10 +13,13 @@ class SheetScaffold extends StatelessWidget {
     this.onClose,
     this.showCloseButton = true,
     this.showDragHandle = true,
+    this.compactBody = false,
     super.key,
   });
 
   /// Form sheet with [SwipeToConfirm] pinned below the scrollable body.
+  ///
+  /// Set [compact] for short forms (e.g. sign-in) so the sheet hugs content.
   factory SheetScaffold.swipeForm({
     required Widget child,
     required String swipeLabel,
@@ -24,9 +27,11 @@ class SheetScaffold extends StatelessWidget {
     required VoidCallback onSwipeConfirmed,
     Key? swipeKey,
     bool showCloseButton = false,
+    bool compact = false,
   }) =>
       SheetScaffold(
         showCloseButton: showCloseButton,
+        compactBody: compact,
         footer: SwipeToConfirm(
           key: swipeKey,
           label: swipeLabel,
@@ -43,6 +48,7 @@ class SheetScaffold extends StatelessWidget {
   final VoidCallback? onClose;
   final bool showCloseButton;
   final bool showDragHandle;
+  final bool compactBody;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +56,7 @@ class SheetScaffold extends StatelessWidget {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.9 - viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasFooter = footer != null;
+    final hugContent = hasFooter && compactBody;
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -60,7 +67,7 @@ class SheetScaffold extends StatelessWidget {
           borderRadius: AppRadii.sheet,
         ),
         child: Column(
-          mainAxisSize: hasFooter ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisSize: hugContent ? MainAxisSize.min : (hasFooter ? MainAxisSize.max : MainAxisSize.min),
           children: [
             if (showDragHandle)
               Padding(
@@ -114,7 +121,17 @@ class SheetScaffold extends StatelessWidget {
                   ],
                 ),
               ),
-            if (hasFooter)
+            if (hugContent)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  title != null && title!.isNotEmpty ? AppSpacing.sm : AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: child,
+              )
+            else if (hasFooter)
               Expanded(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(

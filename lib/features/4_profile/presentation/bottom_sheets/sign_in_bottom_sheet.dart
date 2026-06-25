@@ -110,6 +110,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SheetScaffold.swipeForm(
+      compact: true,
       swipeKey: ValueKey(_swipeKey),
       swipeLabel: _awaitingCode ? 'Slide to verify' : 'Slide to sign in',
       swipeEnabled: _canSubmit,

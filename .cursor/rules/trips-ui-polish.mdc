@@ -33,6 +33,7 @@ Two sheet types share the same chrome:
 - Sections: `SheetSectionHeader` + `SheetSoftCard`
 - Fields: borderless (`SheetInlineField`, `SheetIconFieldRow`) — **no** `OutlineInputBorder`
 - Submit: `SheetScaffold.swipeForm` (pins `SwipeToConfirm` in footer) — **not** inline in scroll body
+- Short forms (sign-in): `SheetScaffold.swipeForm(compact: true)` — sheet hugs content, swipe footer pinned
 - Submit control: `SwipeToConfirm` — **not** `FilledButton` / `SheetPrimaryButton`
 - Trip sheets outside page `BlocProvider`: wrap with `BlocProvider.value`
 
