@@ -236,26 +236,28 @@ def persist_ci_signing_env!
   end
 end
 
-def distribution_identity_installed?
-  output = `security find-identity -v -p codesigning ~/Library/Keychains/login.keychain-db 2>/dev/null`
-  output.include?("Apple Distribution") && output.include?("3G34999H3A")
+def ci_signing_keychain_path
+  File.expand_path("~/Library/Keychains/triftly-ci.keychain-db")
 end
 
-def configure_ci_keychain_for_codesign!
-  return unless ENV["CI"]
+CI_SIGNING_KEYCHAIN_PASSWORD = "triftly-ci-keychain"
 
-  keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
-  sh("security unlock-keychain -p '' '#{keychain}'", log: false)
-  sh(
-    "security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k '' '#{keychain}'",
-    log: false
-  )
-  UI.success("✅ Keychain configured for non-interactive codesign on CI")
-rescue => ex
-  UI.user_error!(
-    "Failed to configure keychain for codesign on CI: #{ex.message}. " \
-    "Archive may hang until the workflow times out."
-  )
+def setup_ci_signing_keychain!
+  keychain = ci_signing_keychain_path
+  login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
+
+  sh("security delete-keychain '#{keychain}' 2>/dev/null || true", log: false)
+  sh("security create-keychain -p '#{CI_SIGNING_KEYCHAIN_PASSWORD}' '#{keychain}'", log: false)
+  sh("security unlock-keychain -p '#{CI_SIGNING_KEYCHAIN_PASSWORD}' '#{keychain}'", log: false)
+  sh("security set-keychain-settings -lut 21600 '#{keychain}'", log: false)
+  sh("security list-keychains -d user -s '#{keychain}' '#{login_keychain}'", log: false)
+  keychain
+end
+
+def distribution_identity_installed?
+  keychain = ENV["CI"] ? ci_signing_keychain_path : File.expand_path("~/Library/Keychains/login.keychain-db")
+  output = `security find-identity -v -p codesigning '#{keychain}' 2>/dev/null`
+  output.include?("Apple Distribution") && output.include?("3G34999H3A")
 end
 
 def import_distribution_certificate_for_ci!
@@ -268,17 +270,22 @@ def import_distribution_certificate_for_ci!
   p12_path = File.join(IOS_DIR, "distribution.ci.p12")
   File.binwrite(p12_path, Base64.decode64(cert_b64))
 
+  keychain = setup_ci_signing_keychain!
+
   import_certificate(
     certificate_path: p12_path,
     certificate_password: ENV["IOS_DISTRIBUTION_CERT_PASSWORD"] || "",
-    keychain_name: "login.keychain-db",
-    keychain_password: ""
+    keychain_path: keychain,
+    keychain_password: CI_SIGNING_KEYCHAIN_PASSWORD
   )
 
-  configure_ci_keychain_for_codesign!
+  sh(
+    "security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k '#{CI_SIGNING_KEYCHAIN_PASSWORD}' '#{keychain}'",
+    log: false
+  )
 
   File.delete(p12_path) if File.exist?(p12_path)
-  UI.success("✅ Imported distribution certificate from CI secret")
+  UI.success("✅ Imported distribution certificate into CI keychain")
   true
 ensure
   File.delete(p12_path) if defined?(p12_path) && p12_path && File.exist?(p12_path)
