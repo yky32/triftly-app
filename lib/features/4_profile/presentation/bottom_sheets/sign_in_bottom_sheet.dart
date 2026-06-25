@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
 class SignInBottomSheet extends StatefulWidget {
@@ -24,6 +25,21 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
   bool _awaitingCode = false;
   bool _submitting = false;
   String? _error;
+  int _swipeKey = 0;
+
+  bool get _canSubmit {
+    if (_submitting) return false;
+    if (_awaitingCode) return _codeController.text.trim().isNotEmpty;
+    return _emailController.text.trim().isNotEmpty;
+  }
+
+  void _onFieldChanged() {
+    setState(() {
+      if (_error != null) _error = null;
+    });
+  }
+
+  void _resetSwipe() => setState(() => _swipeKey++);
 
   @override
   void dispose() {
@@ -48,6 +64,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
           _awaitingCode = true;
           _submitting = false;
         });
+        _resetSwipe();
         return;
       }
       Navigator.pop(context);
@@ -56,6 +73,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
         _error = e.toString();
         _submitting = false;
       });
+      _resetSwipe();
     }
   }
 
@@ -76,6 +94,15 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
         _error = e.toString();
         _submitting = false;
       });
+      _resetSwipe();
+    }
+  }
+
+  void _onConfirmed() {
+    if (_awaitingCode) {
+      _verifyCode();
+    } else {
+      _submitEmail();
     }
   }
 
@@ -98,6 +125,10 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.md),
           SheetSoftCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: SheetIconFieldRow(
               icon: _awaitingCode ? Icons.pin_outlined : Icons.mail_outline_rounded,
               field: SheetInlineField(
@@ -107,9 +138,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
                     ? TextInputType.number
                     : TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
-                onChanged: () {
-                  if (_error != null) setState(() => _error = null);
-                },
+                onChanged: _onFieldChanged,
               ),
             ),
           ),
@@ -123,11 +152,12 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          SheetPrimaryButton(
-            label: _awaitingCode ? 'Verify' : 'Continue',
-            enabled: !_submitting,
-            onPressed: _awaitingCode ? _verifyCode : _submitEmail,
+          const SizedBox(height: AppSpacing.xxl),
+          SwipeToConfirm(
+            key: ValueKey(_swipeKey),
+            label: _awaitingCode ? 'Slide to verify' : 'Slide to sign in',
+            enabled: _canSubmit,
+            onConfirmed: _onConfirmed,
           ),
         ],
       ),

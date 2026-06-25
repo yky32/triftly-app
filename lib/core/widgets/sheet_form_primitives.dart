@@ -14,29 +14,28 @@ class SheetSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleStyle = TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.3,
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+    );
+    final captionStyle = TextStyle(
+      fontSize: 13,
+      height: 1.35,
+      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+    );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    if (caption == null) {
+      return Text(title, style: titleStyle);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-            ),
-          ),
-        ),
-        if (caption != null)
-          Text(
-            caption!,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-            ),
-          ),
+        Text(title, style: titleStyle),
+        const SizedBox(height: 4),
+        Text(caption!, style: captionStyle),
       ],
     );
   }
@@ -570,6 +569,66 @@ class SheetCompactAction extends StatelessWidget {
   }
 }
 
+/// Footer action row inside a zero-padding [SheetSoftCard] (sign-in, etc.).
+class SheetCardActionRow extends StatelessWidget {
+  const SheetCardActionRow({
+    required this.label,
+    required this.onPressed,
+    this.enabled = true,
+    this.loading = false,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool enabled;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canTap = enabled && !loading;
+
+    return Pressable(
+      onTap: canTap ? onPressed : null,
+      child: Opacity(
+        opacity: canTap ? 1 : 0.45,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  loading ? 'Please wait…' : label,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                      ),
+                ),
+              ),
+              if (loading)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Full-width primary action for utility sheets (lookup, apply, etc.).
 class SheetPrimaryButton extends StatelessWidget {
   const SheetPrimaryButton({
@@ -585,24 +644,48 @@ class SheetPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: Pressable(
         onTap: enabled ? onPressed : null,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: enabled
+                  ? [
+                      AppColors.primary,
+                      isDark ? const Color(0xFF0F766E) : AppColors.primaryDark,
+                    ]
+                  : [
+                      isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+                      isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
+                    ],
+            ),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.28),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : null,
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              letterSpacing: -0.2,
+              color: enabled ? Colors.white : AppColors.textTertiary,
             ),
           ),
         ),

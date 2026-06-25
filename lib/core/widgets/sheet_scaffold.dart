@@ -89,16 +89,14 @@ class SheetScaffold extends StatelessWidget {
                 ],
               ),
             ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                title != null && title!.isNotEmpty ? AppSpacing.sm : AppSpacing.md,
-                AppSpacing.lg,
-                AppSpacing.xl + bottomInset,
-              ),
-              child: child,
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              title != null && title!.isNotEmpty ? AppSpacing.sm : AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.lg + bottomInset,
             ),
+            child: child,
           ),
         ],
       ),
