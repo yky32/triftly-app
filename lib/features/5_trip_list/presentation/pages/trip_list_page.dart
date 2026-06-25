@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/bootstrap/app_scope.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
 import '../widgets/trip_phase_segment.dart';
@@ -17,7 +18,7 @@ class TripListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TripListBloc()..add(TripListLoadRequested()),
+      create: (context) => AppScopeBlocs.createTripListBloc()..add(TripListLoadRequested()),
       child: const _View(),
     );
   }
