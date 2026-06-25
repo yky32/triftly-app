@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/models/trip_models.dart';
+import '../../../../core/services/me_identity_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
@@ -336,6 +339,16 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
     if (!_canCreate || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
+    final session = AppBootstrap.userSession;
+    final creator = MeIdentityService.creatorBuddy(
+      user: session.currentUser,
+      preferences: AppBootstrap.profilePreferences,
+    );
+    final buddies = [
+      ..._buddies,
+      if (!_buddies.any((b) => b.isMe || b.userId == creator.userId)) creator,
+    ];
+
     final trip = Trip(
       id: const Uuid().v4(),
       name: _nameController.text.trim(),
@@ -355,8 +368,11 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
         from: _returnFromController,
         to: _returnToController,
       ),
-      buddies: _buddies,
+      buddies: buddies,
+      ownerId: session.currentUser?.id,
+      shareToken: nanoid(12),
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     context.read<TripListBloc>().add(TripListTripCreated(trip: trip));
