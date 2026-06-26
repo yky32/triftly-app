@@ -21,7 +21,6 @@ class MapEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,37 +33,15 @@ class MapEmptyState extends StatelessWidget {
               const MapPreviewGraphic(),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                readOnly ? 'No places mapped' : 'Your map is waiting',
+                readOnly ? 'No places yet' : 'No pins yet',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.35,
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                readOnly
-                    ? 'Stops will appear here once added to the plan.'
-                    : 'Add spots in Plan and they’ll show up as pins and routes.',
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.45,
-                  color: muted,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              if (trip.destination.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  trip.destination,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
               const SizedBox(height: AppSpacing.lg),
               Row(
                 children: const [
@@ -107,7 +84,6 @@ class MapDayEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,29 +93,19 @@ class MapDayEmptyState extends StatelessWidget {
           child: Column(
             children: [
               const EmptyStateIconWell(icon: Icons.map_outlined, compact: true),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.md),
               Text(
-                'Nothing on the map yet',
+                'Nothing on map',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.35,
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'No stops planned for $dayLabel.',
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  color: muted,
-                ),
-                textAlign: TextAlign.center,
-              ),
               if (onOpenPlan != null) ...[
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.lg),
                 EmptyStateActionButton(
                   label: 'Open Plan',
                   onPressed: onOpenPlan!,

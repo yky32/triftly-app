@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/trip_models.dart';
-import '../../../../core/utils/date_formatters.dart';
 import 'trip_inline_empty_card.dart';
 
 /// Inline empty state for a plan day with no spots yet.
@@ -26,12 +25,8 @@ class PlanDayEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TripInlineEmptyCard(
-      eyebrow: 'Plan',
       icon: Icons.place_outlined,
-      title: readOnly ? 'No stops scheduled' : 'No spots yet',
-      subtitle: readOnly
-          ? '${day.displayTitleLine} · ${DateFormatters.weekdayDate(day.date)}'
-          : '${day.displayTitleLine} · ${DateFormatters.weekdayDate(day.date)}',
+      title: readOnly ? 'No stops' : 'No spots',
       readOnly: readOnly,
       suggestions: _suggestions,
       onSuggestionTap: readOnly || onAddSuggestion == null

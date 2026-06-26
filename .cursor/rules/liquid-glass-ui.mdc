@@ -55,7 +55,7 @@ Frosted, light surfaces for trip summaries, metrics, and inline stats. **Do not*
 
 For the full decision tree (when to use `EmptyState` vs glass heroes vs inline cards), see `app-shell-ui.mdc`.
 
-- **Tab-root / list empties** (`EmptyState`): wrap in `SpendGlassShell`; uppercase eyebrow; frosted icon chip; `GlassSurface` pill CTA with `primaryDark` text — **not** solid teal gradient buttons
+- **Tab-root / list empties** (`EmptyState`): frosted icon chip + one-line title + optional `GlassSurface` pill CTA — minimal, no card wrapper
 - Show **`$0 spent`**, not paragraph copy on metric slots
 - Badge: `No expenses` / `No spending` — pill on `surfaceElevated`
 - Map / unmapped heroes use `MapEmptyState` glass preview — not bare `EmptyState` on plain background

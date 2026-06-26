@@ -84,13 +84,10 @@ class _ViewState extends State<_View> {
     if (overview == null || overview.isEmpty) {
       return EmptyState(
         expand: true,
-        eyebrow: 'Wallet',
         icon: Icons.account_balance_wallet_outlined,
-        title: 'Your wallet is empty',
-        subtitle: 'Log expenses in a trip and they will appear here.',
+        title: 'Nothing here yet',
         action: () => context.go(AppPage.plan.path),
         actionLabel: 'Go to Trips',
-        actionIcon: Icons.calendar_month_outlined,
       );
     }
 
@@ -142,21 +139,18 @@ class _ViewState extends State<_View> {
   }
 
   Widget _buildPhaseEmpty(TripPhase phase) {
-    final (icon, title, subtitle) = switch (phase) {
+    final (icon, title) = switch (phase) {
       TripPhase.inProgress => (
           Icons.flight_takeoff_outlined,
-          'No spending on active trips',
-          'Expenses from trips in progress show up here',
+          'No active trip spending',
         ),
       TripPhase.upcoming => (
           Icons.event_outlined,
-          'No spending on upcoming trips',
-          'Pre-trip costs will appear here',
+          'No upcoming trip spending',
         ),
       TripPhase.completed => (
           Icons.check_circle_outline_rounded,
-          'No spending on past trips',
-          'Completed trip expenses will appear here',
+          'No past trip spending',
         ),
     };
 
@@ -164,7 +158,6 @@ class _ViewState extends State<_View> {
       compact: true,
       icon: icon,
       title: title,
-      subtitle: subtitle,
     );
   }
 

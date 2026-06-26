@@ -5,7 +5,7 @@ import 'glass_surface.dart';
 import 'spend_glass_shell.dart';
 import 'triftly_motion.dart';
 
-/// Frosted icon chip — matches wallet / spend metric chips (`liquid-glass-ui.mdc`).
+/// Frosted icon chip — matches wallet / spend metric chips.
 class EmptyStateIconWell extends StatelessWidget {
   const EmptyStateIconWell({
     required this.icon,
@@ -19,55 +19,39 @@ class EmptyStateIconWell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final wellSize = compact ? 52.0 : 60.0;
-    final iconSize = compact ? 24.0 : 28.0;
+    final wellSize = compact ? 48.0 : 56.0;
+    final iconSize = compact ? 22.0 : 26.0;
     final radius = compact ? AppRadii.md : AppRadii.lg;
 
-    return Container(
-      width: wellSize,
-      height: wellSize,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  AppColors.primaryLight.withValues(alpha: 0.22),
-                  Colors.white.withValues(alpha: 0.08),
-                ]
-              : [
-                  AppColors.primaryMuted,
-                  AppColors.primary.withValues(alpha: 0.1),
-                ],
+    return Material(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : AppColors.primary.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: wellSize,
+        height: wellSize,
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
         ),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.14)
-              : AppColors.primary.withValues(alpha: 0.14),
-        ),
-      ),
-      child: Icon(
-        icon,
-        size: iconSize,
-        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
       ),
     );
   }
 }
 
-/// Frosted pill CTA — no solid teal blocks on glass surfaces.
+/// Frosted pill CTA — text only for minimal empty states.
 class EmptyStateActionButton extends StatelessWidget {
   const EmptyStateActionButton({
     required this.label,
     required this.onPressed,
-    this.leading,
     super.key,
   });
 
   final String label;
   final VoidCallback onPressed;
-  final IconData? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -79,47 +63,30 @@ class EmptyStateActionButton extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(AppRadii.pill),
         blur: 22,
-        tint: Color.lerp(
-          SpendGlassShell.tint(isDark),
-          isDark ? AppColors.primary.withValues(alpha: 0.35) : AppColors.primaryMuted,
-          0.22,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: AppSpacing.lg),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (leading != null) ...[
-              Icon(leading, size: 18, color: accent),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-                color: accent,
-              ),
-            ),
-          ],
+        tint: SpendGlassShell.tint(isDark),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppSpacing.xl),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.05,
+            color: accent,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Liquid-glass empty hero — `SpendGlassShell` card with frosted CTA.
-///
-/// Reference: Trips tab when the list is empty (`No trips yet`).
+/// Minimal empty hero — icon, one line, optional glass CTA.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     required this.icon,
     required this.title,
     this.subtitle,
-    this.eyebrow,
     this.action,
     this.actionLabel,
-    this.actionIcon,
     this.expand = false,
     this.compact = false,
     super.key,
@@ -128,12 +95,8 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-
-  /// Uppercase glass label (e.g. `TRIPS`, `WALLET`).
-  final String? eyebrow;
   final VoidCallback? action;
   final String? actionLabel;
-  final IconData? actionIcon;
 
   /// Fill available height and center content (tab-root empties).
   final bool expand;
@@ -141,17 +104,7 @@ class EmptyState extends StatelessWidget {
   /// Tighter layout for phase-filter slots inside a list.
   final bool compact;
 
-  static const double _cardMaxWidth = 340;
-
-  static TextStyle _eyebrowStyle(BuildContext context, bool isDark) {
-    return Theme.of(context).textTheme.labelSmall!.copyWith(
-          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-          letterSpacing: 0.45,
-          height: 1.2,
-        );
-  }
+  static const double _contentMaxWidth = 280;
 
   @override
   Widget build(BuildContext context) {
@@ -159,85 +112,43 @@ class EmptyState extends StatelessWidget {
     final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final subtitleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
-    final shellPadding = compact
-        ? const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.lg)
-        : const EdgeInsets.fromLTRB(AppSpacing.xl, 28, AppSpacing.xl, AppSpacing.xl);
-
-    final card = ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: _cardMaxWidth),
-      child: SpendGlassShell(
-        padding: shellPadding,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: AppRadii.card,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.primary.withValues(alpha: 0.14),
-                            Colors.transparent,
-                          ]
-                        : [
-                            AppColors.primaryMuted.withValues(alpha: 0.55),
-                            AppColors.primary.withValues(alpha: 0.04),
-                          ],
-                  ),
-                ),
-              ),
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          EmptyStateIconWell(icon: icon, compact: compact),
+          SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: compact ? 17 : 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.35,
+              height: 1.2,
+              color: titleColor,
             ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (eyebrow != null) ...[
-                  Text(
-                    eyebrow!.toUpperCase(),
-                    style: _eyebrowStyle(context, isDark),
-                    textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              subtitle!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: subtitleColor,
+                    fontSize: 13,
+                    height: 1.4,
                   ),
-                  SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
-                ],
-                Center(child: EmptyStateIconWell(icon: icon, compact: compact)),
-                SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: compact ? 18 : 20,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1.15,
-                    color: titleColor,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: subtitleColor,
-                          fontSize: compact ? 13 : 14,
-                          height: 1.45,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-                if (action != null && actionLabel != null) ...[
-                  SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
-                  EmptyStateActionButton(
-                    label: actionLabel!,
-                    onPressed: action!,
-                    leading: actionIcon ?? Icons.add_rounded,
-                  ),
-                ],
-              ],
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
+          if (action != null && actionLabel != null) ...[
+            SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+            EmptyStateActionButton(label: actionLabel!, onPressed: action!),
+          ],
+        ],
       ),
     );
 
@@ -247,7 +158,7 @@ class EmptyState extends StatelessWidget {
       return SizedBox.expand(
         child: Padding(
           padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, navInset),
-          child: Center(child: card),
+          child: Center(child: content),
         ),
       );
     }
@@ -257,7 +168,7 @@ class EmptyState extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: compact ? AppSpacing.md : AppSpacing.lg,
       ),
-      child: Center(child: card),
+      child: Center(child: content),
     );
   }
 }

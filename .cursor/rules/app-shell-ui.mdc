@@ -37,9 +37,8 @@ Pick the lightest pattern that fits the slot:
 
 ```
 Full tab / list has zero items?
-  └─ YES → EmptyState inside `SpendGlassShell` (frosted card, uppercase eyebrow, icon chip, glass pill CTA)
+  └─ YES → EmptyState — icon chip + one-line title + optional glass pill CTA (no card shell, no eyebrow)
            Use `expand: true` for tab-root; `compact: true` for phase-filter slots
-           See `liquid-glass-ui.mdc` — no solid teal gradient blocks
 
 Trip sub-tab with no data yet (Map / Plan day / etc.)?
   └─ YES → Does the tab need a visual preview or cross-tab link?
