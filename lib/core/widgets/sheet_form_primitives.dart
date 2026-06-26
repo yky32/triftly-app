@@ -701,34 +701,6 @@ class SheetSocialSignInButton extends StatelessWidget {
   }
 }
 
-/// Google "G" glyph for social sign-in placeholders.
-class SheetGoogleGlyph extends StatelessWidget {
-  const SheetGoogleGlyph({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.border),
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF4285F4),
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
-
 /// Full-width primary action for utility sheets (lookup, apply, etc.).
 class SheetPrimaryButton extends StatelessWidget {
   const SheetPrimaryButton({
