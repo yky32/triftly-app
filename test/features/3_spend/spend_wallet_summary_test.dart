@@ -76,6 +76,34 @@ void main() {
       final summary = SpendWalletSummary.from(overview);
       expect(summary.isSettled, isTrue);
       expect(summary.net, d('0'));
+      expect(summary.currency, 'JPY');
+    });
+
+    test('uses preferred currency for empty wallet', () {
+      final overview = GlobalSpendOverview(
+        tripSnapshots: const [],
+        recentTransactions: const [],
+        meDisplayName: 'Wayne',
+      );
+
+      final summary = SpendWalletSummary.from(overview, preferredCurrency: 'USD');
+      expect(summary.currency, 'USD');
+      expect(summary.isSettled, isTrue);
+    });
+
+    test('promotes preferred currency to primary bucket', () {
+      final overview = GlobalSpendOverview(
+        tripSnapshots: [
+          _snap(trip: _trip(id: 'jpy', currency: 'JPY'), myPaid: d('100'), myShare: d('40')),
+          _snap(trip: _trip(id: 'usd', currency: 'USD'), myPaid: d('10'), myShare: d('5')),
+        ],
+        recentTransactions: const [],
+        meDisplayName: 'Wayne',
+      );
+
+      final summary = SpendWalletSummary.from(overview, preferredCurrency: 'USD');
+      expect(summary.primary.currency, 'USD');
+      expect(summary.otherCurrencies.single.currency, 'JPY');
     });
 
     test('aggregates buckets per currency and marks multi-currency', () {
@@ -92,7 +120,7 @@ void main() {
       expect(summary.isMultiCurrency, isTrue);
       expect(summary.primary.currency, anyOf('JPY', 'THB'));
       expect(summary.otherCurrencies, hasLength(1));
-      expect(summary.hkdEquivalentNet, isNotNull);
+      expect(summary.consolidatedNet, isNotNull);
     });
   });
 
