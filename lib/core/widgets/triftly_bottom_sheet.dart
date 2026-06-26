@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sheet_keyboard_dismiss.dart';
 
 /// Shared modal bottom sheet launcher — matches trip/tool sheet chrome.
 abstract final class TriftlyBottomSheet {
@@ -9,7 +10,7 @@ abstract final class TriftlyBottomSheet {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => child,
+      builder: (_) => SheetKeyboardDismiss(child: child),
     );
   }
 }

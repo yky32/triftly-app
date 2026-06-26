@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'sheet_keyboard_dismiss.dart';
 import 'triftly_motion.dart';
 
 enum TripDatePickerMode { departure, returnDate }
@@ -37,12 +38,14 @@ class TripDatePickerSheet extends StatefulWidget {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => TripDatePickerSheet(
-        mode: mode,
-        initialDate: initialDate,
-        minDate: minDate,
-        maxDate: maxDate,
-        rangeStart: rangeStart,
+      builder: (_) => SheetKeyboardDismiss(
+        child: TripDatePickerSheet(
+          mode: mode,
+          initialDate: initialDate,
+          minDate: minDate,
+          maxDate: maxDate,
+          rangeStart: rangeStart,
+        ),
       ),
     );
   }

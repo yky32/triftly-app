@@ -136,6 +136,7 @@ class SheetScaffold extends StatelessWidget {
             else if (hasFooter)
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     title != null && title!.isNotEmpty ? AppSpacing.sm : AppSpacing.md,
@@ -149,6 +150,7 @@ class SheetScaffold extends StatelessWidget {
               Flexible(
                 fit: FlexFit.loose,
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     title != null && title!.isNotEmpty ? AppSpacing.sm : AppSpacing.md,
