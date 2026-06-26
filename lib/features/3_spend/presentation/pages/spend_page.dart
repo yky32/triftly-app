@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/constants/app_page.dart';
 import '../../../../core/models/spend_overview_models.dart';
 import '../../../../core/models/trip_models.dart';
@@ -91,11 +91,8 @@ class _ViewState extends State<_View> {
   }
 
   Widget _buildWalletScroll(BuildContext context, GlobalSpendOverview overview) {
-    final session = AppBootstrap.userSession;
-
-    return ListenableBuilder(
-      listenable: session,
-      builder: (context, _) {
+    return BlocBuilder<SessionBloc, SessionState>(
+      builder: (context, session) {
         final summary = SpendWalletSummary.from(
           overview,
           preferredCurrency: session.defaultCurrency,

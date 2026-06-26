@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../environment.dart';
 import '../../repositories/cloud_trip_sync.dart';
 import '../../repositories/hive_trip_repository.dart';
-import '../../services/user_session.dart';
+import '../session/session_bloc.dart';
 import '../../sync/cloud_sync_reporter.dart';
 
 part 'cloud_sync_event.dart';
@@ -13,10 +13,10 @@ part 'cloud_sync_state.dart';
 /// App-wide cloud sync UI state (Trips banner, Me → Trip sync).
 class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
   CloudSyncBloc({
-    required UserSession userSession,
+    required SessionBloc sessionBloc,
     required CloudSyncReporterBridge syncReporter,
     required HiveTripRepository tripRepository,
-  })  : _userSession = userSession,
+  })  : _sessionBloc = sessionBloc,
         _tripRepository = tripRepository,
         _syncReporter = syncReporter,
         super(CloudSyncState()) {
@@ -29,7 +29,7 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
     on<CloudSyncRetryRequested>(_onRetryRequested);
   }
 
-  final UserSession _userSession;
+  final SessionBloc _sessionBloc;
   final HiveTripRepository _tripRepository;
   final CloudSyncReporterBridge _syncReporter;
 
@@ -68,7 +68,7 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
     CloudSyncRetryRequested event,
     Emitter<CloudSyncState> emit,
   ) async {
-    final user = _userSession.currentUser;
+    final user = _sessionBloc.state.user;
     if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
 
     try {

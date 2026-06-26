@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/me_identity_service.dart';
@@ -71,13 +72,20 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
             controller: _nameController,
             onChanged: () => setState(() {}),
           ),
-          if (!AppBootstrap.userSession.isCloudSignedIn) ...[
-            const SizedBox(height: AppSpacing.lg),
-            const SheetResultBanner(
-              caption: 'Cloud sync',
-              text: 'Sign in to sync this trip across your devices.',
-            ),
-          ],
+          BlocBuilder<SessionBloc, SessionState>(
+            builder: (context, session) {
+              if (session.isCloudSignedIn) return const SizedBox.shrink();
+              return Column(
+                children: const [
+                  SizedBox(height: AppSpacing.lg),
+                  SheetResultBanner(
+                    caption: 'Cloud sync',
+                    text: 'Sign in to sync this trip across your devices.',
+                  ),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: AppSpacing.xl),
           const SheetSectionHeader(title: 'Where & when'),
           const SizedBox(height: AppSpacing.md),
@@ -346,9 +354,9 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
     if (!_canCreate || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    final session = AppBootstrap.userSession;
+    final session = context.read<SessionBloc>().state;
     final creator = MeIdentityService.creatorBuddy(
-      user: session.currentUser,
+      user: session.user,
       preferences: AppBootstrap.profilePreferences,
     );
     final buddies = [

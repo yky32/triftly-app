@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/auth/auth_debug_log.dart';
 import '../../../../core/auth/auth_oauth_session.dart';
-import '../../../../core/models/user.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
+import '../../../../core/models/user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/validation/email_validator.dart';
@@ -100,7 +102,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       _emailError = null;
     });
     try {
-      final session = AppBootstrap.userSession;
+      final session = context.read<SessionBloc>();
       final user = await session.signInWithEmail(email);
       if (!mounted) return;
       if (Environment.hasSupabase && user == null) {
@@ -124,10 +126,10 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
   Future<void> _signInWithGoogle() async {
     if (_submitting) return;
 
-    final session = AppBootstrap.userSession;
-    if (_isCloudUser(session.currentUser)) {
+    final session = context.read<SessionBloc>();
+    if (_isCloudUser(session.state.user)) {
       authDebugLog(
-        'Already signed in — closing sheet (${session.currentUser!.email})',
+        'Already signed in — closing sheet (${session.state.user!.email})',
         kind: AuthLogKind.session,
       );
       _closeSheetSafely();
@@ -156,9 +158,9 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       await session.signInWithGoogle();
       authDebugLog('Sign-in sheet: waiting for Supabase session…', kind: AuthLogKind.oauth);
 
-      if (_isCloudUser(session.currentUser)) {
+      if (_isCloudUser(session.state.user)) {
         authDebugLog(
-          'Sign-in sheet: session already active — ${session.currentUser!.email}',
+          'Sign-in sheet: session already active — ${session.state.user!.email}',
           kind: AuthLogKind.session,
         );
         if (!signedIn.isCompleted) signedIn.complete();
@@ -183,7 +185,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       });
       _resetSwipe();
     } catch (e, st) {
-      if (_isCloudUser(session.currentUser)) {
+      if (_isCloudUser(session.state.user)) {
         authDebugLog(
           'Sign-in succeeded — closing sheet after navigation error',
           kind: AuthLogKind.success,
@@ -211,7 +213,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       _error = null;
     });
     try {
-      await AppBootstrap.userSession.verifyEmailOtp(email: email, token: code);
+      await context.read<SessionBloc>().verifyEmailOtp(email: email, token: code);
       if (!mounted) return;
       _closeSheetSafely();
     } catch (e) {

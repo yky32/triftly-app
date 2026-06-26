@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../auth/auth_deep_link_bridge.dart';
 import '../auth/auth_debug_log.dart';
 import '../bloc/cloud_sync/cloud_sync_bloc.dart';
+import '../bloc/session/session_bloc.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
@@ -14,7 +15,6 @@ import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
 import '../services/profile_preferences.dart';
-import '../services/user_session.dart';
 import '../sync/cloud_sync_reporter.dart';
 
 /// Initializes Hive, auth, trips, and optional Supabase.
@@ -22,7 +22,7 @@ class AppBootstrap {
   AppBootstrap._();
 
   static late final ProfilePreferences profilePreferences;
-  static late final UserSession userSession;
+  static late final SessionBloc sessionBloc;
   static late final HiveTripRepository tripRepository;
   static late final CloudSyncReporterBridge cloudSyncReporter;
   static late final CloudSyncBloc cloudSyncBloc;
@@ -72,7 +72,7 @@ class AppBootstrap {
     );
     await auth.initialize();
 
-    userSession = UserSession(auth: auth, preferences: profilePreferences);
+    sessionBloc = SessionBloc(auth: auth, preferences: profilePreferences);
 
     cloudSyncReporter = CloudSyncReporterBridge();
     final supabaseSync = supabaseReady
@@ -83,7 +83,7 @@ class AppBootstrap {
       syncReporter: cloudSyncReporter,
     );
     cloudSyncBloc = CloudSyncBloc(
-      userSession: userSession,
+      sessionBloc: sessionBloc,
       syncReporter: cloudSyncReporter,
       tripRepository: tripRepository,
     );
@@ -141,13 +141,11 @@ class AppBootstrap {
 
 class AppScope extends InheritedWidget {
   const AppScope({
-    required this.session,
     required this.tripRepository,
     required super.child,
     super.key,
   });
 
-  final UserSession session;
   final HiveTripRepository tripRepository;
 
   static AppScope of(BuildContext context) {
@@ -158,5 +156,5 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      session != oldWidget.session || tripRepository != oldWidget.tripRepository;
+      tripRepository != oldWidget.tripRepository;
 }

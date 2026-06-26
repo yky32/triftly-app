@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/bootstrap/app_bootstrap.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -85,7 +86,7 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
     });
 
     try {
-      await AppBootstrap.userSession.updateDisplayName(trimmed);
+      await context.read<SessionBloc>().updateDisplayName(trimmed);
       if (!mounted) return;
       setState(() {
         _editingDisplayName = false;
@@ -107,7 +108,7 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
       _error = null;
     });
     try {
-      await AppBootstrap.userSession.signOut();
+      await context.read<SessionBloc>().signOut();
       if (!mounted) return;
       _closeSheetSafely();
     } catch (e) {
@@ -123,12 +124,9 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final session = AppBootstrap.userSession;
-
-    return ListenableBuilder(
-      listenable: session,
-      builder: (context, _) {
-        final user = session.currentUser ?? widget.user;
+    return BlocBuilder<SessionBloc, SessionState>(
+      builder: (context, sessionState) {
+        final user = sessionState.user ?? widget.user;
 
         return SheetScaffold.swipeForm(
           compact: true,
@@ -219,7 +217,7 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
                       _UserDetailRow(
                         icon: Icons.payments_outlined,
                         label: 'Default currency',
-                        value: session.defaultCurrency,
+                        value: sessionState.defaultCurrency,
                       ),
                     ],
                   ),

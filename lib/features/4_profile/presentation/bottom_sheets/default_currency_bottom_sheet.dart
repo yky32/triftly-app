@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/bootstrap/app_bootstrap.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/constants/currency_options.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
@@ -39,8 +40,9 @@ class DefaultCurrencyBottomSheet extends StatelessWidget {
                     option: CurrencyOptions.all[i],
                     selected: selected == CurrencyOptions.all[i].code,
                     onTap: () async {
-                      await AppBootstrap.userSession
-                          .setDefaultCurrency(CurrencyOptions.all[i].code);
+                      context.read<SessionBloc>().add(
+                            SessionDefaultCurrencyChanged(CurrencyOptions.all[i].code),
+                          );
                       if (context.mounted) Navigator.pop(context);
                     },
                   ),

@@ -2,27 +2,31 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:triftly/core/bloc/cloud_sync/cloud_sync_bloc.dart';
+import 'package:triftly/core/bloc/session/session_bloc.dart';
 import 'package:triftly/core/repositories/hive_trip_repository.dart';
-import 'package:triftly/core/services/user_session.dart';
 import 'package:triftly/core/sync/cloud_sync_reporter.dart';
 
-class _MockUserSession extends Mock implements UserSession {}
+class _MockSessionBloc extends MockBloc<SessionEvent, SessionState>
+    implements SessionBloc {}
 
 class _MockHiveTripRepository extends Mock implements HiveTripRepository {}
 
 void main() {
   late CloudSyncReporterBridge reporter;
-  late _MockUserSession session;
+  late _MockSessionBloc sessionBloc;
   late _MockHiveTripRepository repository;
 
   setUp(() {
     reporter = CloudSyncReporterBridge();
-    session = _MockUserSession();
+    sessionBloc = _MockSessionBloc();
     repository = _MockHiveTripRepository();
+    when(() => sessionBloc.state).thenReturn(SessionState(fallbackCurrency: 'USD'));
+    when(() => sessionBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => sessionBloc.close()).thenAnswer((_) async {});
   });
 
   CloudSyncBloc buildBloc() => CloudSyncBloc(
-        userSession: session,
+        sessionBloc: sessionBloc,
         syncReporter: reporter,
         tripRepository: repository,
       );

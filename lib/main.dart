@@ -62,7 +62,6 @@ Future<void> main() async {
     bootstrapError != null
         ? BootstrapErrorApp(error: bootstrapError, stackTrace: bootstrapStack)
         : AppScope(
-            session: AppBootstrap.userSession,
             tripRepository: AppBootstrap.tripRepository,
             child: TripApp(themeController: themeController),
           ),
