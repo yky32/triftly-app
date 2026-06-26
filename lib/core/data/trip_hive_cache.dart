@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/settlement_record.dart';
@@ -37,7 +39,11 @@ class TripHiveCache {
         final trip = Trip.fromMap(Map<String, dynamic>.from(raw));
         if (trip.isActive) store.upsertCreatedTrip(trip);
       } catch (error) {
-        if (kDebugMode) debugPrint('Skipping corrupt trip cache entry: $error');
+        developer.log(
+          'Skipping corrupt trip cache entry',
+          name: 'triftly.hive',
+          error: error,
+        );
       }
     }
     for (final key in _details!.keys) {
@@ -63,9 +69,11 @@ class TripHiveCache {
           ),
         );
       } catch (error) {
-        if (kDebugMode) {
-          debugPrint('Skipping corrupt trip detail cache for $key: $error');
-        }
+        developer.log(
+          'Skipping corrupt trip detail cache for $key',
+          name: 'triftly.hive',
+          error: error,
+        );
       }
     }
   }

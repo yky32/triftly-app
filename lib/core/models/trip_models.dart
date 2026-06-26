@@ -2,6 +2,8 @@ import 'package:decimal/decimal.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+Map<String, dynamic> _stringMap(dynamic value) => Map<String, dynamic>.from(value as Map);
+
 class Buddy extends Equatable {
   final String id;
   final String name;
@@ -215,15 +217,15 @@ class Trip extends Equatable {
         endDate: DateTime.parse(map['end_date'] as String),
         defaultCurrency: map['default_currency'] as String,
         outboundFlight: map['outbound_flight'] != null
-            ? FlightLeg.fromMap(map['outbound_flight'] as Map<String, dynamic>)
+            ? FlightLeg.fromMap(_stringMap(map['outbound_flight']))
             : (map['flight_number'] != null
                 ? FlightLeg(flightNumber: map['flight_number'] as String?)
                 : null),
         returnFlight: map['return_flight'] != null
-            ? FlightLeg.fromMap(map['return_flight'] as Map<String, dynamic>)
+            ? FlightLeg.fromMap(_stringMap(map['return_flight']))
             : null,
         buddies: (map['buddies'] as List<dynamic>)
-            .map((b) => Buddy.fromMap(b as Map<String, dynamic>))
+            .map((b) => Buddy.fromMap(_stringMap(b)))
             .toList(),
         ownerToken: map['owner_token'] as String?,
         shareToken: map['share_token'] as String?,
@@ -513,7 +515,7 @@ class Expense extends Equatable {
         paidById: map['paid_by_id'] as String,
         category: map['category'] as String? ?? 'other',
         splits: (map['splits'] as List<dynamic>?)
-                ?.map((s) => ExpenseSplit.fromMap(s as Map<String, dynamic>))
+                ?.map((s) => ExpenseSplit.fromMap(_stringMap(s)))
                 .toList() ??
             [],
         createdAt: DateTime.parse(map['created_at'] as String),
