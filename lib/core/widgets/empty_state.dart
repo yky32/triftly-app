@@ -23,20 +23,34 @@ class EmptyStateIconWell extends StatelessWidget {
     final iconSize = compact ? 24.0 : 28.0;
     final radius = compact ? AppRadii.md : AppRadii.lg;
 
-    return Material(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.1)
-          : AppColors.primary.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        width: wellSize,
-        height: wellSize,
-        child: Icon(
-          icon,
-          size: iconSize,
-          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+    return Container(
+      width: wellSize,
+      height: wellSize,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.primaryLight.withValues(alpha: 0.22),
+                  Colors.white.withValues(alpha: 0.08),
+                ]
+              : [
+                  AppColors.primaryMuted,
+                  AppColors.primary.withValues(alpha: 0.1),
+                ],
         ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : AppColors.primary.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Icon(
+        icon,
+        size: iconSize,
+        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
       ),
     );
   }
@@ -65,7 +79,11 @@ class EmptyStateActionButton extends StatelessWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(AppRadii.pill),
         blur: 22,
-        tint: SpendGlassShell.tint(isDark),
+        tint: Color.lerp(
+          SpendGlassShell.tint(isDark),
+          isDark ? AppColors.primary.withValues(alpha: 0.35) : AppColors.primaryMuted,
+          0.22,
+        ),
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: AppSpacing.lg),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -149,51 +167,75 @@ class EmptyState extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: _cardMaxWidth),
       child: SpendGlassShell(
         padding: shellPadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            if (eyebrow != null) ...[
-              Text(
-                eyebrow!.toUpperCase(),
-                style: _eyebrowStyle(context, isDark),
-                textAlign: TextAlign.center,
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: AppRadii.card,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.primary.withValues(alpha: 0.14),
+                            Colors.transparent,
+                          ]
+                        : [
+                            AppColors.primaryMuted.withValues(alpha: 0.55),
+                            AppColors.primary.withValues(alpha: 0.04),
+                          ],
+                  ),
+                ),
               ),
-              SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
-            ],
-            Center(child: EmptyStateIconWell(icon: icon, compact: compact)),
-            SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: compact ? 18 : 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-                height: 1.15,
-                color: titleColor,
-              ),
-              textAlign: TextAlign.center,
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: subtitleColor,
-                      fontSize: compact ? 13 : 14,
-                      height: 1.45,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (action != null && actionLabel != null) ...[
-              SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
-              EmptyStateActionButton(
-                label: actionLabel!,
-                onPressed: action!,
-                leading: actionIcon ?? Icons.add_rounded,
-              ),
-            ],
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (eyebrow != null) ...[
+                  Text(
+                    eyebrow!.toUpperCase(),
+                    style: _eyebrowStyle(context, isDark),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+                ],
+                Center(child: EmptyStateIconWell(icon: icon, compact: compact)),
+                SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: compact ? 18 : 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    height: 1.15,
+                    color: titleColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    subtitle!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: subtitleColor,
+                          fontSize: compact ? 13 : 14,
+                          height: 1.45,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (action != null && actionLabel != null) ...[
+                  SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+                  EmptyStateActionButton(
+                    label: actionLabel!,
+                    onPressed: action!,
+                    leading: actionIcon ?? Icons.add_rounded,
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
