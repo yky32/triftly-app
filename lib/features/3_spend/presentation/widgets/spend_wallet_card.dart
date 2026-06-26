@@ -183,10 +183,10 @@ class SpendWalletCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (summary.hkdEquivalentNet != null) ...[
+                  if (summary.consolidatedNet != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      summary.hkdEquivalentNet!,
+                      summary.consolidatedNet!,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: tertiary,
                             fontSize: 11,

@@ -34,7 +34,10 @@ class SpendOverviewBloc extends Bloc<SpendOverviewEvent, SpendOverviewState> {
     SpendOverviewEvent event,
     Emitter<SpendOverviewState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true, errorMessage: null));
+    final keepShowingData = state.overview != null;
+    if (!keepShowingData) {
+      emit(state.copyWith(isLoading: true, errorMessage: null));
+    }
     try {
       final overview = await _ledger.loadGlobalOverview(user: _session?.currentUser);
       emit(state.copyWith(isLoading: false, overview: overview));

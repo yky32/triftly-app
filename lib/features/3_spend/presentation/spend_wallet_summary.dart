@@ -34,7 +34,7 @@ class SpendWalletSummary {
     required this.activeTripCount,
     required this.expenseCount,
     required this.meDisplayName,
-    this.hkdEquivalentNet,
+    this.consolidatedNet,
   });
 
   final CurrencyWalletBucket primary;
@@ -42,7 +42,7 @@ class SpendWalletSummary {
   final int activeTripCount;
   final int expenseCount;
   final String meDisplayName;
-  final String? hkdEquivalentNet;
+  final String? consolidatedNet;
 
   String get currency => primary.currency;
   String get symbol => primary.symbol;
@@ -57,7 +57,10 @@ class SpendWalletSummary {
   bool get isSettled =>
       primary.isSettled && otherCurrencies.every((bucket) => bucket.isSettled);
 
-  factory SpendWalletSummary.from(GlobalSpendOverview overview) {
+  factory SpendWalletSummary.from(
+    GlobalSpendOverview overview, {
+    String preferredCurrency = 'HKD',
+  }) {
     final trips = overview.tripsWithSpending;
     final buckets = <String, CurrencyWalletBucket>{};
 
@@ -94,19 +97,34 @@ class SpendWalletSummary {
         return b.net.abs().compareTo(a.net.abs());
       });
 
-    final primary = allBuckets.isEmpty
-        ? CurrencyWalletBucket(
-            currency: 'HKD',
-            myPaid: Decimal.zero,
-            myShare: Decimal.zero,
-            owedToMe: Decimal.zero,
-            iOwe: Decimal.zero,
-          )
-        : allBuckets.first;
+    final CurrencyWalletBucket primary;
+    final List<CurrencyWalletBucket> others;
 
-    final others = allBuckets.length <= 1 ? <CurrencyWalletBucket>[] : allBuckets.sublist(1);
+    if (allBuckets.isEmpty) {
+      primary = CurrencyWalletBucket(
+        currency: preferredCurrency,
+        myPaid: Decimal.zero,
+        myShare: Decimal.zero,
+        owedToMe: Decimal.zero,
+        iOwe: Decimal.zero,
+      );
+      others = const [];
+    } else {
+      final preferredIndex =
+          allBuckets.indexWhere((bucket) => bucket.currency == preferredCurrency);
+      if (preferredIndex >= 0) {
+        primary = allBuckets[preferredIndex];
+        others = [
+          for (var i = 0; i < allBuckets.length; i++)
+            if (i != preferredIndex) allBuckets[i],
+        ];
+      } else {
+        primary = allBuckets.first;
+        others = allBuckets.length <= 1 ? <CurrencyWalletBucket>[] : allBuckets.sublist(1);
+      }
+    }
 
-    String? hkdNet;
+    String? consolidated;
     if (allBuckets.length > 1) {
       var total = Decimal.zero;
       for (final bucket in allBuckets) {
@@ -114,13 +132,14 @@ class SpendWalletSummary {
         final converted = CurrencyConversion.convert(
           amount: bucket.net.abs(),
           from: bucket.currency,
-          to: 'HKD',
+          to: preferredCurrency,
         );
         total += bucket.net > Decimal.zero ? converted : -converted;
       }
       if (total != Decimal.zero) {
         final prefix = total > Decimal.zero ? '+' : '−';
-        hkdNet = '$prefix${CurrencyUtils.symbolFor('HKD')}${CurrencyUtils.formatDecimal(total.abs())} HKD total';
+        consolidated =
+            '$prefix${CurrencyUtils.symbolFor(preferredCurrency)}${CurrencyUtils.formatDecimal(total.abs())} $preferredCurrency total';
       }
     }
 
@@ -130,7 +149,7 @@ class SpendWalletSummary {
       activeTripCount: overview.activeTripsWithSpending.length,
       expenseCount: overview.totalExpenseCount,
       meDisplayName: overview.meDisplayName,
-      hkdEquivalentNet: hkdNet,
+      consolidatedNet: consolidated,
     );
   }
 }

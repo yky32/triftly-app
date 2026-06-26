@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/constants/app_page.dart';
 import '../../../../core/models/spend_overview_models.dart';
 import '../../../../core/models/trip_models.dart';
@@ -90,60 +91,70 @@ class _ViewState extends State<_View> {
   }
 
   Widget _buildWalletScroll(BuildContext context, GlobalSpendOverview overview) {
-    final summary = SpendWalletSummary.from(overview);
-    final selected = _selectedPhase ?? overview.defaultPhase();
-    final trips = overview.sortedTrips(phase: selected);
-    final balances = overview.buddyOweLines;
-    final counts = overview.phaseCounts;
-    final hasTripSpending = overview.tripsWithSpending.isNotEmpty;
+    final session = AppBootstrap.userSession;
 
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.listBottomInset(context),
-      ),
-      children: [
-        SpendWalletCard(summary: summary),
-        if (balances.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          SpendWalletBalances(lines: balances),
-        ],
-        if (hasTripSpending) ...[
-          const SizedBox(height: AppSpacing.xl),
-          SpendSectionTitle(title: 'Trips', count: trips.length),
-          const SizedBox(height: AppSpacing.sm),
-          TripPhaseSegment(
-            selected: selected,
-            counts: counts,
-            onChanged: (phase) => setState(() => _selectedPhase = phase),
+    return ListenableBuilder(
+      listenable: session,
+      builder: (context, _) {
+        final summary = SpendWalletSummary.from(
+          overview,
+          preferredCurrency: session.defaultCurrency,
+        );
+        final selected = _selectedPhase ?? overview.defaultPhase();
+        final trips = overview.sortedTrips(phase: selected);
+        final balances = overview.buddyOweLines;
+        final counts = overview.phaseCounts;
+        final hasTripSpending = overview.tripsWithSpending.isNotEmpty;
+
+        return ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.listBottomInset(context),
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (trips.isNotEmpty)
-            SpendWalletTrips(snapshots: trips)
-          else
-            _buildPhaseEmpty(selected),
-        ] else ...[
-          const SizedBox(height: AppSpacing.xl),
-          EmptyState(
-            compact: true,
-            icon: Icons.receipt_long_outlined,
-            title: 'No expenses yet',
-            action: () => context.go(AppPage.plan.path),
-            actionLabel: 'Go to Trips',
-          ),
-        ],
-        const SizedBox(height: AppSpacing.xl),
-        SpendWalletActivity(
-          transactions: overview.recentTransactions,
-          totalCount: overview.recentTransactions.length,
-          onSeeAll: overview.recentTransactions.length > 8
-              ? () => context.push('${AppPage.spend.path}/recent')
-              : null,
-        ),
-      ],
+          children: [
+            SpendWalletCard(summary: summary),
+            if (balances.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              SpendWalletBalances(lines: balances),
+            ],
+            if (hasTripSpending) ...[
+              const SizedBox(height: AppSpacing.xl),
+              SpendSectionTitle(title: 'Trips', count: trips.length),
+              const SizedBox(height: AppSpacing.sm),
+              TripPhaseSegment(
+                selected: selected,
+                counts: counts,
+                onChanged: (phase) => setState(() => _selectedPhase = phase),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (trips.isNotEmpty)
+                SpendWalletTrips(snapshots: trips)
+              else
+                _buildPhaseEmpty(selected),
+            ] else ...[
+              const SizedBox(height: AppSpacing.xl),
+              EmptyState(
+                compact: true,
+                icon: Icons.receipt_long_outlined,
+                title: 'No expenses yet',
+                action: () => context.go(AppPage.plan.path),
+                actionLabel: 'Go to Trips',
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            SpendWalletActivity(
+              transactions: overview.recentTransactions,
+              totalCount: overview.recentTransactions.length,
+              onSeeAll: overview.recentTransactions.length > 8
+                  ? () => context.push('${AppPage.spend.path}/recent')
+                  : null,
+            ),
+          ],
+        );
+      },
     );
   }
 
