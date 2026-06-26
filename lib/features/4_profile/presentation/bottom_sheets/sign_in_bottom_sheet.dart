@@ -185,11 +185,15 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
             const SizedBox(height: AppSpacing.lg),
             _OrDivider(isDark: isDark),
             const SizedBox(height: AppSpacing.lg),
-            SheetSocialSignInButton(
-              label: 'Continue with Google',
-              leading: const GoogleLogoIcon(size: 22),
-              enabled: false,
-              badge: 'Soon',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SheetSocialCircleButton(
+                  enabled: false,
+                  semanticLabel: 'Continue with Google',
+                  child: const GoogleLogoIcon(size: 24),
+                ),
+              ],
             ),
           ],
           if (_error != null) ...[
