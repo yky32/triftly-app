@@ -3,6 +3,7 @@ import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/validation/email_validator.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
@@ -24,15 +25,27 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
   bool _awaitingCode = false;
   bool _submitting = false;
   String? _error;
+  String? _emailError;
+  bool _emailTouched = false;
   int _swipeKey = 0;
+
+  bool get _emailValid => EmailValidator.isValid(_emailController.text);
 
   bool get _canSubmit {
     if (_submitting) return false;
     if (_awaitingCode) return _codeController.text.trim().isNotEmpty;
-    return _emailController.text.trim().isNotEmpty;
+    return _emailValid;
   }
 
-  void _onFieldChanged() {
+  void _onEmailChanged() {
+    setState(() {
+      _emailTouched = true;
+      _emailError = EmailValidator.validate(_emailController.text);
+      if (_error != null) _error = null;
+    });
+  }
+
+  void _onCodeChanged() {
     setState(() {
       if (_error != null) _error = null;
     });
@@ -49,10 +62,21 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   Future<void> _submitEmail() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || _submitting) return;
+    final validationError = EmailValidator.validate(email);
+    if (validationError != null) {
+      setState(() {
+        _emailTouched = true;
+        _emailError = validationError;
+      });
+      _resetSwipe();
+      return;
+    }
+    if (_submitting) return;
+
     setState(() {
       _submitting = true;
       _error = null;
+      _emailError = null;
     });
     try {
       final session = AppBootstrap.userSession;
@@ -108,6 +132,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final showEmailError = _emailTouched && _emailError != null && !_awaitingCode;
 
     return SheetScaffold.swipeForm(
       compact: true,
@@ -123,7 +148,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
             caption: _awaitingCode
                 ? 'Enter the code we sent you'
                 : Environment.hasSupabase
-                    ? 'Magic link or one-time code'
+                    ? 'Email code or magic link'
                     : 'Local guest session for now',
           ),
           const SizedBox(height: AppSpacing.md),
@@ -141,10 +166,31 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
                     ? TextInputType.number
                     : TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
-                onChanged: _onFieldChanged,
+                onChanged: _awaitingCode ? _onCodeChanged : _onEmailChanged,
               ),
             ),
           ),
+          if (showEmailError) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _emailError!,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.error : Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          if (!_awaitingCode) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _OrDivider(isDark: isDark),
+            const SizedBox(height: AppSpacing.lg),
+            SheetSocialSignInButton(
+              label: 'Continue with Google',
+              leading: const SheetGoogleGlyph(),
+              enabled: false,
+              badge: 'Soon',
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -157,6 +203,32 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final lineColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final labelColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+
+    return Row(
+      children: [
+        Expanded(child: Divider(height: 1, color: lineColor)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Text(
+            'or',
+            style: TextStyle(fontSize: 13, color: labelColor),
+          ),
+        ),
+        Expanded(child: Divider(height: 1, color: lineColor)),
+      ],
     );
   }
 }

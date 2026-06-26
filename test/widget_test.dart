@@ -30,8 +30,12 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Triftly'), findsOneWidget);
+
+    // Splash hold + fade, then navigate to Trips.
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
 
     expect(find.text('Trips'), findsOneWidget);
   });
