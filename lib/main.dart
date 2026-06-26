@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/bootstrap/app_bootstrap.dart';
 import 'core/bootstrap/bootstrap_error_app.dart';
+import 'core/bootstrap/flutter_dev_error_filters.dart';
 import 'core/environment.dart';
 import 'core/theme/theme_controller.dart';
 
@@ -14,6 +15,9 @@ Future<void> main() async {
   await Environment.load();
 
   FlutterError.onError = (details) {
+    if (isKnownSimulatorKeyboardSyncNoise(details.exception)) {
+      return;
+    }
     developer.log(
       details.exceptionAsString(),
       name: 'triftly.flutter',
@@ -24,6 +28,9 @@ Future<void> main() async {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    if (isKnownSimulatorKeyboardSyncNoise(error)) {
+      return true;
+    }
     developer.log(
       '$error',
       name: 'triftly.platform',
