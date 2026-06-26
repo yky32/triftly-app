@@ -164,14 +164,6 @@ end
 
 scrub_apple_id_auth_for_ci!
 
-def env_file_suffix(env_value)
-  case env_value
-  when "prod" then "prod"
-  when "stag" then "stag"
-  else "dev"
-  end
-end
-
 def parse_env_file(path, vars)
   return unless File.exist?(path)
 
@@ -186,7 +178,7 @@ def parse_env_file(path, vars)
   end
 end
 
-def load_env_file_vars(env_value)
+def load_env_file_vars
   vars = {}
   if ci_build?
     CI_REQUIRED_DART_DEFINE_KEYS.each do |key|
@@ -209,10 +201,10 @@ def load_env_file_vars(env_value)
   vars
 end
 
-def flutter_dart_define_args(env_value)
-  vars = load_env_file_vars(env_value)
+def flutter_dart_define_args
+  vars = load_env_file_vars
 
-  args = ["--dart-define=ENV=#{env_value}"]
+  args = ["--dart-define=ENV=prod"]
   FLUTTER_DART_DEFINE_KEYS.each do |key|
     val = vars[key]
     next if val.nil? || val.empty?
@@ -629,11 +621,8 @@ platform :ios do
 
   desc "Build iOS app and create IPA (requires code signing)"
   desc "Options: export_method - 'development', 'ad-hoc', 'app-store', or 'enterprise' (default: 'development')"
-  desc "         env - environment to use: 'dev', 'stag', or 'prod' (default: 'prod' for app-store, 'dev' for others)"
   lane :build_ipa do |options|
     export_method = options[:export_method] || "development"
-    # Use provided env or determine from export_method
-    env_value = options[:env] || (export_method == "app-store" ? "prod" : "dev")
     
     # Get dependencies
     sh("cd #{PROJECT_ROOT} && flutter pub get")
@@ -669,14 +658,14 @@ platform :ios do
       end
 
       export_plist = write_ci_export_options_plist!
-      dart_defines = flutter_dart_define_args(env_value)
-      UI.message("📦 Building IPA via flutter build ipa (ENV=#{env_value})...")
+      dart_defines = flutter_dart_define_args
+      UI.message("📦 Building IPA via flutter build ipa...")
       sh("cd #{PROJECT_ROOT} && flutter build ipa --release #{dart_defines} --export-options-plist=#{export_plist}")
       ensure_runner_ipa_path!
     else
       # Step 1: Build Flutter artifacts (no codesign — gym handles signing)
-      dart_defines = flutter_dart_define_args(env_value)
-      UI.message("🔧 Step 1/2: Building Flutter artifacts (ENV=#{env_value})...")
+      dart_defines = flutter_dart_define_args
+      UI.message("🔧 Step 1/2: Building Flutter artifacts...")
       sh("cd #{PROJECT_ROOT} && flutter build ios --release --no-codesign #{dart_defines}")
 
       # Step 2: Archive + export IPA using gym with xcodebuild auth flags
@@ -721,10 +710,8 @@ platform :ios do
 
   desc "Build IPA and upload to TestFlight"
   desc "Options: skip_build - set to true to skip building and use existing IPA (default: false)"
-  desc "         env - environment to use: 'dev', 'stag', or 'prod' (default: 'prod')"
   lane :upload_testflight do |options|
     skip_build = options[:skip_build] || false
-    env_value = options[:env] || "prod"  # Default to prod for TestFlight
     version_name = nil
     new_build_number = nil
 
@@ -745,7 +732,7 @@ platform :ios do
       begin
         # Build IPA with app-store export method for TestFlight
         # Pass the environment to build_ipa
-        build_ipa(export_method: "app-store", env: env_value)
+        build_ipa(export_method: "app-store")
         build_success = true
       rescue => ex
         error_msg = ex.message
@@ -765,7 +752,7 @@ platform :ios do
           
           begin
             # Retry the build — xcodebuild with automatic signing should handle it
-            build_ipa(export_method: "app-store", env: env_value)
+            build_ipa(export_method: "app-store")
             build_success = true
           rescue => setup_ex
             UI.error("")
@@ -826,7 +813,7 @@ platform :ios do
     UI.message("")
     UI.important("ℹ️  'Successfully uploaded' = Apple's servers received the file. Build may take 5–30 min to appear (or fail processing → check email).")
     UI.message("📋 If build never appears: App Store Connect → Triftly → TestFlight → 构建版本上传 → 查看更多; or check email for processing errors.")
-    UI.message("📋 Verbose logs: bundle exec fastlane ios upload_testflight env:prod --verbose")
+    UI.message("📋 Verbose logs: bundle exec fastlane ios upload_testflight --verbose")
     UI.message("")
     
     release_notes = generate_release_notes
@@ -856,7 +843,7 @@ platform :ios do
         UI.important("")
 
         version_name, new_build_number = increment_build_number_in_pubspec
-        build_ipa(export_method: "app-store", env: env_value)
+        build_ipa(export_method: "app-store")
         ipa_path = ensure_runner_ipa_path!
 
         version_match = File.read(pubspec_path).match(/^version:\s*(\d+\.\d+\.\d+)\+(\d+)/)

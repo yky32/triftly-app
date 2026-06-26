@@ -174,7 +174,7 @@ class _IdentityCard extends StatelessWidget {
     } else if (isSignedIn) {
       subtitle = user.email ?? 'Signed in';
     } else if (!Environment.hasSupabase) {
-      subtitle = 'Run with dart_defines for cloud sign-in';
+      subtitle = 'Add secrets to env/.env.local for cloud sign-in';
     } else {
       subtitle = 'Sign in to sync trips';
     }

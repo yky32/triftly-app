@@ -1,6 +1,0 @@
-{
-  "ENV": "dev",
-  "SUPABASE_URL": "",
-  "SUPABASE_PUBLISHABLE_KEY": "",
-  "GOOGLE_MAPS_API_KEY": ""
-}

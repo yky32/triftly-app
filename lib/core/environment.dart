@@ -1,29 +1,54 @@
+import 'local_env_reader.dart';
+
+/// Single Supabase project for local dev and TestFlight (no separate staging).
 class Environment {
-  static const String _env = String.fromEnvironment('ENV', defaultValue: 'dev');
+  static Map<String, String> _local = const {};
 
-  static bool get isDev => _env == 'dev';
-  static bool get isProd => _env == 'prod';
-  static bool get isStag => _env == 'stag';
+  /// Loads [env/.env.local] when compile-time defines are not set (local dev).
+  static Future<void> load() async {
+    _local = await LocalEnvReader.loadFromAssets();
+  }
 
-  static String get envName => _env;
+  static const String _compileEnv = String.fromEnvironment('ENV', defaultValue: '');
+
+  static String get envName {
+    if (_compileEnv.isNotEmpty) return _compileEnv;
+    return _local['ENV'] ?? _local['APP_ENV'] ?? 'prod';
+  }
 
   // Supabase
-  static const String supabaseUrl = String.fromEnvironment(
+  static const String _compileSupabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://your-project.supabase.co',
+    defaultValue: '',
   );
 
-  /// New opaque publishable key (`sb_publishable_…`). Preferred over legacy anon JWT.
-  static const String supabasePublishableKey = String.fromEnvironment(
+  static const String _compileSupabasePublishableKey = String.fromEnvironment(
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: '',
   );
 
-  /// Legacy anon JWT — still accepted when publishable key is unset.
-  static const String supabaseAnonKey = String.fromEnvironment(
+  static const String _compileSupabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'your-anon-key',
+    defaultValue: '',
   );
+
+  static String get supabaseUrl {
+    final compiled = _compileSupabaseUrl.trim();
+    if (_isUsableSupabaseUrl(compiled)) return compiled;
+    return (_local['SUPABASE_URL'] ?? '').trim();
+  }
+
+  static String get supabasePublishableKey {
+    final compiled = _compileSupabasePublishableKey.trim();
+    if (compiled.isNotEmpty) return compiled;
+    return (_local['SUPABASE_PUBLISHABLE_KEY'] ?? '').trim();
+  }
+
+  static String get supabaseAnonKey {
+    final compiled = _compileSupabaseAnonKey.trim();
+    if (compiled.isNotEmpty && compiled != 'your-anon-key') return compiled;
+    return (_local['SUPABASE_ANON_KEY'] ?? '').trim();
+  }
 
   static String get supabaseClientKey {
     if (supabasePublishableKey.isNotEmpty) return supabasePublishableKey;
@@ -31,8 +56,7 @@ class Environment {
   }
 
   static bool get hasSupabase {
-    final urlOk =
-        supabaseUrl.isNotEmpty && !supabaseUrl.contains('your-project');
+    final urlOk = _isUsableSupabaseUrl(supabaseUrl);
     final key = supabaseClientKey;
     final keyOk = key.isNotEmpty &&
         key != 'your-anon-key' &&
@@ -42,8 +66,17 @@ class Environment {
   }
 
   // Google Maps
-  static const String googleMapsApiKey = String.fromEnvironment(
+  static const String _compileGoogleMapsApiKey = String.fromEnvironment(
     'GOOGLE_MAPS_API_KEY',
     defaultValue: '',
   );
+
+  static String get googleMapsApiKey {
+    final compiled = _compileGoogleMapsApiKey.trim();
+    if (compiled.isNotEmpty) return compiled;
+    return (_local['GOOGLE_MAPS_API_KEY'] ?? '').trim();
+  }
+
+  static bool _isUsableSupabaseUrl(String url) =>
+      url.isNotEmpty && !url.contains('your-project');
 }

@@ -71,13 +71,32 @@ lib/
 
 ## Getting Started
 
+**One environment** — local simulator and TestFlight use the same Supabase project and API keys.
+
 ```bash
 flutter pub get
-cp env/.env.local.example env/.env.local   # fill from GitHub secrets
-./tool/dart_defines.sh dev flutter run
 ```
 
-Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`). See `env/README.md`.
+Create `env/.env.local` (gitignored) with the **same values** as [GitHub secrets](https://github.com/yky32/triftly-app/settings/secrets/actions):
+
+```
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+GOOGLE_MAPS_API_KEY=
+```
+
+Then run from IntelliJ / Cursor or:
+
+```bash
+flutter run
+```
+
+| Where | Keys from |
+|-------|-----------|
+| Local (`flutter run`) | `env/.env.local` |
+| TestFlight (CI) | GitHub secrets |
+
+`env/.env.prod` is committed metadata only — no API keys in git.
 
 ---
 
@@ -97,8 +116,8 @@ Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`). See 
 - **iOS deployment:** Fastlane → TestFlight (`bundle exec fastlane ios upload_testflight`)
 - **Android deployment:** TBD (Play Console)
 - GitHub Actions: `.github/workflows/deploy.yml` (migrate → TestFlight), `.github/workflows/migrate-supabase.yml` (migrations only, manual)
-- **Secrets:** single source of truth in GitHub — see `env/README.md`
-- Never put credentials in committed `env/.env.*` files or `ios/fastlane/.env.default`
+- **Secrets:** single source of truth in GitHub (see Getting Started above)
+- Never commit `env/.env.local` or put credentials in `ios/fastlane/.env.default`
 
 ---
 

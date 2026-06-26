@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/bootstrap/app_bootstrap.dart';
 import 'core/bootstrap/bootstrap_error_app.dart';
+import 'core/environment.dart';
 import 'core/theme/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Environment.load();
 
   FlutterError.onError = (details) {
     developer.log(

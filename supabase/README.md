@@ -51,15 +51,15 @@ Never put `sb_secret_…` / `service_role` in the app or git.
 
 ## 4. Local run
 
-Copy `env/.env.local.example` → `env/.env.local` and fill the same values as GitHub secrets, then:
+Create `env/.env.local` with the same values as GitHub secrets, then:
 
 ```bash
-./tool/dart_defines.sh dev flutter run
+flutter run
 ```
 
 ## 5. TestFlight / CI
 
-All app keys live in GitHub repository secrets (see `env/README.md`):
+All app keys live in GitHub repository secrets:
 
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `GOOGLE_MAPS_API_KEY` — TestFlight
 - `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` — migrations only

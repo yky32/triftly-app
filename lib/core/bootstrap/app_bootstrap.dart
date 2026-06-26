@@ -49,8 +49,7 @@ class AppBootstrap {
       }
     } else if (kDebugMode) {
       debugPrint(
-        'Supabase OFF — run via ./tool/dart_defines.sh dev flutter run '
-        'or VS Code launch "triftly (dev + Supabase)". '
+        'Supabase OFF — add secrets to env/.env.local, then restart. '
         'Sign-in uses local guest mode only.',
       );
     }
