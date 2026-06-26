@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/constants/app_page.dart';
+import '../../../../core/models/spend_overview_models.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -52,7 +53,7 @@ class _ViewState extends State<_View> {
           }
 
           final body = _buildBody(context, state);
-          if (state.overview != null) {
+          if (state.overview != null && state.errorMessage == null) {
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<SpendOverviewBloc>().add(const SpendOverviewReloadRequested());
@@ -81,22 +82,20 @@ class _ViewState extends State<_View> {
     }
 
     final overview = state.overview;
-    if (overview == null || overview.isEmpty) {
-      return EmptyState(
-        expand: true,
-        icon: Icons.account_balance_wallet_outlined,
-        title: 'Your wallet is empty',
-        subtitle: 'Log expenses in a trip and they will appear here.',
-        action: () => context.go(AppPage.plan.path),
-        actionLabel: 'Go to Trips',
-      );
+    if (overview == null) {
+      return const SizedBox.shrink();
     }
 
+    return _buildWalletScroll(context, overview);
+  }
+
+  Widget _buildWalletScroll(BuildContext context, GlobalSpendOverview overview) {
     final summary = SpendWalletSummary.from(overview);
     final selected = _selectedPhase ?? overview.defaultPhase();
     final trips = overview.sortedTrips(phase: selected);
     final balances = overview.buddyOweLines;
     final counts = overview.phaseCounts;
+    final hasTripSpending = overview.tripsWithSpending.isNotEmpty;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -112,7 +111,7 @@ class _ViewState extends State<_View> {
           const SizedBox(height: AppSpacing.lg),
           SpendWalletBalances(lines: balances),
         ],
-        if (overview.tripsWithSpending.isNotEmpty) ...[
+        if (hasTripSpending) ...[
           const SizedBox(height: AppSpacing.xl),
           SpendSectionTitle(title: 'Trips', count: trips.length),
           const SizedBox(height: AppSpacing.sm),
@@ -126,6 +125,15 @@ class _ViewState extends State<_View> {
             SpendWalletTrips(snapshots: trips)
           else
             _buildPhaseEmpty(selected),
+        ] else ...[
+          const SizedBox(height: AppSpacing.xl),
+          EmptyState(
+            compact: true,
+            icon: Icons.receipt_long_outlined,
+            title: 'No expenses yet',
+            action: () => context.go(AppPage.plan.path),
+            actionLabel: 'Go to Trips',
+          ),
         ],
         const SizedBox(height: AppSpacing.xl),
         SpendWalletActivity(
@@ -140,21 +148,18 @@ class _ViewState extends State<_View> {
   }
 
   Widget _buildPhaseEmpty(TripPhase phase) {
-    final (icon, title, subtitle) = switch (phase) {
+    final (icon, title) = switch (phase) {
       TripPhase.inProgress => (
           Icons.flight_takeoff_outlined,
-          'No spending on active trips',
-          'Expenses from trips in progress show up here',
+          'No active trip spending',
         ),
       TripPhase.upcoming => (
           Icons.event_outlined,
-          'No spending on upcoming trips',
-          'Pre-trip costs will appear here',
+          'No upcoming trip spending',
         ),
       TripPhase.completed => (
           Icons.check_circle_outline_rounded,
-          'No spending on past trips',
-          'Completed trip expenses will appear here',
+          'No past trip spending',
         ),
     };
 
@@ -162,7 +167,6 @@ class _ViewState extends State<_View> {
       compact: true,
       icon: icon,
       title: title,
-      subtitle: subtitle,
     );
   }
 

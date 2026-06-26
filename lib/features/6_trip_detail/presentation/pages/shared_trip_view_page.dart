@@ -55,10 +55,9 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
             body: EmptyState(
               expand: true,
               icon: Icons.link_off_rounded,
-              title: 'Trip not found',
-              subtitle: 'This share link may have expired or been removed.',
+              title: 'Link not found',
               action: () => context.go('/plan'),
-              actionLabel: 'Go to trips',
+              actionLabel: 'Go to Trips',
             ),
           );
         }

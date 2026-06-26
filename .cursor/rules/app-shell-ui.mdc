@@ -37,20 +37,19 @@ Pick the lightest pattern that fits the slot:
 
 ```
 Full tab / list has zero items?
-  └─ YES → EmptyState (56px outline icon, bold title, muted subtitle, teal pill CTA via EmptyStateActionButton)
+  └─ YES → EmptyState — icon chip + one-line title + optional glass pill CTA (no card shell, no eyebrow)
            Use `expand: true` for tab-root; `compact: true` for phase-filter slots
-           Examples: Trips, Spend wallet, recent expenses, trip not found
 
 Trip sub-tab with no data yet (Map / Plan day / etc.)?
   └─ YES → Does the tab need a visual preview or cross-tab link?
            ├─ YES → Glass hero empty (MapEmptyState, MapDayEmptyState, MapUnmappedHero)
            │        Use SpendGlassShell / MapPreviewGraphic; primary CTA links to Plan or action
-           └─ NO  → TripInlineEmptyCard (Plan day slot, compact suggestions + optional action)
-                    Standard AppCard, emoji header, suggestion chips
+           └─ NO  → TripInlineEmptyCard (Plan day slot — `SpendGlassShell`, suggestion chips)
 
 Metric / summary slot with $0?
   └─ YES → Glass metric card with compact badge — NOT a paragraph empty state
            Examples: SpendOverviewMetricCard, "$0 spent", badge "No expenses"
+           Global Spend empty wallet: always show `SpendWalletCard` at $0, then compact hint below
            See liquid-glass-ui.mdc
 
 Inline stat hint on Plan (today spending)?

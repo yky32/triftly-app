@@ -24,8 +24,7 @@ class SpendRecentAllPage extends StatelessWidget {
             return const EmptyState(
               expand: true,
               icon: Icons.receipt_long_outlined,
-              title: 'No recent expenses',
-              subtitle: 'Trip spending will show up here once you log expenses.',
+              title: 'Nothing recent',
             );
           }
 

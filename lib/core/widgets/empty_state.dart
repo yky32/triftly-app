@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'glass_surface.dart';
+import 'spend_glass_shell.dart';
 import 'triftly_motion.dart';
 
-/// Soft circular icon backdrop for empty states.
+/// Frosted icon chip — matches wallet / spend metric chips.
 class EmptyStateIconWell extends StatelessWidget {
   const EmptyStateIconWell({
     required this.icon,
@@ -17,48 +19,30 @@ class EmptyStateIconWell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final wellSize = compact ? 72.0 : 96.0;
-    final iconSize = compact ? 32.0 : 40.0;
+    final wellSize = compact ? 48.0 : 56.0;
+    final iconSize = compact ? 22.0 : 26.0;
+    final radius = compact ? AppRadii.md : AppRadii.lg;
 
-    return Container(
-      width: wellSize,
-      height: wellSize,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  AppColors.primary.withValues(alpha: 0.24),
-                  AppColors.surfaceElevatedDark,
-                ]
-              : [
-                  AppColors.primaryMuted,
-                  const Color(0xFFECFDF5),
-                ],
+    return Material(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : AppColors.primary.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: wellSize,
+        height: wellSize,
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
         ),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: isDark ? 0.28 : 0.14),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: compact ? 12 : 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(
-        icon,
-        size: iconSize,
-        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
       ),
     );
   }
 }
 
-/// Primary CTA for [EmptyState] and inline empty cards — teal gradient pill.
+/// Frosted pill CTA — text only for minimal empty states.
 class EmptyStateActionButton extends StatelessWidget {
   const EmptyStateActionButton({
     required this.label,
@@ -71,38 +55,23 @@ class EmptyStateActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.primaryLight : AppColors.primaryDark;
+
     return Pressable(
       onTap: onPressed,
-      child: Container(
-        width: double.infinity,
-        height: 54,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryLight,
-              AppColors.primary,
-              AppColors.primaryDark,
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        blur: 22,
+        tint: SpendGlassShell.tint(isDark),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppSpacing.xl),
         child: Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 15,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.15,
-            color: Colors.white,
+            letterSpacing: 0.05,
+            color: accent,
           ),
         ),
       ),
@@ -110,9 +79,7 @@ class EmptyStateActionButton extends StatelessWidget {
   }
 }
 
-/// Centered icon + title + subtitle + optional pill CTA.
-///
-/// Reference: Trips tab when the list is empty (`No trips yet`).
+/// Minimal empty hero — icon, one line, optional glass CTA.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     required this.icon,
@@ -137,7 +104,7 @@ class EmptyState extends StatelessWidget {
   /// Tighter layout for phase-filter slots inside a list.
   final bool compact;
 
-  static const double _contentMaxWidth = 300;
+  static const double _contentMaxWidth = 280;
 
   @override
   Widget build(BuildContext context) {
@@ -151,33 +118,34 @@ class EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           EmptyStateIconWell(icon: icon, compact: compact),
-          SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+          SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
           Text(
             title,
             style: TextStyle(
-              fontSize: compact ? 18 : 22,
+              fontSize: compact ? 17 : 18,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
-              height: 1.15,
+              letterSpacing: -0.35,
+              height: 1.2,
               color: titleColor,
             ),
             textAlign: TextAlign.center,
           ),
           if (subtitle != null) ...[
-            SizedBox(height: compact ? AppSpacing.sm : 10),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: compact ? 15 : 16,
-                fontWeight: FontWeight.w400,
-                height: 1.5,
-                color: subtitleColor,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: subtitleColor,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
           if (action != null && actionLabel != null) ...[
-            SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xxl),
+            SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
             EmptyStateActionButton(label: actionLabel!, onPressed: action!),
           ],
         ],
@@ -185,36 +153,20 @@ class EmptyState extends StatelessWidget {
     );
 
     if (expand) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final navInset = AppSpacing.navIslandOccupiedHeight(context);
+      final navInset = AppSpacing.navIslandOccupiedHeight(context);
 
-          return SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  navInset * 0.55,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [content],
-                ),
-              ),
-            ),
-          );
-        },
+      return SizedBox.expand(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, navInset),
+          child: Center(child: content),
+        ),
       );
     }
 
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: compact ? AppSpacing.lg : AppSpacing.xxl,
+        vertical: compact ? AppSpacing.md : AppSpacing.lg,
       ),
       child: Center(child: content),
     );

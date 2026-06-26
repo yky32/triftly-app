@@ -116,7 +116,6 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
               expand: true,
               icon: Icons.travel_explore_outlined,
               title: 'Trip not found',
-              subtitle: state.error ?? 'This trip may have been deleted.',
               action: () => _handleBack(context),
               actionLabel: 'Go back',
             ),
