@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'sheet_form_primitives.dart';
+import 'sheet_keyboard_dismiss.dart';
 import 'triftly_motion.dart';
 
 /// Travel-themed time picker — bottom sheet with drum wheels and quick presets.
@@ -30,10 +31,12 @@ class TripTimePickerSheet extends StatefulWidget {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => TripTimePickerSheet(
-        initialTime: initialTime,
-        accentColor: accentColor,
-        title: title,
+      builder: (_) => SheetKeyboardDismiss(
+        child: TripTimePickerSheet(
+          initialTime: initialTime,
+          accentColor: accentColor,
+          title: title,
+        ),
       ),
     );
   }
