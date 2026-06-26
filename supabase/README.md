@@ -56,6 +56,22 @@ The app handles this via `AuthRedirect.url` (`lib/core/auth/auth_redirect.dart`)
 3. Add authorized redirect URI from Supabase dashboard to Google OAuth client
 4. Smoke test: Me → Sign in → **Continue with Google**
 
+### Auth debug logs (local dev)
+
+In debug builds, auth events print with a fixed prefix — filter the console with **`🔐 AUTH`**:
+
+| Glyph | Meaning |
+|-------|---------|
+| `🌐` | OAuth browser flow |
+| `🔗` | Deep link received |
+| `👤` | Session / auth state |
+| `☁️` | Cloud trip sync |
+| `✅` | Success |
+| `❌` | Error |
+| `·` | General info |
+
+Example: `🔐 AUTH ✅ │ Sign-in successful: you@email.com (uuid)`
+
 ## 3. App keys (client-safe only)
 
 Stored in **GitHub repository secrets** — not in committed env files.

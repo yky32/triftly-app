@@ -47,11 +47,12 @@ class SupabaseAuthRepository implements AuthRepository {
       _user = _userFromAuth(session!.user);
       authDebugLog(
         'Restored session on init: ${_user!.email} (${_user!.id})',
+        kind: AuthLogKind.session,
       );
       unawaited(_upsertUserSafe(_user!));
       _controller.add(_user);
     } else {
-      authDebugLog('No Supabase session on init');
+      authDebugLog('No Supabase session on init', kind: AuthLogKind.session);
     }
     supabase.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       authDebugLog(
@@ -59,13 +60,14 @@ class SupabaseAuthRepository implements AuthRepository {
         'hasSession=${data.session != null} '
         'userId=${data.session?.user.id} '
         'email=${data.session?.user.email}',
+        kind: AuthLogKind.session,
       );
       final authUser = data.session?.user;
       _user = authUser == null ? null : _userFromAuth(authUser);
       if (data.event == supabase.AuthChangeEvent.signedIn && _user != null) {
-        authDebugLog('Sign-in successful: ${_user!.email} (${_user!.id})');
+        authDebugLog('Sign-in successful: ${_user!.email} (${_user!.id})', kind: AuthLogKind.success);
       } else if (data.event == supabase.AuthChangeEvent.signedOut) {
-        authDebugLog('Signed out');
+        authDebugLog('Signed out', kind: AuthLogKind.session);
       }
       _controller.add(_user);
     });
@@ -107,6 +109,7 @@ class SupabaseAuthRepository implements AuthRepository {
     final launchMode = googleOAuthLaunchMode();
     authDebugLog(
       'Launching Google OAuth → redirectTo=${AuthRedirect.url} mode=$launchMode',
+      kind: AuthLogKind.oauth,
     );
     try {
       final launched = await supabase.Supabase.instance.client.auth.signInWithOAuth(
@@ -120,9 +123,10 @@ class SupabaseAuthRepository implements AuthRepository {
       authDebugLog(
         'OAuth browser opened — complete sign-in in Safari, '
         'then return to Triftly via ${AuthRedirect.url}',
+        kind: AuthLogKind.oauth,
       );
     } catch (e, st) {
-      authDebugLog('signInWithOAuth failed', error: e, stackTrace: st);
+      authDebugLog('signInWithOAuth failed', kind: AuthLogKind.error, error: e, stackTrace: st);
       rethrow;
     }
   }

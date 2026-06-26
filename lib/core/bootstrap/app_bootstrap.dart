@@ -39,7 +39,7 @@ class AppBootstrap {
         );
         supabaseReady = true;
         if (kDebugMode) {
-          debugPrint('Supabase ready: $url');
+          authDebugLog('Supabase init completed → $url', kind: AuthLogKind.session);
           _watchDeepLinksForDebug();
         }
       } catch (error, stack) {
@@ -72,17 +72,18 @@ class AppBootstrap {
 
     auth.authStateChanges.listen((user) async {
       if (user != null && CloudTripSync.isCloudUserId(user.id)) {
-        authDebugLog('Cloud sync starting for ${user.email} (${user.id})');
+        authDebugLog('Cloud sync starting for ${user.email} (${user.id})', kind: AuthLogKind.sync);
         try {
           await CloudTripSync.syncForUser(
             user,
             tripRepository,
             migrateLocalTrips: true,
           );
-          authDebugLog('Cloud sync finished for ${user.id}');
+          authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
         } catch (error, stack) {
           authDebugLog(
             'Cloud sync after sign-in failed',
+            kind: AuthLogKind.error,
             error: error,
             stackTrace: stack,
           );
@@ -109,7 +110,7 @@ class AppBootstrap {
     final appLinks = AppLinks();
     // Do not call getInitialLink() — Supabase owns that once per app lifetime.
     appLinks.uriLinkStream.listen((uri) {
-      authDebugLog('Deep link received: $uri');
+      authDebugLog('Deep link received: $uri', kind: AuthLogKind.deepLink);
     });
   }
 }
