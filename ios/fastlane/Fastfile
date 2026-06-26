@@ -296,19 +296,15 @@ def ensure_associated_domains_for_app!(app_identifier: "com.triftly")
   connect_api_for_spaceship unless Spaceship::ConnectAPI.token
   UI.user_error!("App Store Connect API key required to enable Associated Domains") unless Spaceship::ConnectAPI.token
 
-  bundle_ids = Spaceship::ConnectAPI::BundleId.all(filter: { identifier: app_identifier })
-  UI.user_error!("Bundle ID #{app_identifier} not found in App Store Connect") if bundle_ids.empty?
+  bundle_id = Spaceship::ConnectAPI::BundleId.find(app_identifier)
+  UI.user_error!("Bundle ID #{app_identifier} not found in App Store Connect") unless bundle_id
 
-  bundle_id = bundle_ids.first
   capability_type = Spaceship::ConnectAPI::BundleIdCapability::Type::ASSOCIATED_DOMAINS
   existing = Spaceship::ConnectAPI::BundleIdCapability.all(bundle_id_id: bundle_id.id)
   return false if existing.any? { |cap| cap.capability_type == capability_type }
 
   UI.message("🔗 Enabling Associated Domains for #{app_identifier}...")
-  Spaceship::ConnectAPI::BundleIdCapability.create(
-    bundle_id_id: bundle_id.id,
-    capability_type: capability_type
-  )
+  bundle_id.update_capability(capability_type, enabled: true)
   true
 end
 
