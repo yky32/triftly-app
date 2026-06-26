@@ -80,11 +80,11 @@ class _ViewState extends State<_View> {
           builder: (context, state) {
             if (state.isLoading && state.trips.isEmpty) return _buildLoading();
             if (state.trips.isEmpty) {
-              return ListView(
+              return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.55,
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
                     child: _buildEmpty(context),
                   ),
                 ],
@@ -153,14 +153,18 @@ class _ViewState extends State<_View> {
         ),
         Expanded(
           child: trips.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.sizeOf(context).height * 0.4,
-                      child: _buildPhaseEmpty(selected),
-                    ),
-                  ],
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: constraints.maxHeight,
+                          child: Center(child: _buildPhaseEmpty(selected)),
+                        ),
+                      ],
+                    );
+                  },
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
@@ -189,12 +193,10 @@ class _ViewState extends State<_View> {
         ),
     };
 
-    return Center(
-      child: EmptyState(
-        compact: true,
-        icon: icon,
-        title: title,
-      ),
+    return EmptyState(
+      compact: true,
+      icon: icon,
+      title: title,
     );
   }
 

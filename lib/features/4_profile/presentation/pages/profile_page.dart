@@ -175,7 +175,7 @@ class _IdentityCard extends StatelessWidget {
     final String subtitle;
     if (isCloudSignedIn && user != null) {
       title = user.displayName;
-      subtitle = user.email != null ? 'Signed in · ${user.email}' : 'Signed in';
+      subtitle = user.email ?? '';
     } else if (isLocalGuest) {
       title = user.displayName;
       subtitle = 'Local only — Supabase not configured';
@@ -216,11 +216,12 @@ class _IdentityCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),

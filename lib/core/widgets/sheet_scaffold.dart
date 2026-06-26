@@ -26,6 +26,7 @@ class SheetScaffold extends StatelessWidget {
     required bool swipeEnabled,
     required VoidCallback onSwipeConfirmed,
     Key? swipeKey,
+    SwipeToConfirmStyle swipeStyle = SwipeToConfirmStyle.primary,
     bool showCloseButton = false,
     bool compact = false,
   }) =>
@@ -36,6 +37,7 @@ class SheetScaffold extends StatelessWidget {
           key: swipeKey,
           label: swipeLabel,
           enabled: swipeEnabled,
+          style: swipeStyle,
           onConfirmed: onSwipeConfirmed,
         ),
         child: child,

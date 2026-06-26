@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
+import '../../../../core/widgets/swipe_to_confirm.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/user_display_name_label.dart';
@@ -133,6 +134,7 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
           compact: true,
           swipeKey: ValueKey(_swipeKey),
           swipeLabel: 'Slide to sign out',
+          swipeStyle: SwipeToConfirmStyle.destructive,
           swipeEnabled: !_signingOut && !_editingDisplayName && !_savingName,
           onSwipeConfirmed: _signOut,
           child: Column(
@@ -162,32 +164,17 @@ class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
                             color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
                           ),
                     ),
-                    if (user.email != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        user.email!,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.verified_rounded, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Signed in',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                if (user.email != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    user.email!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
+          ),
               const SizedBox(height: AppSpacing.md),
               if (_editingDisplayName)
                 SheetSoftCard(

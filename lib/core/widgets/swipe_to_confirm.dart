@@ -4,18 +4,29 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
+/// Visual style for [SwipeToConfirm].
+enum SwipeToConfirmStyle {
+  /// Teal fill follows the thumb from the start (sign-in, create trip, …).
+  primary,
+
+  /// Red fill fades in after 50% drag — for sign-out and other destructive actions.
+  destructive,
+}
+
 /// Modern swipe-to-confirm track — slide the thumb right to complete.
 class SwipeToConfirm extends StatefulWidget {
   const SwipeToConfirm({
     required this.label,
     required this.onConfirmed,
     this.enabled = true,
+    this.style = SwipeToConfirmStyle.primary,
     super.key,
   });
 
   final String label;
   final VoidCallback onConfirmed;
   final bool enabled;
+  final SwipeToConfirmStyle style;
 
   @override
   State<SwipeToConfirm> createState() => _SwipeToConfirmState();
@@ -74,6 +85,98 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
   }
 
   double get _progress => _maxDrag <= 0 ? 0 : (_dragOffset / _maxDrag).clamp(0.0, 1.0);
+
+  bool get _isDestructive => widget.style == SwipeToConfirmStyle.destructive;
+
+  /// Destructive: hold neutral until 50%, then ease into full red.
+  double get _destructiveColorBlend {
+    if (!_isDestructive) return 1;
+    if (_progress <= 0.5) return 0;
+    final t = ((_progress - 0.5) / 0.5).clamp(0.0, 1.0);
+    return Curves.easeInOutCubic.transform(t);
+  }
+
+  double get _fillColorBlend => _destructiveColorBlend;
+
+  /// Softer reveal so the red wash eases in rather than popping.
+  double get _fillRevealOpacity {
+    if (!_isDestructive) return 1;
+    return Curves.easeOutCubic.transform(_destructiveColorBlend);
+  }
+
+  Color _accentColor(double blend, bool isDark) {
+    if (_isDestructive) {
+      final neutral = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+      return Color.lerp(neutral, AppColors.error, blend) ?? AppColors.error;
+    }
+    return AppColors.primary;
+  }
+
+  Color _labelColor(bool isDark, double blend) {
+    final neutral = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    if (!_isDestructive) {
+      return _progress > 0.35
+          ? Colors.white.withValues(alpha: 0.92)
+          : neutral;
+    }
+
+    final restTint = Color.lerp(neutral, AppColors.error, isDark ? 0.34 : 0.28) ?? neutral;
+
+    if (blend <= 0) return restTint;
+
+    if (blend < 0.5) {
+      final t = Curves.easeOutCubic.transform(blend / 0.5);
+      final onTrackRed = Color.lerp(
+        AppColors.error,
+        isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444),
+        isDark ? 0.35 : 0.2,
+      )!;
+      return Color.lerp(restTint, onTrackRed, t) ?? onTrackRed;
+    }
+
+    final t = Curves.easeInOutCubic.transform((blend - 0.5) / 0.5);
+    final onFillWhite = Colors.white.withValues(alpha: isDark ? 0.96 : 0.94);
+    final midRed = Color.lerp(
+      AppColors.error,
+      isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444),
+      isDark ? 0.35 : 0.2,
+    )!;
+    return Color.lerp(midRed, onFillWhite, t) ?? onFillWhite;
+  }
+
+  double _labelFadeOpacity() {
+    if (_isDestructive) {
+      return (1 - _progress * 0.95).clamp(0.0, 1.0);
+    }
+    return (1 - _progress * 1.25).clamp(0.0, 1.0);
+  }
+
+  double _thumbGlowAlpha(double blend) {
+    if (!widget.enabled) return 0.08;
+    if (_isDestructive) {
+      return 0.06 + blend * (0.12 + _progress * 0.2);
+    }
+    return 0.18 + _progress * 0.22;
+  }
+
+  List<Color> _fillGradientColors(bool isDark, double blend) {
+    if (!widget.enabled) {
+      return [
+        AppColors.border.withValues(alpha: 0.5),
+        AppColors.border.withValues(alpha: 0.7),
+      ];
+    }
+
+    final accent = _accentColor(blend, isDark);
+    final depth = Color.lerp(accent, const Color(0xFFB91C1C), blend * 0.4) ?? accent;
+    final strength = _isDestructive ? (0.25 + blend * 0.75) : 1.0;
+
+    return [
+      accent.withValues(alpha: (isDark ? 0.42 : 0.32) * strength),
+      depth.withValues(alpha: (isDark ? 0.62 : 0.52) * strength),
+    ];
+  }
 
   void _onDragStart(DragStartDetails details) {
     if (!widget.enabled || _confirmed) return;
@@ -159,8 +262,12 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
       builder: (context, constraints) {
         _maxDrag = constraints.maxWidth - _thumbSize - (_inset * 2);
         final fillWidth = (_dragOffset + _thumbSize + _inset).clamp(_thumbSize, constraints.maxWidth);
-        final labelOpacity = (1 - _progress * 1.25).clamp(0.0, 1.0);
+        final labelOpacity = _labelFadeOpacity();
         final thumbScale = _isDragging ? 1.03 : 1.0;
+        final fillBlend = _fillColorBlend;
+        final fillReveal = _fillRevealOpacity;
+        final accent = _accentColor(fillBlend, isDark);
+        final labelColor = _labelColor(isDark, fillBlend);
 
         return AnimatedOpacity(
           duration: const Duration(milliseconds: 240),
@@ -191,21 +298,16 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
                   top: 0,
                   bottom: 0,
                   width: fillWidth,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: widget.enabled
-                            ? [
-                                AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.35),
-                                AppColors.primary.withValues(alpha: isDark ? 0.65 : 0.55),
-                              ]
-                            : [
-                                AppColors.border.withValues(alpha: 0.5),
-                                AppColors.border.withValues(alpha: 0.7),
-                              ],
+                  child: Opacity(
+                    opacity: fillReveal,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: _fillGradientColors(isDark, fillBlend),
+                        ),
                       ),
                     ),
                   ),
@@ -224,9 +326,7 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: -0.25,
-                                color: _progress > 0.35
-                                    ? Colors.white.withValues(alpha: 0.92)
-                                    : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+                                color: labelColor,
                               ),
                             ),
                             if (widget.enabled && !_confirmed && !_isDragging) ...[
@@ -236,7 +336,7 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
                                 builder: (context, _) {
                                   return Opacity(
                                     opacity: 0.35 + (_hintController.value * 0.45),
-                                    child: const _ChevronPair(size: 16),
+                                    child: _ChevronPair(size: 16, color: accent),
                                   );
                                 },
                               ),
@@ -270,9 +370,7 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withValues(
-                                alpha: widget.enabled ? (0.18 + _progress * 0.22) : 0.08,
-                              ),
+                              color: accent.withValues(alpha: _thumbGlowAlpha(fillBlend)),
                               blurRadius: 12 + (_progress * 8),
                               offset: const Offset(0, 3),
                             ),
@@ -288,16 +386,16 @@ class _SwipeToConfirmState extends State<SwipeToConfirm> with TickerProviderStat
                           switchInCurve: Curves.easeOutCubic,
                           switchOutCurve: Curves.easeInCubic,
                           child: _confirmed
-                              ? const Icon(
+                              ? Icon(
                                   Icons.check_rounded,
-                                  key: ValueKey('check'),
-                                  color: AppColors.primary,
+                                  key: const ValueKey('check'),
+                                  color: accent,
                                   size: 26,
                                 )
                               : _ChevronPair(
                                   key: const ValueKey('chevrons'),
                                   size: 22,
-                                  color: widget.enabled ? AppColors.primary : AppColors.textTertiary,
+                                  color: widget.enabled ? accent : AppColors.textTertiary,
                                 ),
                         ),
                       ),
