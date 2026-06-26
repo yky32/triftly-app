@@ -280,19 +280,29 @@ class SheetIconFieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SheetIconTile(icon: icon),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(child: field),
-      ],
+    return SizedBox(
+      height: SheetIconTile.size,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SheetIconTile(icon: icon),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: field,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class SheetIconTile extends StatelessWidget {
   const SheetIconTile({required this.icon, super.key});
+
+  static const double size = 44;
 
   final IconData icon;
 
@@ -301,8 +311,8 @@ class SheetIconTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      width: 44,
-      height: 44,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceElevatedDark : AppColors.primaryMuted.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -370,13 +380,12 @@ class SheetInlineField extends StatelessWidget {
         focusedBorder: InputBorder.none,
         filled: false,
         isDense: true,
+        isCollapsed: maxLines == 1,
         contentPadding: EdgeInsets.zero,
       ),
     );
 
-    if (maxLines > 1) return field;
-
-    return SizedBox(height: 44, child: field);
+    return field;
   }
 }
 
