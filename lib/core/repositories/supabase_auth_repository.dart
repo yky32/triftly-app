@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:url_launcher/url_launcher.dart';
+import '../auth/auth_debug_log.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
@@ -44,12 +45,28 @@ class SupabaseAuthRepository implements AuthRepository {
     final session = supabase.Supabase.instance.client.auth.currentSession;
     if (session?.user != null) {
       _user = _userFromAuth(session!.user);
+      authDebugLog(
+        'Restored session on init: ${_user!.email} (${_user!.id})',
+      );
       unawaited(_upsertUserSafe(_user!));
       _controller.add(_user);
+    } else {
+      authDebugLog('No Supabase session on init');
     }
     supabase.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      authDebugLog(
+        'onAuthStateChange: event=${data.event} '
+        'hasSession=${data.session != null} '
+        'userId=${data.session?.user.id} '
+        'email=${data.session?.user.email}',
+      );
       final authUser = data.session?.user;
       _user = authUser == null ? null : _userFromAuth(authUser);
+      if (data.event == supabase.AuthChangeEvent.signedIn && _user != null) {
+        authDebugLog('Sign-in successful: ${_user!.email} (${_user!.id})');
+      } else if (data.event == supabase.AuthChangeEvent.signedOut) {
+        authDebugLog('Signed out');
+      }
       _controller.add(_user);
     });
   }
@@ -87,11 +104,18 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signInWithGoogle() async {
     if (!_useSupabase) return _local.signInWithGoogle();
-    await supabase.Supabase.instance.client.auth.signInWithOAuth(
-      supabase.OAuthProvider.google,
-      redirectTo: AuthRedirect.url,
-      authScreenLaunchMode: LaunchMode.externalApplication,
-    );
+    authDebugLog('Launching Google OAuth → redirectTo=${AuthRedirect.url}');
+    try {
+      await supabase.Supabase.instance.client.auth.signInWithOAuth(
+        supabase.OAuthProvider.google,
+        redirectTo: AuthRedirect.url,
+        authScreenLaunchMode: LaunchMode.inAppWebView,
+      );
+      authDebugLog('OAuth web view closed — awaiting onAuthStateChange…');
+    } catch (e, st) {
+      authDebugLog('signInWithOAuth failed', error: e, stackTrace: st);
+      rethrow;
+    }
   }
 
   @override

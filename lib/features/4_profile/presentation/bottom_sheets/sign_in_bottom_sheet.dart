@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../../../core/auth/auth_debug_log.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -107,15 +110,48 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       _submitting = true;
       _error = null;
     });
+
+    StreamSubscription? authSub;
     try {
-      await AppBootstrap.userSession.signInWithGoogle();
+      final session = AppBootstrap.userSession;
+      final signedIn = Completer<void>();
+
+      authSub = session.authStateChanges.listen((user) {
+        if (user != null && !user.id.startsWith('local-')) {
+          authDebugLog('Sign-in sheet: cloud user received — ${user.email}');
+          if (!signedIn.isCompleted) signedIn.complete();
+        }
+      });
+
+      await session.signInWithGoogle();
+      authDebugLog('Sign-in sheet: waiting for Supabase session…');
+
+      final userAfterOAuth = session.currentUser;
+      if (userAfterOAuth != null && !userAfterOAuth.id.startsWith('local-')) {
+        authDebugLog('Sign-in sheet: session already active — ${userAfterOAuth.email}');
+        if (!signedIn.isCompleted) signedIn.complete();
+      }
+
+      await signedIn.future.timeout(
+        const Duration(minutes: 2),
+        onTimeout: () {
+          throw TimeoutException(
+            'No session after OAuth — check console for [triftly.auth] logs',
+          );
+        },
+      );
+
       if (!mounted) return;
       Navigator.pop(context);
-    } catch (e) {
+    } catch (e, st) {
+      authDebugLog('Sign-in sheet: Google sign-in failed', error: e, stackTrace: st);
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _submitting = false;
       });
+    } finally {
+      await authSub?.cancel();
     }
   }
 

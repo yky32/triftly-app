@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/auth_debug_log.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
@@ -38,6 +40,7 @@ class AppBootstrap {
         supabaseReady = true;
         if (kDebugMode) {
           debugPrint('Supabase ready: $url');
+          _watchDeepLinksForDebug();
         }
       } catch (error, stack) {
         supabaseReady = false;
@@ -69,16 +72,17 @@ class AppBootstrap {
 
     auth.authStateChanges.listen((user) async {
       if (user != null && CloudTripSync.isCloudUserId(user.id)) {
+        authDebugLog('Cloud sync starting for ${user.email} (${user.id})');
         try {
           await CloudTripSync.syncForUser(
             user,
             tripRepository,
             migrateLocalTrips: true,
           );
+          authDebugLog('Cloud sync finished for ${user.id}');
         } catch (error, stack) {
-          developer.log(
+          authDebugLog(
             'Cloud sync after sign-in failed',
-            name: 'triftly.bootstrap',
             error: error,
             stackTrace: stack,
           );
@@ -99,6 +103,16 @@ class AppBootstrap {
         );
       }
     }
+  }
+
+  static void _watchDeepLinksForDebug() {
+    final appLinks = AppLinks();
+    appLinks.uriLinkStream.listen((uri) {
+      authDebugLog('Deep link received: $uri');
+    });
+    appLinks.getInitialLink().then((uri) {
+      if (uri != null) authDebugLog('Initial deep link: $uri');
+    });
   }
 }
 

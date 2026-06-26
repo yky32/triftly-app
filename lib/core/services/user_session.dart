@@ -32,6 +32,8 @@ class UserSession extends ChangeNotifier {
 
   Future<void> signInWithGoogle() => _auth.signInWithGoogle();
 
+  Stream<User?> get authStateChanges => _auth.authStateChanges;
+
   Future<void> verifyEmailOtp({required String email, required String token}) =>
       _auth.verifyEmailOtp(email: email, token: token);
 
