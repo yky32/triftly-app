@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:triftly/core/auth/auth_user_mapper.dart';
+import 'package:triftly/core/models/user.dart';
 
 void main() {
   group('AuthUserMapper', () {
@@ -33,6 +34,23 @@ void main() {
         }),
         'https://example.com/b.jpg',
       );
+    });
+
+    test('User.signedInWithGoogle reflects signInProvider', () {
+      final googleUser = User(
+        id: 'id',
+        displayName: 'Wayne',
+        signInProvider: 'google',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+      final emailUser = User(
+        id: 'id',
+        displayName: 'Wayne',
+        signInProvider: 'email',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+      expect(googleUser.signedInWithGoogle, isTrue);
+      expect(emailUser.signedInWithGoogle, isFalse);
     });
   });
 }

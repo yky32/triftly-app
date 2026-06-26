@@ -158,6 +158,14 @@ class SupabaseAuthRepository implements AuthRepository {
     _user = user;
     await _preferences.setDefaultCurrency(user.defaultCurrency);
     if (_useSupabase) {
+      await supabase.Supabase.instance.client.auth.updateUser(
+        supabase.UserAttributes(
+          data: {
+            'display_name': user.displayName,
+            'full_name': user.displayName,
+          },
+        ),
+      );
       await supabase.Supabase.instance.client.from('users').upsert(user.toMap());
     }
     _controller.add(_user);

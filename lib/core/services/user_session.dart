@@ -53,6 +53,18 @@ class UserSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateDisplayName(String displayName) async {
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty || _user == null) return;
+    if (trimmed == _user!.displayName) return;
+
+    await _auth.updateUser(_user!.copyWith(
+      displayName: trimmed,
+      updatedAt: DateTime.now(),
+    ));
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _subscription.cancel();

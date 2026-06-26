@@ -16,6 +16,7 @@ import '../bottom_sheets/appearance_bottom_sheet.dart';
 import '../bottom_sheets/default_currency_bottom_sheet.dart';
 import '../bottom_sheets/sign_in_bottom_sheet.dart';
 import '../widgets/profile_avatar.dart';
+import '../widgets/user_display_name_label.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -197,17 +198,21 @@ class _IdentityCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
-                        overflow: TextOverflow.ellipsis,
+                    if (isCloudSignedIn && user != null)
+                      Expanded(
+                        child: UserDisplayNameLabel(
+                          user: user,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    if (isCloudSignedIn) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      Icon(Icons.verified_rounded, size: 18, color: AppColors.primaryDark),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 2),

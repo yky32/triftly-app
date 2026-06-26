@@ -6,6 +6,7 @@ class User extends Equatable {
     required this.displayName,
     this.email,
     this.avatarUrl,
+    this.signInProvider,
     this.defaultCurrency = 'HKD',
     this.locale = 'en',
     required this.updatedAt,
@@ -15,14 +16,19 @@ class User extends Equatable {
   final String displayName;
   final String? email;
   final String? avatarUrl;
+  /// Supabase auth provider id, e.g. `google` or `email`.
+  final String? signInProvider;
   final String defaultCurrency;
   final String locale;
   final DateTime updatedAt;
+
+  bool get signedInWithGoogle => signInProvider == 'google';
 
   User copyWith({
     String? displayName,
     String? email,
     String? avatarUrl,
+    String? signInProvider,
     String? defaultCurrency,
     String? locale,
     DateTime? updatedAt,
@@ -32,6 +38,7 @@ class User extends Equatable {
         displayName: displayName ?? this.displayName,
         email: email ?? this.email,
         avatarUrl: avatarUrl ?? this.avatarUrl,
+        signInProvider: signInProvider ?? this.signInProvider,
         defaultCurrency: defaultCurrency ?? this.defaultCurrency,
         locale: locale ?? this.locale,
         updatedAt: updatedAt ?? this.updatedAt,
@@ -56,5 +63,5 @@ class User extends Equatable {
       );
 
   @override
-  List<Object?> get props => [id, displayName, email, avatarUrl, defaultCurrency];
+  List<Object?> get props => [id, displayName, email, avatarUrl, signInProvider, defaultCurrency];
 }

@@ -14,9 +14,22 @@ abstract final class AuthUserMapper {
       displayName: displayNameFromMetadata(metadata, authUser.email),
       email: authUser.email,
       avatarUrl: avatarUrlFromMetadata(metadata),
+      signInProvider: signInProviderFromAuthUser(authUser),
       defaultCurrency: defaultCurrency,
       updatedAt: DateTime.now(),
     );
+  }
+
+  static String? signInProviderFromAuthUser(supabase.User authUser) {
+    final identities = authUser.identities;
+    if (identities != null) {
+      for (final identity in identities) {
+        if (identity.provider == 'google') return 'google';
+      }
+      if (identities.isNotEmpty) return identities.first.provider;
+    }
+    final fromApp = _nonEmpty(authUser.appMetadata['provider'] as String?);
+    return fromApp;
   }
 
   static String displayNameFromMetadata(
