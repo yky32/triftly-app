@@ -58,6 +58,8 @@ Utility sheet chrome with form-style confirm:
 
 - `SheetSectionHeader` + `SheetSoftCard` + `SheetIconFieldRow` / `SheetInlineField`
 - `SheetScaffold.swipeForm(compact: true)` + `SwipeToConfirm` (**Slide to sign in** / **Slide to verify**)
+- Email: `EmailValidator` — swipe disabled until valid format
+- Social placeholders: `SheetSocialSignInButton` + `SheetGoogleGlyph` (disabled + **Soon** badge)
 - Spacing via `AppSpacing` — no magic numbers
 
 ## Default currency sheet (`default_currency_bottom_sheet.dart`)

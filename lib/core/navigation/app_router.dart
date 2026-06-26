@@ -10,10 +10,16 @@ import '../../features/3_spend/presentation/pages/spend_recent_all_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/6_trip_detail/presentation/pages/shared_trip_view_page.dart';
+import '../../features/splash/presentation/splash_page.dart';
 
 final appRouter = GoRouter(
-  initialLocation: AppPage.plan.path,
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      name: 'splash',
+      builder: (context, state) => const SplashPage(),
+    ),
     GoRoute(
       path: '/s/:token',
       name: 'shared_trip',

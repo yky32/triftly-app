@@ -629,6 +629,106 @@ class SheetCardActionRow extends StatelessWidget {
   }
 }
 
+/// OAuth-style sign-in row (Google, Apple, …). Use [enabled: false] for placeholders.
+class SheetSocialSignInButton extends StatelessWidget {
+  const SheetSocialSignInButton({
+    required this.label,
+    required this.leading,
+    this.onTap,
+    this.enabled = true,
+    this.badge,
+    super.key,
+  });
+
+  final String label;
+  final Widget leading;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final interactive = enabled && onTap != null;
+
+    return Opacity(
+      opacity: interactive ? 1 : 0.55,
+      child: Pressable(
+        onTap: interactive ? onTap : null,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              leading,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              if (badge != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDimDark : AppColors.surfaceDim,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.textTertiaryDark : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Google "G" glyph for social sign-in placeholders.
+class SheetGoogleGlyph extends StatelessWidget {
+  const SheetGoogleGlyph({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.border),
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF4285F4),
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
 /// Full-width primary action for utility sheets (lookup, apply, etc.).
 class SheetPrimaryButton extends StatelessWidget {
   const SheetPrimaryButton({
