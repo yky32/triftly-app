@@ -47,12 +47,30 @@ triftly://login-callback
 
 The app handles this via `AuthRedirect.url` (`lib/core/auth/auth_redirect.dart`) and native URL schemes (`triftly` on iOS/Android).
 
+**iOS:** `AppDelegate` must call `super.application(_:open:options:)` so `app_links` / Supabase receive `triftly://login-callback` after Google OAuth.
+
 ### Google OAuth setup
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → create OAuth client (Web + iOS + Android as needed)
 2. Supabase → **Authentication → Providers → Google** → paste Client ID + Secret
 3. Add authorized redirect URI from Supabase dashboard to Google OAuth client
 4. Smoke test: Me → Sign in → **Continue with Google**
+
+### Auth debug logs (local dev)
+
+In debug builds, auth events print with a fixed prefix — filter the console with **`🔐 AUTH`**:
+
+| Glyph | Meaning |
+|-------|---------|
+| `🌐` | OAuth browser flow |
+| `🔗` | Deep link received |
+| `👤` | Session / auth state |
+| `☁️` | Cloud trip sync |
+| `✅` | Success |
+| `❌` | Error |
+| `·` | General info |
+
+Example: `🔐 AUTH ✅ │ Sign-in successful: you@email.com (uuid)`
 
 ## 3. App keys (client-safe only)
 

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import 'package:url_launcher/url_launcher.dart';
+import '../auth/auth_debug_log.dart';
+import '../auth/auth_user_mapper.dart';
+import '../auth/auth_oauth_launch.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
@@ -44,12 +46,30 @@ class SupabaseAuthRepository implements AuthRepository {
     final session = supabase.Supabase.instance.client.auth.currentSession;
     if (session?.user != null) {
       _user = _userFromAuth(session!.user);
+      authDebugLog(
+        'Restored session on init: ${_user!.email} (${_user!.id})',
+        kind: AuthLogKind.session,
+      );
       unawaited(_upsertUserSafe(_user!));
       _controller.add(_user);
+    } else {
+      authDebugLog('No Supabase session on init', kind: AuthLogKind.session);
     }
     supabase.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      authDebugLog(
+        'onAuthStateChange: event=${data.event} '
+        'hasSession=${data.session != null} '
+        'userId=${data.session?.user.id} '
+        'email=${data.session?.user.email}',
+        kind: AuthLogKind.session,
+      );
       final authUser = data.session?.user;
       _user = authUser == null ? null : _userFromAuth(authUser);
+      if (data.event == supabase.AuthChangeEvent.signedIn && _user != null) {
+        authDebugLog('Sign-in successful: ${_user!.email} (${_user!.id})', kind: AuthLogKind.success);
+      } else if (data.event == supabase.AuthChangeEvent.signedOut) {
+        authDebugLog('Signed out', kind: AuthLogKind.session);
+      }
       _controller.add(_user);
     });
   }
@@ -67,14 +87,9 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
-  User _userFromAuth(supabase.User authUser) => User(
-        id: authUser.id,
-        displayName: authUser.userMetadata?['display_name'] as String? ??
-            authUser.email?.split('@').first ??
-            'Traveler',
-        email: authUser.email,
+  User _userFromAuth(supabase.User authUser) => AuthUserMapper.fromAuthUser(
+        authUser,
         defaultCurrency: _preferences.defaultCurrency,
-        updatedAt: DateTime.now(),
       );
 
   @override
@@ -87,11 +102,29 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signInWithGoogle() async {
     if (!_useSupabase) return _local.signInWithGoogle();
-    await supabase.Supabase.instance.client.auth.signInWithOAuth(
-      supabase.OAuthProvider.google,
-      redirectTo: AuthRedirect.url,
-      authScreenLaunchMode: LaunchMode.externalApplication,
+    final launchMode = googleOAuthLaunchMode();
+    authDebugLog(
+      'Launching Google OAuth → redirectTo=${AuthRedirect.url} mode=$launchMode',
+      kind: AuthLogKind.oauth,
     );
+    try {
+      final launched = await supabase.Supabase.instance.client.auth.signInWithOAuth(
+        supabase.OAuthProvider.google,
+        redirectTo: AuthRedirect.url,
+        authScreenLaunchMode: launchMode,
+      );
+      if (!launched) {
+        throw StateError('Could not open Google sign-in in the browser');
+      }
+      authDebugLog(
+        'OAuth browser opened — complete sign-in in Safari, '
+        'then return to Triftly via ${AuthRedirect.url}',
+        kind: AuthLogKind.oauth,
+      );
+    } catch (e, st) {
+      authDebugLog('signInWithOAuth failed', kind: AuthLogKind.error, error: e, stackTrace: st);
+      rethrow;
+    }
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/cloud_trip_sync.dart';
 import '../services/profile_preferences.dart';
 
 /// Auth state + local preferences exposed to the UI.
@@ -24,6 +25,7 @@ class UserSession extends ChangeNotifier {
 
   User? get currentUser => _user;
   bool get isSignedIn => _user != null;
+  bool get isCloudSignedIn => CloudTripSync.isCloudUserId(_user?.id);
   String get defaultCurrency =>
       _user?.defaultCurrency ?? _preferences.defaultCurrency;
 
@@ -31,6 +33,8 @@ class UserSession extends ChangeNotifier {
       _auth.signInWithEmailOtp(email);
 
   Future<void> signInWithGoogle() => _auth.signInWithGoogle();
+
+  Stream<User?> get authStateChanges => _auth.authStateChanges;
 
   Future<void> verifyEmailOtp({required String email, required String token}) =>
       _auth.verifyEmailOtp(email: email, token: token);

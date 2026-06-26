@@ -5,6 +5,7 @@ class User extends Equatable {
     required this.id,
     required this.displayName,
     this.email,
+    this.avatarUrl,
     this.defaultCurrency = 'HKD',
     this.locale = 'en',
     required this.updatedAt,
@@ -13,6 +14,7 @@ class User extends Equatable {
   final String id;
   final String displayName;
   final String? email;
+  final String? avatarUrl;
   final String defaultCurrency;
   final String locale;
   final DateTime updatedAt;
@@ -20,6 +22,7 @@ class User extends Equatable {
   User copyWith({
     String? displayName,
     String? email,
+    String? avatarUrl,
     String? defaultCurrency,
     String? locale,
     DateTime? updatedAt,
@@ -28,6 +31,7 @@ class User extends Equatable {
         id: id,
         displayName: displayName ?? this.displayName,
         email: email ?? this.email,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
         defaultCurrency: defaultCurrency ?? this.defaultCurrency,
         locale: locale ?? this.locale,
         updatedAt: updatedAt ?? this.updatedAt,
@@ -52,5 +56,5 @@ class User extends Equatable {
       );
 
   @override
-  List<Object?> get props => [id, displayName, email, defaultCurrency];
+  List<Object?> get props => [id, displayName, email, avatarUrl, defaultCurrency];
 }

@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../../../core/auth/auth_debug_log.dart';
+import '../../../../core/models/user.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -54,6 +58,21 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   void _resetSwipe() => setState(() => _swipeKey++);
 
+  /// Defer sheet close — OAuth returns during a navigator build (go_router lock).
+  void _closeSheetSafely() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final navigator = Navigator.of(context, rootNavigator: true);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+    });
+  }
+
+  bool _isCloudUser(User? user) =>
+      user != null && !user.id.startsWith('local-');
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -91,7 +110,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
         _resetSwipe();
         return;
       }
-      Navigator.pop(context);
+      _closeSheetSafely();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -103,19 +122,74 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   Future<void> _signInWithGoogle() async {
     if (_submitting) return;
+
+    final session = AppBootstrap.userSession;
+    if (_isCloudUser(session.currentUser)) {
+      authDebugLog(
+        'Already signed in — closing sheet (${session.currentUser!.email})',
+        kind: AuthLogKind.session,
+      );
+      _closeSheetSafely();
+      return;
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
     });
+
+    StreamSubscription? authSub;
     try {
-      await AppBootstrap.userSession.signInWithGoogle();
+      final signedIn = Completer<void>();
+
+      authSub = session.authStateChanges.listen((user) {
+        if (!_isCloudUser(user)) return;
+        authDebugLog('Sign-in sheet: cloud user received — ${user!.email}', kind: AuthLogKind.success);
+        if (!signedIn.isCompleted) {
+          scheduleMicrotask(() {
+            if (!signedIn.isCompleted) signedIn.complete();
+          });
+        }
+      });
+
+      await session.signInWithGoogle();
+      authDebugLog('Sign-in sheet: waiting for Supabase session…', kind: AuthLogKind.oauth);
+
+      if (_isCloudUser(session.currentUser)) {
+        authDebugLog(
+          'Sign-in sheet: session already active — ${session.currentUser!.email}',
+          kind: AuthLogKind.session,
+        );
+        if (!signedIn.isCompleted) signedIn.complete();
+      }
+
+      await signedIn.future.timeout(
+        const Duration(minutes: 2),
+        onTimeout: () {
+          throw TimeoutException(
+            'No session after OAuth — filter console for 🔐 AUTH',
+          );
+        },
+      );
+
+      _closeSheetSafely();
+    } catch (e, st) {
+      if (_isCloudUser(session.currentUser)) {
+        authDebugLog(
+          'Sign-in succeeded — closing sheet after navigation error',
+          kind: AuthLogKind.success,
+        );
+        _closeSheetSafely();
+        return;
+      }
+      authDebugLog('Sign-in sheet: Google sign-in failed', kind: AuthLogKind.error, error: e, stackTrace: st);
       if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
       setState(() {
         _error = e.toString();
         _submitting = false;
       });
+    } finally {
+      await authSub?.cancel();
     }
   }
 
@@ -130,7 +204,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     try {
       await AppBootstrap.userSession.verifyEmailOtp(email: email, token: code);
       if (!mounted) return;
-      Navigator.pop(context);
+      _closeSheetSafely();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -210,7 +284,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
                   enabled: Environment.hasSupabase &&
                       AppBootstrap.supabaseReady &&
                       !_submitting,
-                  onTap: _signInWithGoogle,
+                  onTap: _submitting ? null : _signInWithGoogle,
                   semanticLabel: 'Continue with Google',
                   child: const GoogleLogoIcon(size: 24),
                 ),

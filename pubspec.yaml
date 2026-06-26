@@ -91,5 +91,6 @@ flutter:
   assets:
     - env/
     - assets/fonts/
+    - assets/icons/
     - assets/lottie/
     - assets/mock/

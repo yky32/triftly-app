@@ -11,9 +11,11 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import '../bottom_sheets/account_bottom_sheet.dart';
 import '../bottom_sheets/appearance_bottom_sheet.dart';
 import '../bottom_sheets/default_currency_bottom_sheet.dart';
 import '../bottom_sheets/sign_in_bottom_sheet.dart';
+import '../widgets/profile_avatar.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -125,16 +127,16 @@ class _ProfilePageState extends State<ProfilePage> {
               _SettingsGroup(children: [
                 _SettingsTile(
                   title: 'Export trips',
-                  subtitle: session.isSignedIn ? null : 'Sign in to export',
-                  enabled: session.isSignedIn,
-                  showChevron: session.isSignedIn,
+                  subtitle: session.isCloudSignedIn ? null : 'Sign in to export',
+                  enabled: session.isCloudSignedIn,
+                  showChevron: session.isCloudSignedIn,
                   onTap: () => _exportTrips(context),
                 ),
                 _SettingsTile(
                   title: 'Clear offline data',
-                  subtitle: session.isSignedIn ? null : 'Sign in to clear cache',
-                  enabled: session.isSignedIn,
-                  showChevron: session.isSignedIn,
+                  subtitle: session.isCloudSignedIn ? null : 'Sign in to clear cache',
+                  enabled: session.isCloudSignedIn,
+                  showChevron: session.isCloudSignedIn,
                   onTap: () => _confirmClearOfflineData(context, session),
                 ),
               ]),
@@ -165,50 +167,65 @@ class _IdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = session.currentUser;
-    final isSignedIn = user != null;
-    final isCloudGuest = isSignedIn && user.id.startsWith('local-');
+    final isCloudSignedIn = session.isCloudSignedIn;
+    final isLocalGuest = user != null && user.id.startsWith('local-');
 
-    String subtitle;
-    if (isCloudGuest) {
+    final String title;
+    final String subtitle;
+    if (isCloudSignedIn && user != null) {
+      title = user.displayName;
+      subtitle = user.email != null ? 'Signed in · ${user.email}' : 'Signed in';
+    } else if (isLocalGuest) {
+      title = user.displayName;
       subtitle = 'Local only — Supabase not configured';
-    } else if (isSignedIn) {
-      subtitle = user.email ?? 'Signed in';
     } else if (!Environment.hasSupabase) {
+      title = 'Guest';
       subtitle = 'Add secrets to env/.env.local for cloud sign-in';
     } else {
+      title = 'Guest';
       subtitle = 'Sign in to sync trips';
     }
 
     return AppCard(
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primaryMuted,
-            child: Icon(
-              isSignedIn ? Icons.verified_user_outlined : Icons.person_rounded,
-              size: 28,
-              color: AppColors.primaryDark,
-            ),
-          ),
+          ProfileAvatar(user: user, isCloudSignedIn: isCloudSignedIn),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isSignedIn ? user.displayName : 'Guest',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isCloudSignedIn) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Icon(Icons.verified_rounded, size: 18, color: AppColors.primaryDark),
+                    ],
+                  ],
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          if (isSignedIn)
-            TextButton(onPressed: session.signOut, child: const Text('Sign out'))
+          if (isCloudSignedIn && user != null)
+            IconButton(
+              icon: const Icon(Icons.info_outline_rounded),
+              color: AppColors.primaryDark,
+              tooltip: 'Account',
+              onPressed: () => AccountBottomSheet.show(context, user: user),
+            )
           else
             TextButton(
               onPressed: () => SignInBottomSheet.show(context),

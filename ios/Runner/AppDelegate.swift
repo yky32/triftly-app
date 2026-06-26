@@ -5,6 +5,9 @@ import UIKit
 @objc class AppDelegate: FlutterAppDelegate {
 
   static var pendingSharedUrl: String?
+  static var pendingOAuthCallback: String?
+
+  private var authChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -13,8 +16,8 @@ import UIKit
     "AIzaSyDN6sSxZP-Xf47aRGGPuABsjyM_f6cC_MU".withCString { ProvideGoogleMapsAPIKey($0) }
     GeneratedPluginRegistrant.register(with: self)
     if let controller = window?.rootViewController as? FlutterViewController {
-      let channel = FlutterMethodChannel(name: "app/share", binaryMessenger: controller.binaryMessenger)
-      channel.setMethodCallHandler { call, result in
+      let shareChannel = FlutterMethodChannel(name: "app/share", binaryMessenger: controller.binaryMessenger)
+      shareChannel.setMethodCallHandler { call, result in
         if call.method == "getPendingSharedUrl" {
           let url = AppDelegate.pendingSharedUrl
           AppDelegate.pendingSharedUrl = nil
@@ -23,7 +26,23 @@ import UIKit
           result(FlutterMethodNotImplemented)
         }
       }
+
+      authChannel = FlutterMethodChannel(name: "com.triftly/auth", binaryMessenger: controller.binaryMessenger)
+      authChannel?.setMethodCallHandler { call, result in
+        if call.method == "getPendingOAuthCallback" {
+          let pending = AppDelegate.pendingOAuthCallback
+          AppDelegate.pendingOAuthCallback = nil
+          result(pending)
+        } else {
+          result(FlutterMethodNotImplemented)
+        }
+      }
     }
+
+    if let url = launchOptions?[.url] as? URL {
+      deliverOAuthCallback(url)
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -38,6 +57,16 @@ import UIKit
        let decoded = urlParam.removingPercentEncoding {
       AppDelegate.pendingSharedUrl = decoded
     }
-    return true
+
+    deliverOAuthCallback(url)
+
+    return super.application(app, open: url, options: options)
+  }
+
+  private func deliverOAuthCallback(_ url: URL) {
+    guard url.scheme == "triftly", url.host == "login-callback" else { return }
+    let absolute = url.absoluteString
+    AppDelegate.pendingOAuthCallback = absolute
+    authChannel?.invokeMethod("onOAuthCallback", arguments: absolute)
   }
 }

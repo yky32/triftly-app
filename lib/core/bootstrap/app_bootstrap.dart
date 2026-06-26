@@ -4,6 +4,8 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/auth_deep_link_bridge.dart';
+import '../auth/auth_debug_log.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
@@ -24,6 +26,9 @@ class AppBootstrap {
   /// True when [Supabase.initialize] completed successfully this session.
   static bool supabaseReady = false;
 
+  static String? _lastCloudSyncUserId;
+  static DateTime? _lastCloudSyncAt;
+
   static Future<void> initialize() async {
     profilePreferences = await ProfilePreferences.initialize();
 
@@ -36,8 +41,9 @@ class AppBootstrap {
           onTimeout: () => throw TimeoutException('Supabase.initialize timed out'),
         );
         supabaseReady = true;
+        await AuthDeepLinkBridge.install();
         if (kDebugMode) {
-          debugPrint('Supabase ready: $url');
+          authDebugLog('Supabase init completed → $url', kind: AuthLogKind.session);
         }
       } catch (error, stack) {
         supabaseReady = false;
@@ -68,21 +74,32 @@ class AppBootstrap {
     tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
 
     auth.authStateChanges.listen((user) async {
-      if (user != null && CloudTripSync.isCloudUserId(user.id)) {
-        try {
-          await CloudTripSync.syncForUser(
-            user,
-            tripRepository,
-            migrateLocalTrips: true,
-          );
-        } catch (error, stack) {
-          developer.log(
-            'Cloud sync after sign-in failed',
-            name: 'triftly.bootstrap',
-            error: error,
-            stackTrace: stack,
-          );
-        }
+      if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
+
+      final now = DateTime.now();
+      if (_lastCloudSyncUserId == user.id &&
+          _lastCloudSyncAt != null &&
+          now.difference(_lastCloudSyncAt!) < const Duration(seconds: 10)) {
+        return;
+      }
+      _lastCloudSyncUserId = user.id;
+      _lastCloudSyncAt = now;
+
+      authDebugLog('Cloud sync starting for ${user.email} (${user.id})', kind: AuthLogKind.sync);
+      try {
+        await CloudTripSync.syncForUser(
+          user,
+          tripRepository,
+          migrateLocalTrips: true,
+        );
+        authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
+      } catch (error, stack) {
+        authDebugLog(
+          'Cloud sync after sign-in failed',
+          kind: AuthLogKind.error,
+          error: error,
+          stackTrace: stack,
+        );
       }
     });
 
