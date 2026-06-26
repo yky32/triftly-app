@@ -1,7 +1,64 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-/// Primary CTA for [EmptyState] and inline empty cards — full-width teal pill.
+import 'triftly_motion.dart';
+
+/// Soft circular icon backdrop for empty states.
+class EmptyStateIconWell extends StatelessWidget {
+  const EmptyStateIconWell({
+    required this.icon,
+    this.compact = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final wellSize = compact ? 72.0 : 96.0;
+    final iconSize = compact ? 32.0 : 40.0;
+
+    return Container(
+      width: wellSize,
+      height: wellSize,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.primary.withValues(alpha: 0.24),
+                  AppColors.surfaceElevatedDark,
+                ]
+              : [
+                  AppColors.primaryMuted,
+                  const Color(0xFFECFDF5),
+                ],
+        ),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: isDark ? 0.28 : 0.14),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08),
+            blurRadius: compact ? 12 : 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        size: iconSize,
+        color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+      ),
+    );
+  }
+}
+
+/// Primary CTA for [EmptyState] and inline empty cards — teal gradient pill.
 class EmptyStateActionButton extends StatelessWidget {
   const EmptyStateActionButton({
     required this.label,
@@ -14,25 +71,40 @@ class EmptyStateActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(52),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.pill),
+    return Pressable(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primaryLight,
+              AppColors.primary,
+              AppColors.primaryDark,
+            ],
           ),
-          textStyle: const TextStyle(
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
+            letterSpacing: 0.15,
+            color: Colors.white,
           ),
         ),
-        child: Text(label),
       ),
     );
   }
@@ -65,51 +137,47 @@ class EmptyState extends StatelessWidget {
   /// Tighter layout for phase-filter slots inside a list.
   final bool compact;
 
+  static const double _contentMaxWidth = 300;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconSize = compact ? 48.0 : 56.0;
-    final iconColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
     final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final subtitleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
-    final content = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: compact ? AppSpacing.lg : AppSpacing.xxl,
-      ),
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: iconSize, color: iconColor),
-          SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+          EmptyStateIconWell(icon: icon, compact: compact),
+          SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
           Text(
             title,
             style: TextStyle(
-              fontSize: compact ? 18 : 20,
+              fontSize: compact ? 18 : 22,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              height: 1.2,
+              letterSpacing: -0.4,
+              height: 1.15,
               color: titleColor,
             ),
             textAlign: TextAlign.center,
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.sm),
+            SizedBox(height: compact ? AppSpacing.sm : 10),
             Text(
               subtitle!,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: compact ? 15 : 16,
                 fontWeight: FontWeight.w400,
-                height: 1.45,
+                height: 1.5,
                 color: subtitleColor,
               ),
               textAlign: TextAlign.center,
             ),
           ],
           if (action != null && actionLabel != null) ...[
-            SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+            SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xxl),
             EmptyStateActionButton(label: actionLabel!, onPressed: action!),
           ],
         ],
@@ -117,9 +185,38 @@ class EmptyState extends StatelessWidget {
     );
 
     if (expand) {
-      return SizedBox.expand(child: Center(child: content));
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final navInset = AppSpacing.navIslandOccupiedHeight(context);
+
+          return SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  navInset * 0.55,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [content],
+                ),
+              ),
+            ),
+          );
+        },
+      );
     }
 
-    return content;
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: compact ? AppSpacing.lg : AppSpacing.xxl,
+      ),
+      child: Center(child: content),
+    );
   }
 }
