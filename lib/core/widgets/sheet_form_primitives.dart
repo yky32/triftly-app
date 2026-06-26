@@ -638,7 +638,58 @@ class SheetCardActionRow extends StatelessWidget {
   }
 }
 
-/// OAuth-style sign-in row (Google, Apple, …). Use [enabled: false] for placeholders.
+/// Round icon button for OAuth providers (Google, Apple, …).
+class SheetSocialCircleButton extends StatelessWidget {
+  const SheetSocialCircleButton({
+    required this.child,
+    this.onTap,
+    this.enabled = true,
+    this.size = 52,
+    this.semanticLabel,
+    super.key,
+  });
+
+  static const double defaultSize = 52;
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool enabled;
+  final double size;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final interactive = enabled && onTap != null;
+
+    return Semantics(
+      button: true,
+      enabled: interactive,
+      label: semanticLabel,
+      child: Opacity(
+        opacity: interactive ? 1 : 0.5,
+        child: Pressable(
+          onTap: interactive ? onTap : null,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? AppColors.surfaceElevatedDark : AppColors.surface,
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width OAuth row — prefer [SheetSocialCircleButton] for compact sign-in.
 class SheetSocialSignInButton extends StatelessWidget {
   const SheetSocialSignInButton({
     required this.label,
