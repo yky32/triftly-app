@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/cloud_trip_sync.dart';
-import '../services/profile_preferences.dart';
+import 'profile_preferences.dart';
 
 /// Auth state + local preferences exposed to the UI.
 class UserSession extends ChangeNotifier {
@@ -11,7 +11,8 @@ class UserSession extends ChangeNotifier {
     required AuthRepository auth,
     required ProfilePreferences preferences,
   })  : _auth = auth,
-        _preferences = preferences {
+        _preferences = preferences,
+        _user = auth.currentUser {
     _subscription = _auth.authStateChanges.listen((user) {
       _user = user;
       notifyListeners();
