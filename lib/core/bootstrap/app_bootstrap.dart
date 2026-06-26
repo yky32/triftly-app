@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,17 +20,31 @@ class AppBootstrap {
   static late final UserSession userSession;
   static late final HiveTripRepository tripRepository;
 
+  /// True when [Supabase.initialize] completed successfully this session.
+  static bool supabaseReady = false;
+
   static Future<void> initialize() async {
     profilePreferences = await ProfilePreferences.initialize();
 
     if (Environment.hasSupabase) {
-      await Supabase.initialize(
-        url: Environment.supabaseUrl,
-        publishableKey: Environment.supabaseClientKey,
-      );
-      if (kDebugMode) {
-        debugPrint(
-          'Supabase ready: ${Environment.supabaseUrl}',
+      try {
+        final url = Environment.supabaseUrl.trim();
+        final key = Environment.supabaseClientKey.trim();
+        await Supabase.initialize(url: url, publishableKey: key).timeout(
+          const Duration(seconds: 20),
+          onTimeout: () => throw TimeoutException('Supabase.initialize timed out'),
+        );
+        supabaseReady = true;
+        if (kDebugMode) {
+          debugPrint('Supabase ready: $url');
+        }
+      } catch (error, stack) {
+        supabaseReady = false;
+        developer.log(
+          'Supabase init failed — continuing in offline mode',
+          name: 'triftly.bootstrap',
+          error: error,
+          stackTrace: stack,
         );
       }
     } else if (kDebugMode) {
@@ -47,13 +64,22 @@ class AppBootstrap {
 
     userSession = UserSession(auth: auth, preferences: profilePreferences);
 
-    final supabaseSync = Environment.hasSupabase ? SupabaseTripSync() : null;
+    final supabaseSync = supabaseReady ? SupabaseTripSync() : null;
     tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
 
     auth.authStateChanges.listen((user) async {
       if (user != null && !user.id.startsWith('local-')) {
-        await tripRepository.migrateLocalTripsToCloud(user);
-        await tripRepository.pullFromSupabase(user.id);
+        try {
+          await tripRepository.migrateLocalTripsToCloud(user);
+          await tripRepository.pullFromSupabase(user.id);
+        } catch (error, stack) {
+          developer.log(
+            'Cloud sync after sign-in failed',
+            name: 'triftly.bootstrap',
+            error: error,
+            stackTrace: stack,
+          );
+        }
       }
     });
   }

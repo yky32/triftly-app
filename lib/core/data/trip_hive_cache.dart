@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
@@ -13,37 +14,59 @@ class TripHiveCache {
 
   Future<void> init() async {
     await Hive.initFlutter();
-    _trips = await Hive.openBox<Map>(_tripsBox);
-    _details = await Hive.openBox<Map>(_detailsBox);
+    _trips = await _openBoxSafe(_tripsBox);
+    _details = await _openBoxSafe(_detailsBox);
+  }
+
+  Future<Box<Map>> _openBoxSafe(String name) async {
+    try {
+      return await Hive.openBox<Map>(name);
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('Hive box $name failed, recreating: $error');
+      }
+      await Hive.deleteBoxFromDisk(name);
+      return Hive.openBox<Map>(name);
+    }
   }
 
   Future<void> hydrate(TripStore store) async {
     if (_trips == null || _details == null) return;
     for (final raw in _trips!.values) {
-      final trip = Trip.fromMap(Map<String, dynamic>.from(raw));
-      if (trip.isActive) store.upsertCreatedTrip(trip);
+      try {
+        final trip = Trip.fromMap(Map<String, dynamic>.from(raw));
+        if (trip.isActive) store.upsertCreatedTrip(trip);
+      } catch (error) {
+        if (kDebugMode) debugPrint('Skipping corrupt trip cache entry: $error');
+      }
     }
     for (final key in _details!.keys) {
-      final raw = _details!.get(key);
-      if (raw == null) continue;
-      final map = Map<String, dynamic>.from(raw);
-      store.restoreDetail(
-        key as String,
-        TripDetailData(
-          days: (map['days'] as List)
-              .map((d) => TripDay.fromMap(Map<String, dynamic>.from(d as Map)))
-              .toList(),
-          spots: (map['spots'] as List)
-              .map((s) => Spot.fromMap(Map<String, dynamic>.from(s as Map)))
-              .toList(),
-          expenses: (map['expenses'] as List)
-              .map((e) => Expense.fromMap(Map<String, dynamic>.from(e as Map)))
-              .toList(),
-          settlements: (map['settlements'] as List? ?? [])
-              .map((r) => SettlementRecord.fromMap(Map<String, dynamic>.from(r as Map)))
-              .toList(),
-        ),
-      );
+      try {
+        final raw = _details!.get(key);
+        if (raw == null) continue;
+        final map = Map<String, dynamic>.from(raw);
+        store.restoreDetail(
+          key as String,
+          TripDetailData(
+            days: (map['days'] as List)
+                .map((d) => TripDay.fromMap(Map<String, dynamic>.from(d as Map)))
+                .toList(),
+            spots: (map['spots'] as List)
+                .map((s) => Spot.fromMap(Map<String, dynamic>.from(s as Map)))
+                .toList(),
+            expenses: (map['expenses'] as List)
+                .map((e) => Expense.fromMap(Map<String, dynamic>.from(e as Map)))
+                .toList(),
+            settlements: (map['settlements'] as List? ?? [])
+                .map((r) => SettlementRecord.fromMap(Map<String, dynamic>.from(r as Map)))
+                .toList(),
+          ),
+        );
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint('Skipping corrupt trip detail cache for $key: $error');
+        }
+      }
     }
   }
 

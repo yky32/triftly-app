@@ -72,6 +72,11 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                       SplashPage.lottieAsset,
                       fit: BoxFit.contain,
                       repeat: false,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.flight_takeoff_rounded,
+                        size: 96,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
