@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../bloc/spend_overview_bloc.dart';
 import '../widgets/spend_wallet_accent.dart';
@@ -20,7 +21,12 @@ class SpendRecentAllPage extends StatelessWidget {
         builder: (context, state) {
           final lines = state.overview?.recentTransactions ?? [];
           if (lines.isEmpty) {
-            return const Center(child: Text('No recent expenses'));
+            return const EmptyState(
+              expand: true,
+              icon: Icons.receipt_long_outlined,
+              title: 'No recent expenses',
+              subtitle: 'Trip spending will show up here once you log expenses.',
+            );
           }
 
           return ListView.separated(

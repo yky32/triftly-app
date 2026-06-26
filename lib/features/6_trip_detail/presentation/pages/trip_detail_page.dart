@@ -9,6 +9,7 @@ import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/today_plan_utils.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/glass_icon_button.dart';
 import '../../../../core/widgets/glass_toggle.dart';
 import '../../bloc/trip_detail_bloc.dart';
@@ -111,7 +112,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
         if (state.trip == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: Center(child: Text(state.error ?? 'Trip not found')),
+            body: EmptyState(
+              expand: true,
+              icon: Icons.travel_explore_outlined,
+              title: 'Trip not found',
+              subtitle: state.error ?? 'This trip may have been deleted.',
+              action: () => _handleBack(context),
+              actionLabel: 'Go back',
+            ),
           );
         }
 

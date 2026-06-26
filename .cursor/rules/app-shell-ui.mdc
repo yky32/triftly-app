@@ -37,8 +37,9 @@ Pick the lightest pattern that fits the slot:
 
 ```
 Full tab / list has zero items?
-  └─ YES → EmptyState (centered icon + title + optional subtitle + CTA)
-           Examples: Trips phase filter, Spend wallet error, global Spend no trips
+  └─ YES → EmptyState (56px outline icon, bold title, muted subtitle, teal pill CTA via EmptyStateActionButton)
+           Use `expand: true` for tab-root; `compact: true` for phase-filter slots
+           Examples: Trips, Spend wallet, recent expenses, trip not found
 
 Trip sub-tab with no data yet (Map / Plan day / etc.)?
   └─ YES → Does the tab need a visual preview or cross-tab link?

@@ -12,6 +12,7 @@ import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/services/split_calculator.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
@@ -82,9 +83,34 @@ class SpendTab extends StatelessWidget {
                 AppSpacing.xxl,
               ),
               sliver: SliverToBoxAdapter(
-                child: buildOverviewRow(
-                  totalSpending: Decimal.zero,
-                  emptyBadgeLabel: readOnly ? 'No spending' : 'No expenses',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    buildOverviewRow(
+                      totalSpending: Decimal.zero,
+                      emptyBadgeLabel: readOnly ? 'No spending' : 'No expenses',
+                    ),
+                    if (!readOnly) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      EmptyState(
+                        compact: true,
+                        icon: Icons.receipt_long_outlined,
+                        title: 'No expenses yet',
+                        subtitle: 'Track what you spend on this trip.',
+                        action: () => _showExpenseSheet(context),
+                        actionLabel: 'Add expense',
+                      ),
+                    ] else
+                      const Padding(
+                        padding: EdgeInsets.only(top: AppSpacing.xl),
+                        child: EmptyState(
+                          compact: true,
+                          icon: Icons.receipt_long_outlined,
+                          title: 'No spending yet',
+                          subtitle: 'Expenses will appear here once they are logged.',
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
