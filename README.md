@@ -96,7 +96,7 @@ Environments: `dev`, `stag`, `prod` (toggle via `--dart-define=ENV=<env>`). See 
 
 - **iOS deployment:** Fastlane → TestFlight (`bundle exec fastlane ios upload_testflight`)
 - **Android deployment:** TBD (Play Console)
-- GitHub Actions: `.github/workflows/deploy-testflight.yml`, `.github/workflows/migrate-supabase.yml`
+- GitHub Actions: `.github/workflows/deploy.yml` (migrate → TestFlight), `.github/workflows/migrate-supabase.yml` (migrations only, manual)
 - **Secrets:** single source of truth in GitHub — see `env/README.md`
 - Never put credentials in committed `env/.env.*` files or `ios/fastlane/.env.default`
 

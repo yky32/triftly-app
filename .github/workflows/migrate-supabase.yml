@@ -1,12 +1,8 @@
+# Migrations-only entry point (e.g. hotfix schema without a full app deploy).
+# Normal main deploys run migrate → TestFlight in deploy.yml.
 name: Supabase migrations
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'supabase/migrations/**'
-      - 'supabase/config.toml'
-      - '.github/workflows/migrate-supabase.yml'
   workflow_dispatch:
 
 concurrency:
