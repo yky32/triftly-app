@@ -44,16 +44,15 @@ class TripInlineEmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final iconColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
     final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(icon, size: 48, color: iconColor),
-          const SizedBox(height: AppSpacing.md),
+          Center(child: EmptyStateIconWell(icon: icon, compact: true)),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             title,
             style: TextStyle(

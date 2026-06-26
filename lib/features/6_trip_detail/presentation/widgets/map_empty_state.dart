@@ -116,12 +116,8 @@ class MapDayEmptyState extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              Icon(
-                Icons.map_outlined,
-                size: 48,
-                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-              ),
-              const SizedBox(height: AppSpacing.md),
+              const EmptyStateIconWell(icon: Icons.map_outlined, compact: true),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'Nothing on the map yet',
                 style: TextStyle(
@@ -137,13 +133,13 @@ class MapDayEmptyState extends StatelessWidget {
                 'No stops planned for $dayLabel.',
                 style: TextStyle(
                   fontSize: 15,
-                  height: 1.45,
+                  height: 1.5,
                   color: muted,
                 ),
                 textAlign: TextAlign.center,
               ),
               if (onOpenPlan != null) ...[
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xl),
                 EmptyStateActionButton(
                   label: 'Open Plan',
                   onPressed: onOpenPlan!,
