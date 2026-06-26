@@ -39,6 +39,11 @@ class LocalAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> signInWithGoogle() async {
+    throw UnsupportedError('Google sign-in requires Supabase configuration');
+  }
+
+  @override
   Future<void> verifyEmailOtp({required String email, required String token}) async {}
 
   @override

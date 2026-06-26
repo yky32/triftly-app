@@ -7,6 +7,7 @@ import '../../features/6_trip_detail/bloc/trip_detail_bloc.dart';
 abstract final class AppScopeBlocs {
   static TripListBloc createTripListBloc() => TripListBloc(
         repository: AppBootstrap.tripRepository,
+        cloudUserId: () => AppBootstrap.userSession.currentUser?.id,
       );
 
   static TripDetailBloc createTripDetailBloc(String tripId) => TripDetailBloc(

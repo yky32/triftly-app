@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
+import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
 import '../services/profile_preferences.dart';
@@ -67,10 +68,13 @@ class AppBootstrap {
     tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
 
     auth.authStateChanges.listen((user) async {
-      if (user != null && !user.id.startsWith('local-')) {
+      if (user != null && CloudTripSync.isCloudUserId(user.id)) {
         try {
-          await tripRepository.migrateLocalTripsToCloud(user);
-          await tripRepository.pullFromSupabase(user.id);
+          await CloudTripSync.syncForUser(
+            user,
+            tripRepository,
+            migrateLocalTrips: true,
+          );
         } catch (error, stack) {
           developer.log(
             'Cloud sync after sign-in failed',
@@ -81,6 +85,20 @@ class AppBootstrap {
         }
       }
     });
+
+    final signedInUser = auth.currentUser;
+    if (signedInUser != null && CloudTripSync.isCloudUserId(signedInUser.id)) {
+      try {
+        await CloudTripSync.syncForUser(signedInUser, tripRepository);
+      } catch (error, stack) {
+        developer.log(
+          'Cloud sync on startup failed',
+          name: 'triftly.bootstrap',
+          error: error,
+          stackTrace: stack,
+        );
+      }
+    }
   }
 }
 

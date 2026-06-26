@@ -6,7 +6,15 @@ sealed class TripListEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-final class TripListLoadRequested extends TripListEvent {}
+final class TripListLoadRequested extends TripListEvent {
+  const TripListLoadRequested({this.syncCloud = true});
+
+  /// When true, pull latest trips from Supabase for the signed-in user.
+  final bool syncCloud;
+
+  @override
+  List<Object?> get props => [syncCloud];
+}
 
 final class TripListTripCreated extends TripListEvent {
   final Trip trip;

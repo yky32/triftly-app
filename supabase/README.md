@@ -35,7 +35,24 @@ npx supabase migration repair --status applied 001 002 003 004
 
 ## 2. Auth
 
-In **Authentication → Providers**, enable **Email** (magic link / OTP).
+In **Authentication → Providers**, enable **Email** (magic link / OTP) and **Google**.
+
+### Redirect URL (required for Google OAuth)
+
+Add this to **Authentication → URL configuration → Redirect URLs**:
+
+```
+triftly://login-callback
+```
+
+The app handles this via `AuthRedirect.url` (`lib/core/auth/auth_redirect.dart`) and native URL schemes (`triftly` on iOS/Android).
+
+### Google OAuth setup
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → create OAuth client (Web + iOS + Android as needed)
+2. Supabase → **Authentication → Providers → Google** → paste Client ID + Secret
+3. Add authorized redirect URI from Supabase dashboard to Google OAuth client
+4. Smoke test: Me → Sign in → **Continue with Google**
 
 ## 3. App keys (client-safe only)
 

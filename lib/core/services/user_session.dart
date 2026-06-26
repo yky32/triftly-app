@@ -30,6 +30,8 @@ class UserSession extends ChangeNotifier {
   Future<User?> signInWithEmail(String email) =>
       _auth.signInWithEmailOtp(email);
 
+  Future<void> signInWithGoogle() => _auth.signInWithGoogle();
+
   Future<void> verifyEmailOtp({required String email, required String token}) =>
       _auth.verifyEmailOtp(email: email, token: token);
 

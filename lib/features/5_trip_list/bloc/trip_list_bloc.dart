@@ -8,8 +8,11 @@ part 'trip_list_event.dart';
 part 'trip_list_state.dart';
 
 class TripListBloc extends Bloc<TripListEvent, TripListState> {
-  TripListBloc({TripRepository? repository})
-      : _repository = repository ?? HiveTripRepository.instance,
+  TripListBloc({
+    TripRepository? repository,
+    String? Function()? cloudUserId,
+  })  : _repository = repository ?? HiveTripRepository.instance,
+        _cloudUserId = cloudUserId,
         super(const TripListState()) {
     on<TripListLoadRequested>(_onLoadRequested);
     on<TripListTripCreated>(_onTripCreated);
@@ -18,13 +21,16 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
   }
 
   final TripRepository _repository;
+  final String? Function()? _cloudUserId;
 
   Future<void> _onLoadRequested(
     TripListLoadRequested event,
     Emitter<TripListState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    await Future.delayed(const Duration(milliseconds: 200));
+    if (event.syncCloud) {
+      await _repository.pullFromCloud(_cloudUserId?.call());
+    }
     emit(state.copyWith(isLoading: false, trips: _repository.allTrips()));
   }
 

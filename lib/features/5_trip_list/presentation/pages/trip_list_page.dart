@@ -71,12 +71,28 @@ class _ViewState extends State<_View> {
           ),
         ],
       ),
-      body: BlocBuilder<TripListBloc, TripListState>(
-        builder: (context, state) {
-          if (state.isLoading) return _buildLoading();
-          if (state.trips.isEmpty) return _buildEmpty(context);
-          return _buildTripList(context, state);
+      body: RefreshIndicator(
+        onRefresh: () async {
+          context.read<TripListBloc>().add(const TripListLoadRequested(syncCloud: true));
+          await context.read<TripListBloc>().stream.firstWhere((s) => !s.isLoading);
         },
+        child: BlocBuilder<TripListBloc, TripListState>(
+          builder: (context, state) {
+            if (state.isLoading && state.trips.isEmpty) return _buildLoading();
+            if (state.trips.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.sizeOf(context).height * 0.55,
+                    child: _buildEmpty(context),
+                  ),
+                ],
+              );
+            }
+            return _buildTripList(context, state);
+          },
+        ),
       ),
     );
   }
@@ -137,7 +153,15 @@ class _ViewState extends State<_View> {
         ),
         Expanded(
           child: trips.isEmpty
-              ? _buildPhaseEmpty(selected)
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.sizeOf(context).height * 0.4,
+                      child: _buildPhaseEmpty(selected),
+                    ),
+                  ],
+                )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
                   itemCount: trips.length,
