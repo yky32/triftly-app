@@ -1,0 +1,85 @@
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../environment.dart';
+import '../../repositories/cloud_trip_sync.dart';
+import '../../repositories/hive_trip_repository.dart';
+import '../../services/user_session.dart';
+import '../../sync/cloud_sync_reporter.dart';
+
+part 'cloud_sync_event.dart';
+part 'cloud_sync_state.dart';
+
+/// App-wide cloud sync UI state (Trips banner, Me → Trip sync).
+class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
+  CloudSyncBloc({
+    required UserSession userSession,
+    required CloudSyncReporterBridge syncReporter,
+    required HiveTripRepository tripRepository,
+  })  : _userSession = userSession,
+        _tripRepository = tripRepository,
+        _syncReporter = syncReporter,
+        super(CloudSyncState()) {
+    syncReporter.bind(add);
+    on<CloudSyncStarted>(_onStarted);
+    on<CloudSyncSucceeded>(_onSucceeded);
+    on<CloudSyncFailed>(_onFailed);
+    on<CloudSyncPushFailed>(_onPushFailed);
+    on<CloudSyncErrorCleared>(_onErrorCleared);
+    on<CloudSyncRetryRequested>(_onRetryRequested);
+  }
+
+  final UserSession _userSession;
+  final HiveTripRepository _tripRepository;
+  final CloudSyncReporterBridge _syncReporter;
+
+  CloudSyncReporter get reporter => _syncReporter;
+
+  void _onStarted(CloudSyncStarted event, Emitter<CloudSyncState> emit) {
+    emit(state.copyWith(isSyncing: true));
+  }
+
+  void _onSucceeded(CloudSyncSucceeded event, Emitter<CloudSyncState> emit) {
+    emit(state.copyWith(
+      isSyncing: false,
+      lastSuccessAt: DateTime.now(),
+      clearLastError: true,
+    ));
+  }
+
+  void _onFailed(CloudSyncFailed event, Emitter<CloudSyncState> emit) {
+    emit(state.copyWith(
+      isSyncing: false,
+      lastError: CloudSyncState.messageFrom(event.error),
+    ));
+  }
+
+  void _onPushFailed(CloudSyncPushFailed event, Emitter<CloudSyncState> emit) {
+    emit(state.copyWith(
+      lastError: CloudSyncState.messageFrom(event.error),
+    ));
+  }
+
+  void _onErrorCleared(CloudSyncErrorCleared event, Emitter<CloudSyncState> emit) {
+    emit(state.copyWith(clearLastError: true));
+  }
+
+  Future<void> _onRetryRequested(
+    CloudSyncRetryRequested event,
+    Emitter<CloudSyncState> emit,
+  ) async {
+    final user = _userSession.currentUser;
+    if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
+
+    try {
+      await CloudTripSync.syncForUser(
+        user,
+        _tripRepository,
+        syncReporter: _syncReporter,
+      );
+      event.onComplete?.call();
+    } catch (_) {
+      // Pull failure recorded via reporter; UI reads [CloudSyncState.lastError].
+    }
+  }
+}

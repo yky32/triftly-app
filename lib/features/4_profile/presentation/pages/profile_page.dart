@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../../core/bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
-import '../../../../core/repositories/cloud_trip_sync.dart';
 import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -227,52 +228,24 @@ class _IdentityCard extends StatelessWidget {
 class _CloudSyncSettingsTile extends StatelessWidget {
   const _CloudSyncSettingsTile();
 
-  Future<void> _retry(BuildContext context) async {
-    final user = AppBootstrap.userSession.currentUser;
-    if (user == null) return;
-
-    try {
-      await CloudTripSync.syncForUser(
-        user,
-        AppBootstrap.tripRepository,
-        syncStatus: AppBootstrap.cloudSyncStatus,
-      );
-      if (!context.mounted) return;
-      if (!AppBootstrap.cloudSyncStatus.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trips synced')),
-        );
-      }
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppBootstrap.cloudSyncStatus.lastError ?? 'Could not sync trips',
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: AppBootstrap.cloudSyncStatus,
-      builder: (context, _) {
-        final status = AppBootstrap.cloudSyncStatus;
-        final hasError = status.hasError;
+    return BlocBuilder<CloudSyncBloc, CloudSyncState>(
+      builder: (context, state) {
+        final hasError = state.hasError;
 
         return _SettingsTile(
           title: 'Trip sync',
-          subtitle: hasError ? status.lastError : null,
-          value: status.isSyncing
+          subtitle: hasError ? state.lastError : null,
+          value: state.isSyncing
               ? 'Syncing…'
               : hasError
                   ? 'Failed'
-                  : status.lastSuccessLabel,
-          showChevron: hasError && !status.isSyncing,
-          onTap: hasError && !status.isSyncing ? () => _retry(context) : () {},
+                  : state.lastSuccessLabel,
+          showChevron: hasError && !state.isSyncing,
+          onTap: hasError && !state.isSyncing
+              ? () => context.read<CloudSyncBloc>().add(const CloudSyncRetryRequested())
+              : () {},
         );
       },
     );

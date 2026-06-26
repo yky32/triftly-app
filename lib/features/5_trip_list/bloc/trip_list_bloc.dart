@@ -32,7 +32,7 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
       try {
         await _repository.pullFromCloud(_cloudUserId?.call());
       } catch (_) {
-        // [CloudSyncStatus] records the failure; still show local trips.
+        // [CloudSyncBloc] records the failure; still show local trips.
       }
     }
     emit(state.copyWith(isLoading: false, trips: _repository.allTrips()));

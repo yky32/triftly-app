@@ -22,9 +22,14 @@ class TripApp extends StatelessWidget {
           return ListenableBuilder(
             listenable: AppBootstrap.userSession,
             builder: (context, _) {
-              return BlocProvider(
-                create: (_) => AppScopeBlocs.createSpendOverviewBloc()
-                  ..add(const SpendOverviewLoadRequested()),
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: AppBootstrap.cloudSyncBloc),
+                  BlocProvider(
+                    create: (_) => AppScopeBlocs.createSpendOverviewBloc()
+                      ..add(const SpendOverviewLoadRequested()),
+                  ),
+                ],
                 child: MaterialApp.router(
                   title: 'Triftly',
                   debugShowCheckedModeBanner: false,

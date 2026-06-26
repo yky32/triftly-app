@@ -5,7 +5,7 @@ import '../data/trip_hive_cache.dart';
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
 import '../models/user.dart';
-import '../services/cloud_sync_status.dart';
+import '../sync/cloud_sync_reporter.dart';
 import '../services/local_trip_migration.dart';
 import '../services/trip_store.dart';
 import 'supabase_trip_sync.dart';
@@ -17,11 +17,11 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     required TripStore store,
     required TripHiveCache cache,
     SupabaseTripSync? supabaseSync,
-    CloudSyncStatus? syncStatus,
+    CloudSyncReporter? syncReporter,
   })  : _store = store,
         _cache = cache,
         _supabaseSync = supabaseSync,
-        _syncStatus = syncStatus;
+        _syncReporter = syncReporter;
 
   static HiveTripRepository? _instance;
   static HiveTripRepository get instance {
@@ -32,11 +32,11 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   final TripStore _store;
   final TripHiveCache _cache;
   final SupabaseTripSync? _supabaseSync;
-  final CloudSyncStatus? _syncStatus;
+  final CloudSyncReporter? _syncReporter;
 
   static Future<HiveTripRepository> bootstrap({
     SupabaseTripSync? supabaseSync,
-    CloudSyncStatus? syncStatus,
+    CloudSyncReporter? syncReporter,
   }) async {
     final cache = TripHiveCache();
     await cache.init();
@@ -46,7 +46,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
       store: store,
       cache: cache,
       supabaseSync: supabaseSync,
-      syncStatus: syncStatus,
+      syncReporter: syncReporter,
     );
     store.addListener(repo.notifyListeners);
     _instance = repo;
@@ -58,7 +58,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     try {
       await _supabaseSync?.upsertTrip(trip);
     } catch (_) {
-      // Push failure recorded on [CloudSyncStatus].
+      // Push failure recorded via [CloudSyncReporter].
     }
   }
 
@@ -69,7 +69,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     try {
       await _supabaseSync?.upsertDetail(tripId, detail);
     } catch (_) {
-      // Push failure recorded on [CloudSyncStatus].
+      // Push failure recorded via [CloudSyncReporter].
     }
   }
 
@@ -170,14 +170,14 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     notifyListeners();
   }
 
-  Future<void> pullFromSupabase(String userId, {CloudSyncStatus? syncStatus}) async {
-    final status = syncStatus ?? _syncStatus;
-    status?.begin();
+  Future<void> pullFromSupabase(String userId, {CloudSyncReporter? syncReporter}) async {
+    final reporter = syncReporter ?? _syncReporter;
+    reporter?.begin();
     try {
       await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
-      status?.succeed();
+      reporter?.succeed();
     } catch (error) {
-      status?.fail(error);
+      reporter?.fail(error);
       rethrow;
     }
     notifyListeners();

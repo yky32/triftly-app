@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../bootstrap/app_bootstrap.dart';
-import '../repositories/cloud_trip_sync.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
@@ -14,49 +15,23 @@ class CloudSyncBanner extends StatelessWidget {
 
   final VoidCallback onRetryComplete;
 
-  Future<void> _retry(BuildContext context) async {
-    final user = AppBootstrap.userSession.currentUser;
-    if (user == null) return;
-
-    try {
-      await CloudTripSync.syncForUser(
-        user,
-        AppBootstrap.tripRepository,
-        syncStatus: AppBootstrap.cloudSyncStatus,
-      );
-      onRetryComplete();
-      if (!context.mounted) return;
-      if (!AppBootstrap.cloudSyncStatus.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trips synced')),
-        );
-      }
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppBootstrap.cloudSyncStatus.lastError ?? 'Could not sync trips',
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: AppBootstrap.cloudSyncStatus,
-      builder: (context, _) {
-        final status = AppBootstrap.cloudSyncStatus;
+    return BlocConsumer<CloudSyncBloc, CloudSyncState>(
+      listenWhen: (previous, current) =>
+          previous.isSyncing &&
+          !current.isSyncing &&
+          !current.hasError,
+      listener: (context, state) => onRetryComplete(),
+      builder: (context, state) {
         final session = AppBootstrap.userSession;
-        if (!status.isConfigured || !session.isCloudSignedIn) {
+        if (!state.isConfigured || !session.isCloudSignedIn) {
           return const SizedBox.shrink();
         }
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        if (status.hasError) {
+        if (state.hasError) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
             child: Material(
@@ -82,7 +57,7 @@ class CloudSyncBanner extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            status.lastError!,
+                            state.lastError!,
                             style: Theme.of(context).textTheme.bodySmall,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -91,8 +66,12 @@ class CloudSyncBanner extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: status.isSyncing ? null : () => _retry(context),
-                      child: status.isSyncing
+                      onPressed: state.isSyncing
+                          ? null
+                          : () => context.read<CloudSyncBloc>().add(
+                                CloudSyncRetryRequested(onComplete: onRetryComplete),
+                              ),
+                      child: state.isSyncing
                           ? const SizedBox(
                               width: 16,
                               height: 16,
@@ -107,7 +86,7 @@ class CloudSyncBanner extends StatelessWidget {
           );
         }
 
-        if (status.isSyncing) {
+        if (state.isSyncing) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
             child: Row(
@@ -127,7 +106,7 @@ class CloudSyncBanner extends StatelessWidget {
           );
         }
 
-        if (status.lastSuccessAt == null) return const SizedBox.shrink();
+        if (state.lastSuccessAt == null) return const SizedBox.shrink();
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
@@ -140,7 +119,7 @@ class CloudSyncBanner extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                status.lastSuccessLabel,
+                state.lastSuccessLabel,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

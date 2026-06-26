@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../data/trip_hive_cache.dart';
 import '../environment.dart';
 import '../models/trip_models.dart';
-import '../services/cloud_sync_status.dart';
+import '../sync/cloud_sync_reporter.dart';
 import '../services/trip_store.dart';
 import 'supabase_trip_mapper.dart';
 
@@ -13,14 +13,14 @@ class SupabaseTripSync {
   SupabaseTripSync({
     supabase.SupabaseClient? client,
     TripStore? store,
-    CloudSyncStatus? syncStatus,
+    CloudSyncReporter? syncReporter,
   })  : _client = client,
         _store = store ?? TripStore.instance,
-        _syncStatus = syncStatus;
+        _syncReporter = syncReporter;
 
   final supabase.SupabaseClient? _client;
   final TripStore _store;
-  final CloudSyncStatus? _syncStatus;
+  final CloudSyncReporter? _syncReporter;
 
   supabase.SupabaseClient get client {
     final c = _client;
@@ -64,7 +64,7 @@ class SupabaseTripSync {
         );
       }
     } catch (e, st) {
-      _syncStatus?.recordPushFailure(e);
+      _syncReporter?.recordPushFailure(e);
       debugPrint('SupabaseTripSync.upsertTrip failed: $e\n$st');
       rethrow;
     }
@@ -103,7 +103,7 @@ class SupabaseTripSync {
         );
       }
     } catch (e, st) {
-      _syncStatus?.recordPushFailure(e);
+      _syncReporter?.recordPushFailure(e);
       debugPrint('SupabaseTripSync.upsertDetail failed: $e\n$st');
       rethrow;
     }
@@ -118,7 +118,7 @@ class SupabaseTripSync {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', tripId);
     } catch (e, st) {
-      _syncStatus?.recordPushFailure(e);
+      _syncReporter?.recordPushFailure(e);
       debugPrint('SupabaseTripSync.deactivateTrip failed: $e\n$st');
       rethrow;
     }

@@ -6,15 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../auth/auth_deep_link_bridge.dart';
 import '../auth/auth_debug_log.dart';
+import '../bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
 import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
-import '../services/cloud_sync_status.dart';
 import '../services/profile_preferences.dart';
 import '../services/user_session.dart';
+import '../sync/cloud_sync_reporter.dart';
 
 /// Initializes Hive, auth, trips, and optional Supabase.
 class AppBootstrap {
@@ -23,7 +24,8 @@ class AppBootstrap {
   static late final ProfilePreferences profilePreferences;
   static late final UserSession userSession;
   static late final HiveTripRepository tripRepository;
-  static late final CloudSyncStatus cloudSyncStatus;
+  static late final CloudSyncReporterBridge cloudSyncReporter;
+  static late final CloudSyncBloc cloudSyncBloc;
 
   /// True when [Supabase.initialize] completed successfully this session.
   static bool supabaseReady = false;
@@ -72,12 +74,18 @@ class AppBootstrap {
 
     userSession = UserSession(auth: auth, preferences: profilePreferences);
 
-    cloudSyncStatus = CloudSyncStatus();
-    final supabaseSync =
-        supabaseReady ? SupabaseTripSync(syncStatus: cloudSyncStatus) : null;
+    cloudSyncReporter = CloudSyncReporterBridge();
+    final supabaseSync = supabaseReady
+        ? SupabaseTripSync(syncReporter: cloudSyncReporter)
+        : null;
     tripRepository = await HiveTripRepository.bootstrap(
       supabaseSync: supabaseSync,
-      syncStatus: cloudSyncStatus,
+      syncReporter: cloudSyncReporter,
+    );
+    cloudSyncBloc = CloudSyncBloc(
+      userSession: userSession,
+      syncReporter: cloudSyncReporter,
+      tripRepository: tripRepository,
     );
 
     auth.authStateChanges.listen((user) async {
@@ -97,7 +105,7 @@ class AppBootstrap {
         await CloudTripSync.syncForUser(
           user,
           tripRepository,
-          syncStatus: cloudSyncStatus,
+          syncReporter: cloudSyncReporter,
           migrateLocalTrips: true,
         );
         authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
@@ -117,7 +125,7 @@ class AppBootstrap {
         await CloudTripSync.syncForUser(
           signedInUser,
           tripRepository,
-          syncStatus: cloudSyncStatus,
+          syncReporter: cloudSyncReporter,
         );
       } catch (error, stack) {
         developer.log(
