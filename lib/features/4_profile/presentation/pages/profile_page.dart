@@ -7,16 +7,14 @@ import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_controller.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
-import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import '../bottom_sheets/user_detail_bottom_sheet.dart';
 import '../bottom_sheets/appearance_bottom_sheet.dart';
 import '../bottom_sheets/default_currency_bottom_sheet.dart';
 import '../bottom_sheets/sign_in_bottom_sheet.dart';
 import '../widgets/profile_avatar.dart';
-import '../widgets/user_display_name_label.dart';
+import '../widgets/profile_identity_island.dart';
+import '../widgets/profile_settings_glass_group.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -94,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               _IdentityCard(session: session),
               const SizedBox(height: AppSpacing.xl),
-              const SectionHeader(title: 'Preferences'),
+              const _MeSectionHeader(title: 'Preferences'),
               ListenableBuilder(
                 listenable: themeController,
                 builder: (context, _) {
@@ -124,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               const SizedBox(height: AppSpacing.xl),
-              const SectionHeader(title: 'Data'),
+              const _MeSectionHeader(title: 'Data'),
               _SettingsGroup(children: [
                 _SettingsTile(
                   title: 'Export trips',
@@ -142,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ]),
               const SizedBox(height: AppSpacing.xl),
-              const SectionHeader(title: 'About'),
+              const _MeSectionHeader(title: 'About'),
               _SettingsGroup(children: [
                 _SettingsTile(
                   title: 'Version',
@@ -171,12 +169,13 @@ class _IdentityCard extends StatelessWidget {
     final isCloudSignedIn = session.isCloudSignedIn;
     final isLocalGuest = user != null && user.id.startsWith('local-');
 
+    if (isCloudSignedIn && user != null) {
+      return ProfileIdentityIsland(user: user);
+    }
+
     final String title;
     final String subtitle;
-    if (isCloudSignedIn && user != null) {
-      title = user.displayName;
-      subtitle = user.email ?? '';
-    } else if (isLocalGuest) {
+    if (isLocalGuest) {
       title = user.displayName;
       subtitle = 'Local only — Supabase not configured';
     } else if (!Environment.hasSupabase) {
@@ -187,7 +186,7 @@ class _IdentityCard extends StatelessWidget {
       subtitle = 'Sign in to sync trips';
     }
 
-    return AppCard(
+    return ProfileGuestGlassCard(
       child: Row(
         children: [
           ProfileAvatar(user: user, isCloudSignedIn: isCloudSignedIn),
@@ -196,24 +195,12 @@ class _IdentityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    if (isCloudSignedIn && user != null)
-                      Expanded(
-                        child: UserDisplayNameLabel(
-                          user: user,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
-                        ),
-                      )
-                    else
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
+                Flexible(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 if (subtitle.isNotEmpty)
@@ -225,18 +212,10 @@ class _IdentityCard extends StatelessWidget {
               ],
             ),
           ),
-          if (isCloudSignedIn && user != null)
-            IconButton(
-              icon: const Icon(Icons.info_outline_rounded),
-              color: AppColors.primaryDark,
-              tooltip: 'User details',
-              onPressed: () => UserDetailBottomSheet.show(context, user: user),
-            )
-          else
-            TextButton(
-              onPressed: () => SignInBottomSheet.show(context),
-              child: const Text('Sign in'),
-            ),
+          TextButton(
+            onPressed: () => SignInBottomSheet.show(context),
+            child: const Text('Sign in'),
+          ),
         ],
       ),
     );
@@ -250,22 +229,30 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ProfileSettingsGlassGroup(children: children);
+  }
+}
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i < children.length - 1)
-              Divider(
-                height: 1,
-                indent: AppSpacing.lg,
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              ),
-          ],
-        ],
+class _MeSectionHeader extends StatelessWidget {
+  const _MeSectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 4, left: 2),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
       ),
     );
   }
@@ -312,7 +299,13 @@ class _SettingsTile extends StatelessWidget {
           if (value != null) Text(value!, style: Theme.of(context).textTheme.bodySmall),
           if (showChevron && enabled) ...[
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textTertiaryDark
+                  : AppColors.textTertiary,
+            ),
           ],
         ],
       ),
