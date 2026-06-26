@@ -38,6 +38,7 @@ import UIKit
        let decoded = urlParam.removingPercentEncoding {
       AppDelegate.pendingSharedUrl = decoded
     }
-    return true
+    // Forward all URLs (including triftly://login-callback OAuth) to Flutter plugins.
+    return super.application(app, open: url, options: options)
   }
 }
