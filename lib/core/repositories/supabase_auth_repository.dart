@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import 'package:url_launcher/url_launcher.dart';
 import '../auth/auth_debug_log.dart';
+import '../auth/auth_oauth_launch.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
@@ -104,14 +104,23 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signInWithGoogle() async {
     if (!_useSupabase) return _local.signInWithGoogle();
-    authDebugLog('Launching Google OAuth → redirectTo=${AuthRedirect.url}');
+    final launchMode = googleOAuthLaunchMode();
+    authDebugLog(
+      'Launching Google OAuth → redirectTo=${AuthRedirect.url} mode=$launchMode',
+    );
     try {
-      await supabase.Supabase.instance.client.auth.signInWithOAuth(
+      final launched = await supabase.Supabase.instance.client.auth.signInWithOAuth(
         supabase.OAuthProvider.google,
         redirectTo: AuthRedirect.url,
-        authScreenLaunchMode: LaunchMode.inAppWebView,
+        authScreenLaunchMode: launchMode,
       );
-      authDebugLog('OAuth web view closed — awaiting onAuthStateChange…');
+      if (!launched) {
+        throw StateError('Could not open Google sign-in in the browser');
+      }
+      authDebugLog(
+        'OAuth browser opened — complete sign-in in Safari, '
+        'then return to Triftly via ${AuthRedirect.url}',
+      );
     } catch (e, st) {
       authDebugLog('signInWithOAuth failed', error: e, stackTrace: st);
       rethrow;

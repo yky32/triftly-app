@@ -107,11 +107,9 @@ class AppBootstrap {
 
   static void _watchDeepLinksForDebug() {
     final appLinks = AppLinks();
+    // Do not call getInitialLink() — Supabase owns that once per app lifetime.
     appLinks.uriLinkStream.listen((uri) {
       authDebugLog('Deep link received: $uri');
-    });
-    appLinks.getInitialLink().then((uri) {
-      if (uri != null) authDebugLog('Initial deep link: $uri');
     });
   }
 }
