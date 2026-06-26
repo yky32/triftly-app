@@ -9,6 +9,7 @@ import '../bottom_sheets/create_trip_bottom_sheet.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/cloud_sync_banner.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 
@@ -71,7 +72,16 @@ class _ViewState extends State<_View> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CloudSyncBanner(
+            onRetryComplete: () {
+              context.read<TripListBloc>().add(const TripListLoadRequested());
+            },
+          ),
+          Expanded(
+            child: RefreshIndicator(
         onRefresh: () async {
           context.read<TripListBloc>().add(const TripListLoadRequested(syncCloud: true));
           await context.read<TripListBloc>().stream.firstWhere((s) => !s.isLoading);
@@ -93,6 +103,9 @@ class _ViewState extends State<_View> {
             return _buildTripList(context, state);
           },
         ),
+            ),
+          ),
+        ],
       ),
     );
   }

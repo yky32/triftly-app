@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
+import '../../../../core/repositories/cloud_trip_sync.dart';
 import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -124,6 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: AppSpacing.xl),
               const _MeSectionHeader(title: 'Data'),
               _SettingsGroup(children: [
+                if (session.isCloudSignedIn) const _CloudSyncSettingsTile(),
                 _SettingsTile(
                   title: 'Export trips',
                   subtitle: session.isCloudSignedIn ? null : 'Sign in to export',
@@ -218,6 +220,61 @@ class _IdentityCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CloudSyncSettingsTile extends StatelessWidget {
+  const _CloudSyncSettingsTile();
+
+  Future<void> _retry(BuildContext context) async {
+    final user = AppBootstrap.userSession.currentUser;
+    if (user == null) return;
+
+    try {
+      await CloudTripSync.syncForUser(
+        user,
+        AppBootstrap.tripRepository,
+        syncStatus: AppBootstrap.cloudSyncStatus,
+      );
+      if (!context.mounted) return;
+      if (!AppBootstrap.cloudSyncStatus.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Trips synced')),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppBootstrap.cloudSyncStatus.lastError ?? 'Could not sync trips',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppBootstrap.cloudSyncStatus,
+      builder: (context, _) {
+        final status = AppBootstrap.cloudSyncStatus;
+        final hasError = status.hasError;
+
+        return _SettingsTile(
+          title: 'Trip sync',
+          subtitle: hasError ? status.lastError : null,
+          value: status.isSyncing
+              ? 'Syncing…'
+              : hasError
+                  ? 'Failed'
+                  : status.lastSuccessLabel,
+          showChevron: hasError && !status.isSyncing,
+          onTap: hasError && !status.isSyncing ? () => _retry(context) : () {},
+        );
+      },
     );
   }
 }

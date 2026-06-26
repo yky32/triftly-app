@@ -71,6 +71,13 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
             controller: _nameController,
             onChanged: () => setState(() {}),
           ),
+          if (!AppBootstrap.userSession.isCloudSignedIn) ...[
+            const SizedBox(height: AppSpacing.lg),
+            const SheetResultBanner(
+              caption: 'Cloud sync',
+              text: 'Sign in to sync this trip across your devices.',
+            ),
+          ],
           const SizedBox(height: AppSpacing.xl),
           const SheetSectionHeader(title: 'Where & when'),
           const SizedBox(height: AppSpacing.md),

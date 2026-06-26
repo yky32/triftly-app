@@ -101,9 +101,42 @@ All app keys live in GitHub repository secrets:
 
 The deploy workflow passes secrets into `flutter build ipa` via Fastlane.
 
-## 6. Smoke test
+## 6. Pilot smoke checklist
 
-1. Me → Sign in → email OTP
-2. Create a trip while signed in
-3. Confirm rows in **Table Editor** (`users`, `trips`, `buddies`, `trip_days`)
-4. Sign in on a second device → trips pull down
+Run this before each TestFlight build or after schema/auth changes.
+
+### Sign-in & session
+
+- [ ] Me → Sign in → email OTP completes
+- [ ] Me → Sign in → **Continue with Google** returns to app (no Safari tab left open)
+- [ ] Console filter `🔐 AUTH` shows `✅ Sign-in successful`
+- [ ] Me identity island shows your email / name (not Guest)
+
+### Create & sync (signed in)
+
+- [ ] Trips → **+** → create a trip → appears in list immediately
+- [ ] Trips tab shows **Synced just now** (or similar) after pull
+- [ ] Supabase **Table Editor**: rows in `users`, `trips`, `buddies`, `trip_days`
+- [ ] Edit trip name on device A → pull-to-refresh on device B → change appears
+
+### Offline / failure handling
+
+- [ ] Create trip while **not** signed in → sheet shows *Sign in to sync this trip across your devices*
+- [ ] Airplane mode → pull-to-refresh → red **Could not sync trips** banner with **Retry**
+- [ ] Me → Data → **Trip sync** row shows error; tap row (chevron) or Trips **Retry** recovers when online
+
+### Second device
+
+- [ ] Sign in with same account on device B → trips from device A appear after sync
+- [ ] Create trip on B → appears on A after pull-to-refresh
+
+### Share links (read-only buddy view)
+
+- [ ] Trip detail → Share → copy link → open on another account → read-only bundle loads
+- [ ] Note: `https://triftly.app/s/*` universal links are **not** wired yet — use in-app link / token flow
+
+### Quick SQL spot-check
+
+```sql
+select id, name, owner_id, updated_at from trips order by updated_at desc limit 5;
+```

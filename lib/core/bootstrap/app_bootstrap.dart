@@ -12,6 +12,7 @@ import '../repositories/local_auth_repository.dart';
 import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
+import '../services/cloud_sync_status.dart';
 import '../services/profile_preferences.dart';
 import '../services/user_session.dart';
 
@@ -22,6 +23,7 @@ class AppBootstrap {
   static late final ProfilePreferences profilePreferences;
   static late final UserSession userSession;
   static late final HiveTripRepository tripRepository;
+  static late final CloudSyncStatus cloudSyncStatus;
 
   /// True when [Supabase.initialize] completed successfully this session.
   static bool supabaseReady = false;
@@ -70,8 +72,13 @@ class AppBootstrap {
 
     userSession = UserSession(auth: auth, preferences: profilePreferences);
 
-    final supabaseSync = supabaseReady ? SupabaseTripSync() : null;
-    tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
+    cloudSyncStatus = CloudSyncStatus();
+    final supabaseSync =
+        supabaseReady ? SupabaseTripSync(syncStatus: cloudSyncStatus) : null;
+    tripRepository = await HiveTripRepository.bootstrap(
+      supabaseSync: supabaseSync,
+      syncStatus: cloudSyncStatus,
+    );
 
     auth.authStateChanges.listen((user) async {
       if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
@@ -90,6 +97,7 @@ class AppBootstrap {
         await CloudTripSync.syncForUser(
           user,
           tripRepository,
+          syncStatus: cloudSyncStatus,
           migrateLocalTrips: true,
         );
         authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
@@ -106,7 +114,11 @@ class AppBootstrap {
     final signedInUser = auth.currentUser;
     if (signedInUser != null && CloudTripSync.isCloudUserId(signedInUser.id)) {
       try {
-        await CloudTripSync.syncForUser(signedInUser, tripRepository);
+        await CloudTripSync.syncForUser(
+          signedInUser,
+          tripRepository,
+          syncStatus: cloudSyncStatus,
+        );
       } catch (error, stack) {
         developer.log(
           'Cloud sync on startup failed',

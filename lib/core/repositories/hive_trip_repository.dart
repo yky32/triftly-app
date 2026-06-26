@@ -5,6 +5,7 @@ import '../data/trip_hive_cache.dart';
 import '../models/settlement_record.dart';
 import '../models/trip_models.dart';
 import '../models/user.dart';
+import '../services/cloud_sync_status.dart';
 import '../services/local_trip_migration.dart';
 import '../services/trip_store.dart';
 import 'supabase_trip_sync.dart';
@@ -16,9 +17,11 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     required TripStore store,
     required TripHiveCache cache,
     SupabaseTripSync? supabaseSync,
+    CloudSyncStatus? syncStatus,
   })  : _store = store,
         _cache = cache,
-        _supabaseSync = supabaseSync;
+        _supabaseSync = supabaseSync,
+        _syncStatus = syncStatus;
 
   static HiveTripRepository? _instance;
   static HiveTripRepository get instance {
@@ -29,8 +32,12 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   final TripStore _store;
   final TripHiveCache _cache;
   final SupabaseTripSync? _supabaseSync;
+  final CloudSyncStatus? _syncStatus;
 
-  static Future<HiveTripRepository> bootstrap({SupabaseTripSync? supabaseSync}) async {
+  static Future<HiveTripRepository> bootstrap({
+    SupabaseTripSync? supabaseSync,
+    CloudSyncStatus? syncStatus,
+  }) async {
     final cache = TripHiveCache();
     await cache.init();
     final store = TripStore.instance;
@@ -39,6 +46,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
       store: store,
       cache: cache,
       supabaseSync: supabaseSync,
+      syncStatus: syncStatus,
     );
     store.addListener(repo.notifyListeners);
     _instance = repo;
@@ -47,14 +55,22 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
 
   Future<void> _persistTrip(Trip trip) async {
     await _cache.saveTrip(trip);
-    await _supabaseSync?.upsertTrip(trip);
+    try {
+      await _supabaseSync?.upsertTrip(trip);
+    } catch (_) {
+      // Push failure recorded on [CloudSyncStatus].
+    }
   }
 
   Future<void> _persistDetail(String tripId) async {
     final detail = _store.detailSync(tripId);
     if (detail == null) return;
     await _cache.saveDetail(tripId, detail);
-    await _supabaseSync?.upsertDetail(tripId, detail);
+    try {
+      await _supabaseSync?.upsertDetail(tripId, detail);
+    } catch (_) {
+      // Push failure recorded on [CloudSyncStatus].
+    }
   }
 
   @override
@@ -154,8 +170,16 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     notifyListeners();
   }
 
-  Future<void> pullFromSupabase(String userId) async {
-    await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
+  Future<void> pullFromSupabase(String userId, {CloudSyncStatus? syncStatus}) async {
+    final status = syncStatus ?? _syncStatus;
+    status?.begin();
+    try {
+      await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
+      status?.succeed();
+    } catch (error) {
+      status?.fail(error);
+      rethrow;
+    }
     notifyListeners();
   }
 
