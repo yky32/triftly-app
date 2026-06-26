@@ -49,6 +49,7 @@ Trip sub-tab with no data yet (Map / Plan day / etc.)?
 Metric / summary slot with $0?
   └─ YES → Glass metric card with compact badge — NOT a paragraph empty state
            Examples: SpendOverviewMetricCard, "$0 spent", badge "No expenses"
+           Global Spend empty wallet: always show `SpendWalletCard` at $0, then compact hint below
            See liquid-glass-ui.mdc
 
 Inline stat hint on Plan (today spending)?
