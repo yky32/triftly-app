@@ -127,8 +127,9 @@ class SupabaseTripMapper {
 
   static Trip tripFromRow(
     Map<String, dynamic> row,
-    List<Buddy> buddies,
-  ) {
+    List<Buddy> buddies, {
+    String? membershipRole,
+  }) {
     FlightLeg? legFromJson(dynamic raw) {
       if (raw == null) return null;
       return FlightLeg.fromMap(Map<String, dynamic>.from(raw as Map));
@@ -151,6 +152,7 @@ class SupabaseTripMapper {
           ? DateTime.parse(row['updated_at'] as String)
           : null,
       isActive: row['is_active'] as bool? ?? true,
+      membershipRole: membershipRole,
     );
   }
 
@@ -251,6 +253,7 @@ class SupabaseTripMapper {
     final trip = tripFromRow(
       Map<String, dynamic>.from(bundle['trip'] as Map),
       buddies,
+      membershipRole: 'preview',
     );
 
     final days = (bundle['days'] as List? ?? [])

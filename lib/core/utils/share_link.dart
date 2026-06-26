@@ -9,10 +9,24 @@ abstract final class ShareLink {
     return '$baseHost/s/$token';
   }
 
-  static String? tokenFromUri(Uri uri) {
+  static String? tokenFromUri(Uri? uri) {
+    if (uri == null) return null;
+
+    if (uri.scheme == 'triftly' && uri.host == 's' && uri.pathSegments.isNotEmpty) {
+      return uri.pathSegments.first;
+    }
+
+    final host = uri.host.toLowerCase();
+    if (host == 'triftly.app' || host.endsWith('.triftly.app')) {
+      if (uri.pathSegments.length == 2 && uri.pathSegments.first == 's') {
+        return uri.pathSegments[1];
+      }
+    }
+
     if (uri.pathSegments.length == 2 && uri.pathSegments.first == 's') {
       return uri.pathSegments[1];
     }
+
     return null;
   }
 }

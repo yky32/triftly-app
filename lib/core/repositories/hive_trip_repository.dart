@@ -209,7 +209,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
 
   Future<Trip?> hydrateSharedTrip(String shareToken) async {
     final local = _store.tripByShareToken(shareToken);
-    if (local != null) return local;
+    if (local != null && !local.isPreviewShare) return local;
 
     final remote = await _supabaseSync?.hydrateSharedTripByToken(
       shareToken,
@@ -218,6 +218,14 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     );
     if (remote != null) notifyListeners();
     return remote;
+  }
+
+  Future<Trip?> joinTripFromShare(String shareToken, String cloudUserId) async {
+    final tripId = await _supabaseSync?.acceptTripShare(shareToken);
+    if (tripId == null) return null;
+    await pullFromSupabase(cloudUserId);
+    notifyListeners();
+    return _store.tripById(tripId);
   }
 
   Future<String> exportCreatedTripsJson() async {

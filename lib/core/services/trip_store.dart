@@ -74,7 +74,7 @@ class TripStore extends ChangeNotifier {
   static bool isMockTripId(String id) => mockTripIds.contains(id);
 
   List<Trip> allTrips() {
-    final created = _createdTrips.where((t) => t.isActive).toList();
+    final created = _createdTrips.where((t) => t.isActive && t.appearsInTripList).toList();
     if (!includeMockTrips) return created;
 
     final mock = _mockTrips();

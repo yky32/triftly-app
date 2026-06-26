@@ -39,10 +39,13 @@ class TripDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final trip = TripStore.instance.tripById(tripId);
+    final effectiveReadOnly = readOnly || (trip?.isReadOnlyForCurrentUser ?? false);
+
     return BlocProvider(
       create: (context) =>
           AppScopeBlocs.createTripDetailBloc(tripId)..add(TripDetailLoadRequested()),
-      child: _View(readOnly: readOnly, initialTabIndex: initialTabIndex),
+      child: _View(readOnly: effectiveReadOnly, initialTabIndex: initialTabIndex),
     );
   }
 }

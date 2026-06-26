@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/constants/app_page.dart';
+import '../../../core/navigation/share_deep_link_bridge.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
@@ -41,6 +42,11 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   void _goToTrips() {
     if (_navigated) return;
     _navigated = true;
+    final shareToken = ShareDeepLinkBridge.consumePendingShareToken();
+    if (shareToken != null) {
+      context.go('/s/$shareToken');
+      return;
+    }
     context.go(AppPage.plan.path);
   }
 
