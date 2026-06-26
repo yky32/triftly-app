@@ -7,6 +7,17 @@ void main() {
     test('uses triftly scheme for OAuth callback', () {
       expect(AuthRedirect.url, 'triftly://login-callback');
     });
+
+    test('isOAuthCallback recognizes login-callback deep links', () {
+      expect(
+        AuthRedirect.isOAuthCallback(
+          Uri.parse('triftly://login-callback/?code=abc'),
+        ),
+        isTrue,
+      );
+      expect(AuthRedirect.isOAuthCallback(Uri.parse('/profile')), isFalse);
+      expect(AuthRedirect.isOAuthCallback(Uri.parse('triftly://other')), isFalse);
+    });
   });
 
   group('CloudTripSync.isCloudUserId', () {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../../../core/auth/auth_debug_log.dart';
+import '../../../../core/models/user.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -57,6 +58,21 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   void _resetSwipe() => setState(() => _swipeKey++);
 
+  /// Defer sheet close — OAuth returns during a navigator build (go_router lock).
+  void _closeSheetSafely() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final navigator = Navigator.of(context, rootNavigator: true);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+    });
+  }
+
+  bool _isCloudUser(User? user) =>
+      user != null && !user.id.startsWith('local-');
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -94,7 +110,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
         _resetSwipe();
         return;
       }
-      Navigator.pop(context);
+      _closeSheetSafely();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -106,6 +122,17 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
   Future<void> _signInWithGoogle() async {
     if (_submitting) return;
+
+    final session = AppBootstrap.userSession;
+    if (_isCloudUser(session.currentUser)) {
+      authDebugLog(
+        'Already signed in — closing sheet (${session.currentUser!.email})',
+        kind: AuthLogKind.session,
+      );
+      _closeSheetSafely();
+      return;
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
@@ -113,22 +140,26 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
 
     StreamSubscription? authSub;
     try {
-      final session = AppBootstrap.userSession;
       final signedIn = Completer<void>();
 
       authSub = session.authStateChanges.listen((user) {
-        if (user != null && !user.id.startsWith('local-')) {
-          authDebugLog('Sign-in sheet: cloud user received — ${user.email}', kind: AuthLogKind.success);
-          if (!signedIn.isCompleted) signedIn.complete();
+        if (!_isCloudUser(user)) return;
+        authDebugLog('Sign-in sheet: cloud user received — ${user!.email}', kind: AuthLogKind.success);
+        if (!signedIn.isCompleted) {
+          scheduleMicrotask(() {
+            if (!signedIn.isCompleted) signedIn.complete();
+          });
         }
       });
 
       await session.signInWithGoogle();
       authDebugLog('Sign-in sheet: waiting for Supabase session…', kind: AuthLogKind.oauth);
 
-      final userAfterOAuth = session.currentUser;
-      if (userAfterOAuth != null && !userAfterOAuth.id.startsWith('local-')) {
-        authDebugLog('Sign-in sheet: session already active — ${userAfterOAuth.email}', kind: AuthLogKind.session);
+      if (_isCloudUser(session.currentUser)) {
+        authDebugLog(
+          'Sign-in sheet: session already active — ${session.currentUser!.email}',
+          kind: AuthLogKind.session,
+        );
         if (!signedIn.isCompleted) signedIn.complete();
       }
 
@@ -141,9 +172,16 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
         },
       );
 
-      if (!mounted) return;
-      Navigator.pop(context);
+      _closeSheetSafely();
     } catch (e, st) {
+      if (_isCloudUser(session.currentUser)) {
+        authDebugLog(
+          'Sign-in succeeded — closing sheet after navigation error',
+          kind: AuthLogKind.success,
+        );
+        _closeSheetSafely();
+        return;
+      }
       authDebugLog('Sign-in sheet: Google sign-in failed', kind: AuthLogKind.error, error: e, stackTrace: st);
       if (!mounted) return;
       setState(() {
@@ -166,7 +204,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     try {
       await AppBootstrap.userSession.verifyEmailOtp(email: email, token: code);
       if (!mounted) return;
-      Navigator.pop(context);
+      _closeSheetSafely();
     } catch (e) {
       setState(() {
         _error = e.toString();

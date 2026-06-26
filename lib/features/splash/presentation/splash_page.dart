@@ -55,7 +55,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceDim,
+      backgroundColor: isDark ? AppColors.surfaceDimDark : AppColors.accentSurface,
       body: SafeArea(
         child: FadeTransition(
           opacity: ReverseAnimation(_fadeAnimation),
@@ -75,7 +75,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.flight_takeoff_rounded,
                         size: 96,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                        color: isDark ? AppColors.primaryLight : AppColors.primary,
                       ),
                     ),
                   ),
@@ -85,7 +85,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                          color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.xs),

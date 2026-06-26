@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import '../auth/auth_redirect.dart';
 import '../constants/app_page.dart';
 import 'scaffold_with_nav_bar.dart';
 import 'page_transitions.dart';
@@ -14,6 +15,14 @@ import '../../features/splash/presentation/splash_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
+  redirect: (context, state) {
+    // OAuth returns via triftly://login-callback — not a screen route.
+    // Supabase exchanges the code via app_links; send user back to Me tab.
+    if (AuthRedirect.isOAuthCallback(state.uri)) {
+      return AppPage.profile.path;
+    }
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/splash',

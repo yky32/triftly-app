@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../auth/auth_debug_log.dart';
+import '../auth/auth_user_mapper.dart';
 import '../auth/auth_oauth_launch.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
@@ -86,14 +87,9 @@ class SupabaseAuthRepository implements AuthRepository {
     }
   }
 
-  User _userFromAuth(supabase.User authUser) => User(
-        id: authUser.id,
-        displayName: authUser.userMetadata?['display_name'] as String? ??
-            authUser.email?.split('@').first ??
-            'Traveler',
-        email: authUser.email,
+  User _userFromAuth(supabase.User authUser) => AuthUserMapper.fromAuthUser(
+        authUser,
         defaultCurrency: _preferences.defaultCurrency,
-        updatedAt: DateTime.now(),
       );
 
   @override
