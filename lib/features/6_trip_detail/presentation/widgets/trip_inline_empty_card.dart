@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 
 class TripEmptySuggestion {
@@ -16,12 +17,12 @@ class TripEmptySuggestion {
   final String? value;
 }
 
-/// Compact inline empty placeholder for Plan / Spend day slots.
+/// Inline empty placeholder for Plan day slots — matches [EmptyState] typography.
 class TripInlineEmptyCard extends StatelessWidget {
   const TripInlineEmptyCard({
-    required this.leadingEmoji,
     required this.title,
     required this.subtitle,
+    this.icon = Icons.place_outlined,
     this.suggestions = const [],
     this.onSuggestionTap,
     this.actionLabel,
@@ -30,7 +31,7 @@ class TripInlineEmptyCard extends StatelessWidget {
     super.key,
   });
 
-  final String leadingEmoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final List<TripEmptySuggestion> suggestions;
@@ -43,46 +44,37 @@ class TripInlineEmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final iconColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.1),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-                alignment: Alignment.center,
-                child: Text(leadingEmoji, style: const TextStyle(fontSize: 24)),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Icon(icon, size: 48, color: iconColor),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              height: 1.2,
+              color: titleColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              height: 1.45,
+              color: muted,
+            ),
+            textAlign: TextAlign.center,
           ),
           if (!readOnly && suggestions.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
@@ -92,6 +84,7 @@ class TripInlineEmptyCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: muted,
                   ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             SizedBox(
@@ -115,35 +108,8 @@ class TripInlineEmptyCard extends StatelessWidget {
             ),
           ],
           if (!readOnly && onAction != null && actionLabel != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Pressable(
-              onTap: onAction,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.08),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      actionLabel!,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: AppSpacing.lg),
+            EmptyStateActionButton(label: actionLabel!, onPressed: onAction!),
           ],
         ],
       ),

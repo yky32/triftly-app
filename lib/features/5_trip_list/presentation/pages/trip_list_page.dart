@@ -105,6 +105,7 @@ class _ViewState extends State<_View> {
 
   Widget _buildEmpty(BuildContext context) {
     return EmptyState(
+      expand: true,
       icon: Icons.luggage_outlined,
       title: 'No trips yet',
       subtitle: 'Start planning your next trip',
@@ -152,12 +153,12 @@ class _ViewState extends State<_View> {
   Widget _buildPhaseEmpty(TripPhase phase) {
     final (icon, title, subtitle) = switch (phase) {
       TripPhase.inProgress => (
-          Icons.flight_takeoff_rounded,
+          Icons.flight_takeoff_outlined,
           'Nothing in progress',
           'Trips you\'re on right now show up here',
         ),
       TripPhase.upcoming => (
-          Icons.event_rounded,
+          Icons.event_outlined,
           'No upcoming trips',
           'Plan your next adventure',
         ),
@@ -168,7 +169,14 @@ class _ViewState extends State<_View> {
         ),
     };
 
-    return EmptyState(icon: icon, title: title, subtitle: subtitle);
+    return Center(
+      child: EmptyState(
+        compact: true,
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+      ),
+    );
   }
 
   void _showCreateTrip(BuildContext context) {

@@ -70,35 +70,25 @@ class _ViewState extends State<_View> {
 
   Widget _buildBody(BuildContext context, SpendOverviewState state) {
     if (state.errorMessage != null) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-          EmptyState(
-            icon: Icons.error_outline_rounded,
-            title: 'Could not load wallet',
-            subtitle: state.errorMessage!,
-            action: () => context.read<SpendOverviewBloc>().add(const SpendOverviewReloadRequested()),
-            actionLabel: 'Retry',
-          ),
-        ],
+      return EmptyState(
+        expand: true,
+        icon: Icons.error_outline_rounded,
+        title: 'Could not load wallet',
+        subtitle: state.errorMessage!,
+        action: () => context.read<SpendOverviewBloc>().add(const SpendOverviewReloadRequested()),
+        actionLabel: 'Retry',
       );
     }
 
     final overview = state.overview;
     if (overview == null || overview.isEmpty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(height: MediaQuery.sizeOf(context).height * 0.15),
-          EmptyState(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'Your wallet is empty',
-            subtitle: 'Log expenses in a trip and they will appear here.',
-            action: () => context.go(AppPage.plan.path),
-            actionLabel: 'Go to Trips',
-          ),
-        ],
+      return EmptyState(
+        expand: true,
+        icon: Icons.account_balance_wallet_outlined,
+        title: 'Your wallet is empty',
+        subtitle: 'Log expenses in a trip and they will appear here.',
+        action: () => context.go(AppPage.plan.path),
+        actionLabel: 'Go to Trips',
       );
     }
 
@@ -152,12 +142,12 @@ class _ViewState extends State<_View> {
   Widget _buildPhaseEmpty(TripPhase phase) {
     final (icon, title, subtitle) = switch (phase) {
       TripPhase.inProgress => (
-          Icons.flight_takeoff_rounded,
+          Icons.flight_takeoff_outlined,
           'No spending on active trips',
           'Expenses from trips in progress show up here',
         ),
       TripPhase.upcoming => (
-          Icons.event_rounded,
+          Icons.event_outlined,
           'No spending on upcoming trips',
           'Pre-trip costs will appear here',
         ),
@@ -168,7 +158,12 @@ class _ViewState extends State<_View> {
         ),
     };
 
-    return EmptyState(icon: icon, title: title, subtitle: subtitle);
+    return EmptyState(
+      compact: true,
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+    );
   }
 
   Widget _buildLoading(BuildContext context) {

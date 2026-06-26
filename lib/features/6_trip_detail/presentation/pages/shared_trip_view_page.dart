@@ -53,6 +53,7 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
           return Scaffold(
             appBar: AppBar(),
             body: EmptyState(
+              expand: true,
               icon: Icons.link_off_rounded,
               title: 'Trip not found',
               subtitle: 'This share link may have expired or been removed.',

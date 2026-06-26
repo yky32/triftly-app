@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/triftly_motion.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/spend_glass_shell.dart';
 
 /// Empty Map tab — glass preview plus inline link to Plan.
@@ -35,10 +35,12 @@ class MapEmptyState extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 readOnly ? 'No places mapped' : 'Your map is waiting',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -46,7 +48,11 @@ class MapEmptyState extends StatelessWidget {
                 readOnly
                     ? 'Stops will appear here once added to the plan.'
                     : 'Add spots in Plan and they’ll show up as pins and routes.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted),
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.45,
+                  color: muted,
+                ),
                 textAlign: TextAlign.center,
               ),
               if (trip.destination.isNotEmpty) ...[
@@ -73,10 +79,13 @@ class MapEmptyState extends StatelessWidget {
           ),
         ),
         if (!readOnly && onOpenPlan != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _PlanLinkStrip(
-            destination: trip.destination,
-            onOpenPlan: onOpenPlan!,
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: EmptyStateActionButton(
+              label: 'Open Plan',
+              onPressed: onOpenPlan!,
+            ),
           ),
         ],
       ],
@@ -109,28 +118,40 @@ class MapDayEmptyState extends StatelessWidget {
             children: [
               Icon(
                 Icons.map_outlined,
-                size: 36,
+                size: 48,
                 color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Nothing on the map yet',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'No stops planned for $dayLabel.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.45,
+                  color: muted,
+                ),
                 textAlign: TextAlign.center,
               ),
+              if (onOpenPlan != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                EmptyStateActionButton(
+                  label: 'Open Plan',
+                  onPressed: onOpenPlan!,
+                ),
+              ],
             ],
           ),
         ),
-        if (onOpenPlan != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _PlanLinkStrip(destination: '', onOpenPlan: onOpenPlan!),
-        ],
       ],
     );
   }
@@ -284,69 +305,6 @@ class _StatusBadge extends StatelessWidget {
               fontWeight: FontWeight.w600,
               fontSize: 10,
             ),
-      ),
-    );
-  }
-}
-
-class _PlanLinkStrip extends StatelessWidget {
-  const _PlanLinkStrip({
-    required this.destination,
-    required this.onOpenPlan,
-  });
-
-  final String destination;
-  final VoidCallback onOpenPlan;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-
-    return Pressable(
-      onTap: onOpenPlan,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.borderLight,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.event_note_outlined,
-              size: 15,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-                  children: [
-                    const TextSpan(
-                      text: 'Plan your stops',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    TextSpan(
-                      text: destination.isNotEmpty ? '  ·  $destination' : '  ·  open Plan tab',
-                    ),
-                  ],
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-            ),
-          ],
-        ),
       ),
     );
   }
