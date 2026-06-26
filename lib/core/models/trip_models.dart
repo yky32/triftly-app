@@ -127,6 +127,8 @@ class Trip extends Equatable {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool isActive;
+  /// Local-only: null/owner = yours; preview = link preview; viewer/editor = joined.
+  final String? membershipRole;
 
   const Trip({
     required this.id,
@@ -144,7 +146,17 @@ class Trip extends Equatable {
     required this.createdAt,
     this.updatedAt,
     this.isActive = true,
+    this.membershipRole,
   });
+
+  bool get isPreviewShare => membershipRole == 'preview';
+
+  bool get isJoinedMember =>
+      membershipRole == 'viewer' || membershipRole == 'editor';
+
+  bool get isReadOnlyForCurrentUser => isPreviewShare || membershipRole == 'viewer';
+
+  bool get appearsInTripList => !isPreviewShare;
 
   int get numberOfDays => endDate.difference(startDate).inDays + 1;
 
@@ -207,6 +219,7 @@ class Trip extends Equatable {
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt?.toIso8601String(),
         'is_active': isActive,
+        'membership_role': membershipRole,
       };
 
   factory Trip.fromMap(Map<String, dynamic> map) => Trip(
@@ -235,6 +248,7 @@ class Trip extends Equatable {
             ? DateTime.parse(map['updated_at'] as String)
             : null,
         isActive: map['is_active'] as bool? ?? true,
+        membershipRole: map['membership_role'] as String?,
       );
 
   Trip copyWith({
@@ -251,6 +265,7 @@ class Trip extends Equatable {
     String? ownerId,
     DateTime? updatedAt,
     bool? isActive,
+    String? membershipRole,
   }) =>
       Trip(
         id: id,
@@ -268,6 +283,7 @@ class Trip extends Equatable {
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isActive: isActive ?? this.isActive,
+        membershipRole: membershipRole ?? this.membershipRole,
       );
 
   @override

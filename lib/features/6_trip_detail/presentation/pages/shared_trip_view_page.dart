@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/constants/app_page.dart';
+import '../../../../core/environment.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/repositories/hive_trip_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_motion.dart';
+import '../../../4_profile/presentation/bottom_sheets/sign_in_bottom_sheet.dart';
 import 'trip_detail_page.dart';
 
-/// Public read-only trip view at `/s/:token` (DESIGN_SPEC P1).
+/// Shared trip preview at `/s/:token` — join to add to Trips list.
 class SharedTripViewPage extends StatefulWidget {
   const SharedTripViewPage({required this.shareToken, super.key});
 
@@ -20,6 +26,8 @@ class SharedTripViewPage extends StatefulWidget {
 
 class _SharedTripViewPageState extends State<SharedTripViewPage> {
   late Future<SharedTripLoadResult> _loadFuture;
+  bool _joining = false;
+  String? _joinError;
 
   @override
   void initState() {
@@ -30,11 +38,55 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
   Future<SharedTripLoadResult> _loadTrip() async {
     final repo = HiveTripRepository.instance;
     final local = repo.tripByShareToken(widget.shareToken);
-    if (local != null) return SharedTripLoadResult.found(local);
+    if (local != null && !local.isPreviewShare) {
+      return SharedTripLoadResult.found(local, alreadyJoined: true);
+    }
 
     final remote = await repo.hydrateSharedTrip(widget.shareToken);
-    if (remote != null) return SharedTripLoadResult.found(remote);
+    if (remote != null) {
+      return SharedTripLoadResult.found(remote, alreadyJoined: !remote.isPreviewShare);
+    }
     return SharedTripLoadResult.notFound;
+  }
+
+  Future<void> _joinTrip(SessionState session) async {
+    if (_joining) return;
+
+    if (!session.isCloudSignedIn) {
+      await SignInBottomSheet.show(context);
+      if (!mounted) return;
+      final updated = context.read<SessionBloc>().state;
+      if (!updated.isCloudSignedIn) return;
+      return _joinTrip(updated);
+    }
+
+    setState(() {
+      _joining = true;
+      _joinError = null;
+    });
+
+    try {
+      final userId = session.user!.id;
+      final trip = await HiveTripRepository.instance.joinTripFromShare(
+        widget.shareToken,
+        userId,
+      );
+      if (!mounted) return;
+      if (trip == null) {
+        setState(() {
+          _joining = false;
+          _joinError = 'Could not join this trip';
+        });
+        return;
+      }
+      context.go('${AppPage.plan.path}/${trip.id}');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _joining = false;
+        _joinError = error.toString();
+      });
+    }
   }
 
   @override
@@ -56,17 +108,39 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
               expand: true,
               icon: Icons.link_off_rounded,
               title: 'Link not found',
-              action: () => context.go('/plan'),
+              action: () => context.go(AppPage.plan.path),
               actionLabel: 'Go to Trips',
             ),
           );
         }
 
         final trip = result.trip!;
+        final session = context.watch<SessionBloc>().state;
+        final isOwner = session.user?.id == trip.ownerId;
+        final alreadyJoined = result.alreadyJoined || trip.isJoinedMember || isOwner;
+
+        if (alreadyJoined) {
+          return TripDetailPage(
+            tripId: trip.id,
+            readOnly: trip.isReadOnlyForCurrentUser,
+          );
+        }
+
         return Column(
           children: [
-            Expanded(child: TripDetailPage(tripId: trip.id, readOnly: true)),
-            _DownloadBanner(onTap: () => context.go('/plan')),
+            Expanded(
+              child: TripDetailPage(
+                tripId: trip.id,
+                readOnly: true,
+              ),
+            ),
+            _JoinBanner(
+              tripName: trip.name,
+              joining: _joining,
+              error: _joinError,
+              supabaseReady: Environment.hasSupabase && AppBootstrap.supabaseReady,
+              onJoin: () => _joinTrip(session),
+            ),
           ],
         );
       },
@@ -75,18 +149,30 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
 }
 
 class SharedTripLoadResult {
-  const SharedTripLoadResult._({this.trip});
+  const SharedTripLoadResult._({this.trip, this.alreadyJoined = false});
 
   final Trip? trip;
+  final bool alreadyJoined;
 
   static const notFound = SharedTripLoadResult._();
-  static SharedTripLoadResult found(Trip trip) => SharedTripLoadResult._(trip: trip);
+  static SharedTripLoadResult found(Trip trip, {bool alreadyJoined = false}) =>
+      SharedTripLoadResult._(trip: trip, alreadyJoined: alreadyJoined);
 }
 
-class _DownloadBanner extends StatelessWidget {
-  const _DownloadBanner({required this.onTap});
+class _JoinBanner extends StatelessWidget {
+  const _JoinBanner({
+    required this.tripName,
+    required this.joining,
+    required this.supabaseReady,
+    required this.onJoin,
+    this.error,
+  });
 
-  final VoidCallback onTap;
+  final String tripName;
+  final bool joining;
+  final bool supabaseReady;
+  final VoidCallback onJoin;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -94,30 +180,60 @@ class _DownloadBanner extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-        child: Pressable(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Plan your own trip on Triftly',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (error != null) ...[
+              Text(
+                error!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            Pressable(
+              onTap: joining || !supabaseReady ? null : onJoin,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: supabaseReady ? AppColors.primary : AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
-                const SizedBox(width: 6),
-                const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
-              ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (joining)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    else
+                      Text(
+                        supabaseReady
+                            ? 'Join “$tripName”'
+                            : 'Sign in unavailable offline',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              supabaseReady
+                  ? 'Adds this trip to your Trips tab — plan, spend, and map stay in sync.'
+                  : 'Connect Supabase to join shared trips.',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

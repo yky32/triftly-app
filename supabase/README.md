@@ -26,6 +26,7 @@ Migration order:
 3. `migrations/003_auth_profile_trigger.sql`
 4. `migrations/004_shared_trip_bundle.sql`
 5. `migrations/005_rename_profiles_to_users.sql` — only if `public.profiles` already exists
+6. `migrations/006_trip_share_join.sql`
 
 **Already ran SQL by hand?** Mark versions as applied so CI does not re-run them:
 
@@ -130,10 +131,14 @@ Run this before each TestFlight build or after schema/auth changes.
 - [ ] Sign in with same account on device B → trips from device A appear after sync
 - [ ] Create trip on B → appears on A after pull-to-refresh
 
-### Share links (read-only buddy view)
+### Share links (join via WhatsApp / Messages)
 
-- [ ] Trip detail → Share → copy link → open on another account → read-only bundle loads
-- [ ] Note: `https://triftly.app/s/*` universal links are **not** wired yet — use in-app link / token flow
+- [ ] Trip detail → Share → iOS share sheet → send link via WhatsApp
+- [ ] Buddy taps `https://triftly.app/s/{token}` → **Triftly opens** (not Safari stuck)
+- [ ] Preview shows full trip (plan, spend, map)
+- [ ] Tap **Join** → sign in if needed → trip appears in **Trips** tab
+- [ ] Second device: same account → joined trip syncs after pull
+- [ ] Host `web/.well-known/apple-app-site-association` on `triftly.app` (see `web/.well-known/`)
 
 ### Quick SQL spot-check
 

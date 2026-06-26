@@ -42,6 +42,13 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="triftly" android:host="login-callback"/>
             </intent-filter>
+            <!-- Trip share links https://triftly.app/s/{token} -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="triftly.app" android:pathPrefix="/s/"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

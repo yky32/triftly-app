@@ -36,6 +36,8 @@ class SupabaseTripSync {
   bool _shouldSyncTrip(Trip trip) =>
       _canSync &&
       _isCloudOwnerId(trip.ownerId) &&
+      !trip.isJoinedMember &&
+      !trip.isPreviewShare &&
       !TripStore.isMockTripId(trip.id);
 
   Future<void> upsertTrip(Trip trip) async {
@@ -139,21 +141,85 @@ class SupabaseTripSync {
           .eq('is_active', true);
 
       for (final raw in tripRows as List) {
+        await _ingestTripRow(
+          Map<String, dynamic>.from(raw as Map),
+          store,
+          cache,
+        );
+      }
+
+      final memberRows = await client
+          .from('trip_members')
+          .select('trip_id, role')
+          .eq('user_id', userId);
+
+      final memberRoles = <String, String>{};
+      for (final raw in memberRows as List) {
+        final row = Map<String, dynamic>.from(raw as Map);
+        final role = row['role'] as String;
+        if (role == 'owner') continue;
+        memberRoles[row['trip_id'] as String] = role;
+      }
+
+      if (memberRoles.isEmpty) return;
+
+      final joinedRows = await client
+          .from('trips')
+          .select()
+          .inFilter('id', memberRoles.keys.toList())
+          .eq('is_active', true);
+
+      for (final raw in joinedRows as List) {
         final tripRow = Map<String, dynamic>.from(raw as Map);
         final tripId = tripRow['id'] as String;
-        if (TripStore.isMockTripId(tripId)) continue;
-
-        final buddies = await _loadBuddies(tripId);
-        final trip = SupabaseTripMapper.tripFromRow(tripRow, buddies);
-        final detail = await _loadDetail(tripId);
-
-        store.upsertCreatedTrip(trip);
-        store.restoreDetail(tripId, detail);
-        await cache.saveTrip(trip);
-        await cache.saveDetail(tripId, detail);
+        await _ingestTripRow(
+          tripRow,
+          store,
+          cache,
+          membershipRole: memberRoles[tripId],
+        );
       }
     } catch (e, st) {
       debugPrint('SupabaseTripSync.pullTripsForUser failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  Future<void> _ingestTripRow(
+    Map<String, dynamic> tripRow,
+    TripStore store,
+    TripHiveCache cache, {
+    String? membershipRole,
+  }) async {
+    final tripId = tripRow['id'] as String;
+    if (TripStore.isMockTripId(tripId)) return;
+
+    final buddies = await _loadBuddies(tripId);
+    final trip = SupabaseTripMapper.tripFromRow(
+      tripRow,
+      buddies,
+      membershipRole: membershipRole,
+    );
+    final detail = await _loadDetail(tripId);
+
+    store.upsertCreatedTrip(trip);
+    store.restoreDetail(tripId, detail);
+    await cache.saveTrip(trip);
+    await cache.saveDetail(tripId, detail);
+  }
+
+  /// Adds the signed-in user as a viewer and returns the trip id.
+  Future<String?> acceptTripShare(String shareToken) async {
+    if (!_canSync) return null;
+
+    try {
+      final result = await client.rpc('accept_trip_share', params: {
+        'p_token': shareToken,
+      });
+      if (result == null) return null;
+      return result.toString();
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.acceptTripShare failed: $e\n$st');
       rethrow;
     }
   }
@@ -224,11 +290,12 @@ class SupabaseTripSync {
       final parsed = SupabaseTripMapper.sharedBundleFromMap(
         Map<String, dynamic>.from(bundle as Map),
       );
-      store.upsertCreatedTrip(parsed.trip);
-      store.restoreDetail(parsed.trip.id, parsed.detail);
-      await cache.saveTrip(parsed.trip);
-      await cache.saveDetail(parsed.trip.id, parsed.detail);
-      return parsed.trip;
+      final previewTrip = parsed.trip.copyWith(membershipRole: 'preview');
+      store.upsertCreatedTrip(previewTrip);
+      store.restoreDetail(previewTrip.id, parsed.detail);
+      await cache.saveTrip(previewTrip);
+      await cache.saveDetail(previewTrip.id, parsed.detail);
+      return previewTrip;
     } catch (e, st) {
       debugPrint('SupabaseTripSync.hydrateSharedTripByToken failed: $e\n$st');
       return null;

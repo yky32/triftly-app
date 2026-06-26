@@ -38,7 +38,7 @@ class ShareTripBottomSheet extends StatelessWidget {
   void _shareLink() {
     HapticFeedback.lightImpact();
     Share.share(
-      'Join my trip "${trip.name}" on Triftly\n$_link',
+      'Join our trip "${trip.name}" on Triftly — tap to open the app:\n$_link',
       subject: trip.name,
     );
   }
@@ -52,7 +52,10 @@ class ShareTripBottomSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SheetSectionHeader(title: 'Share trip', caption: 'View-only link'),
+          const SheetSectionHeader(
+            title: 'Share trip',
+            caption: 'Invite travel buddies',
+          ),
           const SizedBox(height: AppSpacing.md),
           SheetGradientHero(
             child: Column(
@@ -86,7 +89,7 @@ class ShareTripBottomSheet extends StatelessWidget {
           SheetPrimaryButton(label: 'Share link', onPressed: _shareLink),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Anyone with this link can view your itinerary and expenses.',
+            'Buddies can join from the link and see the full itinerary, spend, and map.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
                 ),
