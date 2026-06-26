@@ -285,6 +285,33 @@ def connect_api_for_spaceship
   token
 end
 
+def associated_domains_entitlements_enabled?
+  entitlements_path = File.join(IOS_DIR, "Runner/Runner.entitlements")
+  return false unless File.exist?(entitlements_path)
+
+  File.read(entitlements_path).include?("com.apple.developer.associated-domains")
+end
+
+def ensure_associated_domains_for_app!(app_identifier: "com.triftly")
+  connect_api_for_spaceship unless Spaceship::ConnectAPI.token
+  UI.user_error!("App Store Connect API key required to enable Associated Domains") unless Spaceship::ConnectAPI.token
+
+  bundle_ids = Spaceship::ConnectAPI::BundleId.all(filter: { identifier: app_identifier })
+  UI.user_error!("Bundle ID #{app_identifier} not found in App Store Connect") if bundle_ids.empty?
+
+  bundle_id = bundle_ids.first
+  capability_type = Spaceship::ConnectAPI::BundleIdCapability::Type::ASSOCIATED_DOMAINS
+  existing = Spaceship::ConnectAPI::BundleIdCapability.all(bundle_id_id: bundle_id.id)
+  return false if existing.any? { |cap| cap.capability_type == capability_type }
+
+  UI.message("🔗 Enabling Associated Domains for #{app_identifier}...")
+  Spaceship::ConnectAPI::BundleIdCapability.create(
+    bundle_id_id: bundle_id.id,
+    capability_type: capability_type
+  )
+  true
+end
+
 def prune_certificates_of_type(type, keep:, revoked_ids:)
   certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: type })
   certs = certs.reject { |cert| revoked_ids.include?(cert.id) }
@@ -1006,6 +1033,10 @@ platform :ios do
         end
       end
       
+      if associated_domains_entitlements_enabled?
+        ensure_associated_domains_for_app!(app_identifier: "com.triftly")
+      end
+
       # Get or create App Store provisioning profile
       UI.message("📋 Getting App Store provisioning profile...")
       if api_key_params
@@ -1013,10 +1044,13 @@ platform :ios do
           app_identifier: "com.triftly",
           api_key: app_store_connect_api_key(**api_key_params),
           team_id: "3G34999H3A",
-          force: false
+          force: ENV["CI"] && associated_domains_entitlements_enabled?
         }
         if ENV["CI"]
           profile_options[:cert_id] = distribution_cert_id_for_ci
+        end
+        if profile_options[:force]
+          UI.message("🔄 Regenerating App Store profile (Associated Domains entitlements)")
         end
         get_provisioning_profile(**profile_options)
       else
