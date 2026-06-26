@@ -200,29 +200,13 @@ class EmptyState extends StatelessWidget {
     );
 
     if (expand) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final navInset = AppSpacing.navIslandOccupiedHeight(context);
+      final navInset = AppSpacing.navIslandOccupiedHeight(context);
 
-          return SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                  AppSpacing.lg,
-                  navInset * 0.5,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [card],
-                ),
-              ),
-            ),
-          );
-        },
+      return SizedBox.expand(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, navInset),
+          child: Center(child: card),
+        ),
       );
     }
 
