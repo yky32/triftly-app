@@ -8,23 +8,23 @@ import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../widgets/profile_avatar.dart';
 
-class AccountBottomSheet extends StatefulWidget {
-  const AccountBottomSheet({required this.user, super.key});
+class UserDetailBottomSheet extends StatefulWidget {
+  const UserDetailBottomSheet({required this.user, super.key});
 
   final User user;
 
   static Future<void> show(BuildContext context, {required User user}) {
     return TriftlyBottomSheet.show(
       context,
-      child: AccountBottomSheet(user: user),
+      child: UserDetailBottomSheet(user: user),
     );
   }
 
   @override
-  State<AccountBottomSheet> createState() => _AccountBottomSheetState();
+  State<UserDetailBottomSheet> createState() => _UserDetailBottomSheetState();
 }
 
-class _AccountBottomSheetState extends State<AccountBottomSheet> {
+class _UserDetailBottomSheetState extends State<UserDetailBottomSheet> {
   bool _signingOut = false;
   String? _error;
   int _swipeKey = 0;
@@ -76,7 +76,7 @@ class _AccountBottomSheetState extends State<AccountBottomSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SheetSectionHeader(
-            title: 'Account',
+            title: 'User details',
             caption: 'Your Triftly profile',
           ),
           const SizedBox(height: AppSpacing.md),
@@ -129,19 +129,19 @@ class _AccountBottomSheetState extends State<AccountBottomSheet> {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _AccountDetailRow(
+                _UserDetailRow(
                   icon: Icons.person_outline_rounded,
                   label: 'Display name',
                   value: user.displayName,
                 ),
                 const SheetSoftListDivider(),
-                _AccountDetailRow(
+                _UserDetailRow(
                   icon: Icons.mail_outline_rounded,
                   label: 'Email',
                   value: user.email ?? '—',
                 ),
                 const SheetSoftListDivider(),
-                _AccountDetailRow(
+                _UserDetailRow(
                   icon: Icons.payments_outlined,
                   label: 'Default currency',
                   value: session.defaultCurrency,
@@ -165,8 +165,8 @@ class _AccountBottomSheetState extends State<AccountBottomSheet> {
   }
 }
 
-class _AccountDetailRow extends StatelessWidget {
-  const _AccountDetailRow({
+class _UserDetailRow extends StatelessWidget {
+  const _UserDetailRow({
     required this.icon,
     required this.label,
     required this.value,

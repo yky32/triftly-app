@@ -11,7 +11,7 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/triftly_motion.dart';
-import '../bottom_sheets/account_bottom_sheet.dart';
+import '../bottom_sheets/user_detail_bottom_sheet.dart';
 import '../bottom_sheets/appearance_bottom_sheet.dart';
 import '../bottom_sheets/default_currency_bottom_sheet.dart';
 import '../bottom_sheets/sign_in_bottom_sheet.dart';
@@ -223,8 +223,8 @@ class _IdentityCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.info_outline_rounded),
               color: AppColors.primaryDark,
-              tooltip: 'Account',
-              onPressed: () => AccountBottomSheet.show(context, user: user),
+              tooltip: 'User details',
+              onPressed: () => UserDetailBottomSheet.show(context, user: user),
             )
           else
             TextButton(
