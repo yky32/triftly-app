@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../auth/auth_deep_link_bridge.dart';
 import '../auth/auth_debug_log.dart';
+import '../bloc/cloud_sync/cloud_sync_bloc.dart';
+import '../bloc/session/session_bloc.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
@@ -13,15 +15,17 @@ import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
 import '../services/profile_preferences.dart';
-import '../services/user_session.dart';
+import '../sync/cloud_sync_reporter.dart';
 
 /// Initializes Hive, auth, trips, and optional Supabase.
 class AppBootstrap {
   AppBootstrap._();
 
   static late final ProfilePreferences profilePreferences;
-  static late final UserSession userSession;
+  static late final SessionBloc sessionBloc;
   static late final HiveTripRepository tripRepository;
+  static late final CloudSyncReporterBridge cloudSyncReporter;
+  static late final CloudSyncBloc cloudSyncBloc;
 
   /// True when [Supabase.initialize] completed successfully this session.
   static bool supabaseReady = false;
@@ -68,10 +72,21 @@ class AppBootstrap {
     );
     await auth.initialize();
 
-    userSession = UserSession(auth: auth, preferences: profilePreferences);
+    sessionBloc = SessionBloc(auth: auth, preferences: profilePreferences);
 
-    final supabaseSync = supabaseReady ? SupabaseTripSync() : null;
-    tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
+    cloudSyncReporter = CloudSyncReporterBridge();
+    final supabaseSync = supabaseReady
+        ? SupabaseTripSync(syncReporter: cloudSyncReporter)
+        : null;
+    tripRepository = await HiveTripRepository.bootstrap(
+      supabaseSync: supabaseSync,
+      syncReporter: cloudSyncReporter,
+    );
+    cloudSyncBloc = CloudSyncBloc(
+      sessionBloc: sessionBloc,
+      syncReporter: cloudSyncReporter,
+      tripRepository: tripRepository,
+    );
 
     auth.authStateChanges.listen((user) async {
       if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
@@ -90,6 +105,7 @@ class AppBootstrap {
         await CloudTripSync.syncForUser(
           user,
           tripRepository,
+          syncReporter: cloudSyncReporter,
           migrateLocalTrips: true,
         );
         authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
@@ -106,7 +122,11 @@ class AppBootstrap {
     final signedInUser = auth.currentUser;
     if (signedInUser != null && CloudTripSync.isCloudUserId(signedInUser.id)) {
       try {
-        await CloudTripSync.syncForUser(signedInUser, tripRepository);
+        await CloudTripSync.syncForUser(
+          signedInUser,
+          tripRepository,
+          syncReporter: cloudSyncReporter,
+        );
       } catch (error, stack) {
         developer.log(
           'Cloud sync on startup failed',
@@ -121,13 +141,11 @@ class AppBootstrap {
 
 class AppScope extends InheritedWidget {
   const AppScope({
-    required this.session,
     required this.tripRepository,
     required super.child,
     super.key,
   });
 
-  final UserSession session;
   final HiveTripRepository tripRepository;
 
   static AppScope of(BuildContext context) {
@@ -138,5 +156,5 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      session != oldWidget.session || tripRepository != oldWidget.tripRepository;
+      tripRepository != oldWidget.tripRepository;
 }

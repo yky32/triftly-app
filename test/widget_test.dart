@@ -24,7 +24,6 @@ void main() {
 
     await tester.pumpWidget(
       AppScope(
-        session: AppBootstrap.userSession,
         tripRepository: AppBootstrap.tripRepository,
         child: TripApp(themeController: themeController),
       ),

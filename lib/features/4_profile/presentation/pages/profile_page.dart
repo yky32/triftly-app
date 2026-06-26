@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../../core/bloc/cloud_sync/cloud_sync_bloc.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
-import '../../../../core/services/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -44,7 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await Share.share(json, subject: 'Triftly trips export');
   }
 
-  Future<void> _confirmClearOfflineData(BuildContext context, UserSession session) async {
+  Future<void> _confirmClearOfflineData(BuildContext context, SessionState session) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -60,7 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     if (confirmed != true || !context.mounted) return;
 
-    final user = session.currentUser;
+    final user = session.user;
     final cloudUserId =
         user != null && !user.id.startsWith('local-') ? user.id : null;
     await AppBootstrap.tripRepository.clearOfflineData(cloudUserId: cloudUserId);
@@ -73,15 +75,13 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
-    final session = AppBootstrap.userSession;
 
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Me')),
-      body: ListenableBuilder(
-        listenable: session,
-        builder: (context, _) {
+      body: BlocBuilder<SessionBloc, SessionState>(
+        builder: (context, session) {
           return ListView(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -124,6 +124,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: AppSpacing.xl),
               const _MeSectionHeader(title: 'Data'),
               _SettingsGroup(children: [
+                if (session.isCloudSignedIn) const _CloudSyncSettingsTile(),
                 _SettingsTile(
                   title: 'Export trips',
                   subtitle: session.isCloudSignedIn ? null : 'Sign in to export',
@@ -161,11 +162,11 @@ class _ProfilePageState extends State<ProfilePage> {
 class _IdentityCard extends StatelessWidget {
   const _IdentityCard({required this.session});
 
-  final UserSession session;
+  final SessionState session;
 
   @override
   Widget build(BuildContext context) {
-    final user = session.currentUser;
+    final user = session.user;
     final isCloudSignedIn = session.isCloudSignedIn;
     final isLocalGuest = user != null && user.id.startsWith('local-');
 
@@ -218,6 +219,33 @@ class _IdentityCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CloudSyncSettingsTile extends StatelessWidget {
+  const _CloudSyncSettingsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CloudSyncBloc, CloudSyncState>(
+      builder: (context, state) {
+        final hasError = state.hasError;
+
+        return _SettingsTile(
+          title: 'Trip sync',
+          subtitle: hasError ? state.lastError : null,
+          value: state.isSyncing
+              ? 'Syncing…'
+              : hasError
+                  ? 'Failed'
+                  : state.lastSuccessLabel,
+          showChevron: hasError && !state.isSyncing,
+          onTap: hasError && !state.isSyncing
+              ? () => context.read<CloudSyncBloc>().add(const CloudSyncRetryRequested())
+              : () {},
+        );
+      },
     );
   }
 }

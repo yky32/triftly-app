@@ -7,7 +7,7 @@ import '../../features/6_trip_detail/bloc/trip_detail_bloc.dart';
 abstract final class AppScopeBlocs {
   static TripListBloc createTripListBloc() => TripListBloc(
         repository: AppBootstrap.tripRepository,
-        cloudUserId: () => AppBootstrap.userSession.currentUser?.id,
+        cloudUserId: () => AppBootstrap.sessionBloc.state.user?.id,
       );
 
   static TripDetailBloc createTripDetailBloc(String tripId) => TripDetailBloc(
@@ -16,7 +16,7 @@ abstract final class AppScopeBlocs {
       );
 
   static SpendOverviewBloc createSpendOverviewBloc() => SpendOverviewBloc(
-        session: AppBootstrap.userSession,
+        sessionBloc: AppBootstrap.sessionBloc,
         repository: AppBootstrap.tripRepository,
       );
 }

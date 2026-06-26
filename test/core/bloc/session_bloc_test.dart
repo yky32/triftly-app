@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:triftly/core/bloc/session/session_bloc.dart';
 import 'package:triftly/core/models/user.dart';
 import 'package:triftly/core/repositories/auth_repository.dart';
 import 'package:triftly/core/services/auth_state_stream.dart';
 import 'package:triftly/core/services/profile_preferences.dart';
-import 'package:triftly/core/services/user_session.dart';
 
 void main() {
   group('replayAuthState', () {
@@ -35,7 +36,7 @@ void main() {
     });
   });
 
-  group('UserSession cold start', () {
+  group('SessionBloc cold start', () {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       await ProfilePreferences.initialize();
@@ -52,15 +53,25 @@ void main() {
 
       await auth.restoreSession(cloudUser);
 
-      final session = UserSession(
+      final bloc = SessionBloc(
         auth: auth,
         preferences: ProfilePreferences.instance,
       );
 
-      expect(session.isCloudSignedIn, isTrue);
-      expect(session.currentUser?.email, 'wayne@example.com');
-      session.dispose();
+      expect(bloc.state.isCloudSignedIn, isTrue);
+      expect(bloc.state.user?.email, 'wayne@example.com');
+      await bloc.close();
     });
+
+    blocTest<SessionBloc, SessionState>(
+      'SessionDefaultCurrencyChanged updates fallback for guest',
+      build: () => SessionBloc(
+        auth: _FakeAuthRepository(),
+        preferences: ProfilePreferences.instance,
+      ),
+      act: (bloc) => bloc.add(const SessionDefaultCurrencyChanged('EUR')),
+      verify: (bloc) => expect(bloc.state.defaultCurrency, 'EUR'),
+    );
   });
 }
 
