@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../models/user.dart';
+import '../services/auth_state_stream.dart';
 import '../services/profile_preferences.dart';
 import 'auth_repository.dart';
 
@@ -13,7 +14,8 @@ class LocalAuthRepository implements AuthRepository {
   User? _user;
 
   @override
-  Stream<User?> get authStateChanges => _controller.stream;
+  Stream<User?> get authStateChanges =>
+      replayAuthState(_user, _controller.stream);
 
   @override
   User? get currentUser => _user;

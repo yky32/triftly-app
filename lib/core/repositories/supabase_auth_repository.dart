@@ -6,6 +6,7 @@ import '../auth/auth_oauth_launch.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
+import '../services/auth_state_stream.dart';
 import '../services/profile_preferences.dart';
 import 'auth_repository.dart';
 import 'local_auth_repository.dart';
@@ -27,7 +28,8 @@ class SupabaseAuthRepository implements AuthRepository {
       Environment.hasSupabase && supabase.Supabase.instance.isInitialized;
 
   @override
-  Stream<User?> get authStateChanges => _controller.stream;
+  Stream<User?> get authStateChanges =>
+      replayAuthState(_user, _controller.stream);
 
   @override
   User? get currentUser => _user;
