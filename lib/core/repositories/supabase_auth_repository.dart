@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:url_launcher/url_launcher.dart';
+import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
 import '../services/profile_preferences.dart';
@@ -80,6 +82,16 @@ class SupabaseAuthRepository implements AuthRepository {
     if (!_useSupabase) return _local.signInWithEmailOtp(email);
     await supabase.Supabase.instance.client.auth.signInWithOtp(email: email);
     return null;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    if (!_useSupabase) return _local.signInWithGoogle();
+    await supabase.Supabase.instance.client.auth.signInWithOAuth(
+      supabase.OAuthProvider.google,
+      redirectTo: AuthRedirect.url,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
   }
 
   @override

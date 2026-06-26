@@ -159,6 +159,12 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     notifyListeners();
   }
 
+  @override
+  Future<void> pullFromCloud(String? cloudUserId) async {
+    if (cloudUserId == null || cloudUserId.startsWith('local-')) return;
+    await pullFromSupabase(cloudUserId);
+  }
+
   Future<void> migrateLocalTripsToCloud(User user) async {
     for (final trip in _store.createdTripsOnly()) {
       if (!LocalTripMigration.needsMigration(trip)) continue;

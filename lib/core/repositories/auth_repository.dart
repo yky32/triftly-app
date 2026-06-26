@@ -7,6 +7,7 @@ abstract class AuthRepository {
 
   Future<void> initialize();
   Future<User?> signInWithEmailOtp(String email);
+  Future<void> signInWithGoogle();
   Future<void> verifyEmailOtp({required String email, required String token});
   Future<void> signOut();
   Future<void> updateUser(User user);

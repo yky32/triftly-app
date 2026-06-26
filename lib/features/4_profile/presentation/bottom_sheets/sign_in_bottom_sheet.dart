@@ -101,6 +101,24 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    if (_submitting) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await AppBootstrap.userSession.signInWithGoogle();
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _submitting = false;
+      });
+    }
+  }
+
   Future<void> _verifyCode() async {
     final email = _emailController.text.trim();
     final code = _codeController.text.trim();
@@ -189,7 +207,10 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SheetSocialCircleButton(
-                  enabled: false,
+                  enabled: Environment.hasSupabase &&
+                      AppBootstrap.supabaseReady &&
+                      !_submitting,
+                  onTap: _signInWithGoogle,
                   semanticLabel: 'Continue with Google',
                   child: const GoogleLogoIcon(size: 24),
                 ),

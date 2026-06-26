@@ -22,4 +22,7 @@ abstract class TripRepository {
   void updateExpense(String tripId, Expense expense);
   void removeExpense(String tripId, String expenseId);
   void addSettlement(String tripId, SettlementRecord record);
+
+  /// Pull latest trips from Supabase when [cloudUserId] is a Supabase auth id.
+  Future<void> pullFromCloud(String? cloudUserId);
 }
