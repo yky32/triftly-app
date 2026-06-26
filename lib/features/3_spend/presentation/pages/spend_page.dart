@@ -84,11 +84,13 @@ class _ViewState extends State<_View> {
     if (overview == null || overview.isEmpty) {
       return EmptyState(
         expand: true,
+        eyebrow: 'Wallet',
         icon: Icons.account_balance_wallet_outlined,
         title: 'Your wallet is empty',
         subtitle: 'Log expenses in a trip and they will appear here.',
         action: () => context.go(AppPage.plan.path),
         actionLabel: 'Go to Trips',
+        actionIcon: Icons.calendar_month_outlined,
       );
     }
 

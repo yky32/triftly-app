@@ -26,6 +26,7 @@ class PlanDayEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TripInlineEmptyCard(
+      eyebrow: 'Plan',
       icon: Icons.place_outlined,
       title: readOnly ? 'No stops scheduled' : 'No spots yet',
       subtitle: readOnly

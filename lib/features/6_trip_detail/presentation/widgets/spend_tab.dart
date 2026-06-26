@@ -94,6 +94,7 @@ class SpendTab extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xl),
                       EmptyState(
                         compact: true,
+                        eyebrow: 'Spend',
                         icon: Icons.receipt_long_outlined,
                         title: 'No expenses yet',
                         subtitle: 'Track what you spend on this trip.',

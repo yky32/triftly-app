@@ -106,6 +106,7 @@ class _ViewState extends State<_View> {
   Widget _buildEmpty(BuildContext context) {
     return EmptyState(
       expand: true,
+      eyebrow: 'Trips',
       icon: Icons.luggage_outlined,
       title: 'No trips yet',
       subtitle: 'Start planning your next trip',
