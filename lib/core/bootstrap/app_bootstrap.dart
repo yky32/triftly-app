@@ -26,6 +26,9 @@ class AppBootstrap {
   /// True when [Supabase.initialize] completed successfully this session.
   static bool supabaseReady = false;
 
+  static String? _lastCloudSyncUserId;
+  static DateTime? _lastCloudSyncAt;
+
   static Future<void> initialize() async {
     profilePreferences = await ProfilePreferences.initialize();
 
@@ -71,23 +74,32 @@ class AppBootstrap {
     tripRepository = await HiveTripRepository.bootstrap(supabaseSync: supabaseSync);
 
     auth.authStateChanges.listen((user) async {
-      if (user != null && CloudTripSync.isCloudUserId(user.id)) {
-        authDebugLog('Cloud sync starting for ${user.email} (${user.id})', kind: AuthLogKind.sync);
-        try {
-          await CloudTripSync.syncForUser(
-            user,
-            tripRepository,
-            migrateLocalTrips: true,
-          );
-          authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
-        } catch (error, stack) {
-          authDebugLog(
-            'Cloud sync after sign-in failed',
-            kind: AuthLogKind.error,
-            error: error,
-            stackTrace: stack,
-          );
-        }
+      if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
+
+      final now = DateTime.now();
+      if (_lastCloudSyncUserId == user.id &&
+          _lastCloudSyncAt != null &&
+          now.difference(_lastCloudSyncAt!) < const Duration(seconds: 10)) {
+        return;
+      }
+      _lastCloudSyncUserId = user.id;
+      _lastCloudSyncAt = now;
+
+      authDebugLog('Cloud sync starting for ${user.email} (${user.id})', kind: AuthLogKind.sync);
+      try {
+        await CloudTripSync.syncForUser(
+          user,
+          tripRepository,
+          migrateLocalTrips: true,
+        );
+        authDebugLog('Cloud sync finished for ${user.id}', kind: AuthLogKind.success);
+      } catch (error, stack) {
+        authDebugLog(
+          'Cloud sync after sign-in failed',
+          kind: AuthLogKind.error,
+          error: error,
+          stackTrace: stack,
+        );
       }
     });
 

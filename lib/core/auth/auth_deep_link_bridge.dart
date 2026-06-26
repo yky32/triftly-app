@@ -1,28 +1,23 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:app_links/app_links.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../environment.dart';
 import 'auth_debug_log.dart';
-import 'auth_redirect.dart';
 
-/// Completes Supabase OAuth when the app receives `triftly://login-callback`.
+/// Logs OAuth deep links on iOS and ensures native forwards reach Flutter.
 ///
-/// iOS: native [AppDelegate] forwards the URL via method channel (app_links alone
-/// can miss warm-resume callbacks). All platforms also listen to [AppLinks].
+/// Session exchange is handled solely by `supabase_flutter` via `app_links`
+/// (after [AppDelegate] calls `super.application`). Do not call
+/// [getSessionFromUrl] here — duplicate calls cause `flow_state_not_found`.
 class AuthDeepLinkBridge {
   AuthDeepLinkBridge._();
 
   static const _channel = MethodChannel('com.triftly/auth');
 
-  static StreamSubscription<Uri>? _appLinksSub;
   static bool _installed = false;
-
-  /// Last OAuth URL handled — avoids duplicate [getSessionFromUrl] calls.
-  static String? _lastHandledUrl;
+  static String? _lastLoggedUrl;
 
   static Future<void> install() async {
     if (_installed || !Environment.hasSupabase) return;
@@ -33,7 +28,7 @@ class AuthDeepLinkBridge {
       try {
         final pending = await _channel.invokeMethod<String>('getPendingOAuthCallback');
         if (pending != null && pending.isNotEmpty) {
-          await _handleOAuthUri(Uri.parse(pending), source: 'ios-pending');
+          _logOAuthUri(Uri.parse(pending), source: 'ios-pending');
         }
       } catch (e, st) {
         authDebugLog(
@@ -45,19 +40,6 @@ class AuthDeepLinkBridge {
       }
     }
 
-    final appLinks = AppLinks();
-    await _appLinksSub?.cancel();
-    _appLinksSub = appLinks.uriLinkStream.listen(
-      (uri) => unawaited(_handleOAuthUri(uri, source: 'app_links')),
-      onError: (Object e, StackTrace st) {
-        authDebugLog(
-          'app_links stream error',
-          kind: AuthLogKind.error,
-          error: e,
-          stackTrace: st,
-        );
-      },
-    );
     authDebugLog('Auth deep link bridge installed', kind: AuthLogKind.deepLink);
   }
 
@@ -65,69 +47,30 @@ class AuthDeepLinkBridge {
     if (call.method == 'onOAuthCallback') {
       final raw = call.arguments;
       if (raw is String && raw.isNotEmpty) {
-        await _handleOAuthUri(Uri.parse(raw), source: 'ios-channel');
+        _logOAuthUri(Uri.parse(raw), source: 'ios-channel');
       }
     }
   }
 
-  static bool _isOAuthCallback(Uri uri) {
-    if (uri.scheme != 'triftly') return false;
-    final host = uri.host;
-    if (host == 'login-callback') return true;
-    // Some launchers omit host: triftly:///login-callback or path-only.
-    if (host.isEmpty && uri.path.contains('login-callback')) return true;
-    return false;
-  }
-
-  static Future<void> _handleOAuthUri(Uri uri, {required String source}) async {
-    if (!_isOAuthCallback(uri)) return;
+  static void _logOAuthUri(Uri uri, {required String source}) {
+    if (uri.scheme != 'triftly' || uri.host != 'login-callback') return;
 
     final raw = uri.toString();
-    if (_lastHandledUrl == raw) {
-      authDebugLog('Skipping duplicate OAuth URL ($source)', kind: AuthLogKind.deepLink);
-      return;
-    }
-
-    authDebugLog('OAuth callback ($source): $uri', kind: AuthLogKind.deepLink);
+    if (_lastLoggedUrl == raw) return;
+    _lastLoggedUrl = raw;
 
     if (uri.queryParameters.containsKey('error')) {
       authDebugLog(
-        'OAuth error in callback: ${uri.queryParameters['error']} '
+        'OAuth error ($source): ${uri.queryParameters['error']} '
         '${uri.queryParameters['error_description'] ?? ''}',
         kind: AuthLogKind.error,
       );
       return;
     }
 
-    final hasCode = uri.queryParameters.containsKey('code');
-    final hasToken = uri.fragment.contains('access_token');
-    if (!hasCode && !hasToken) {
-      authDebugLog('OAuth callback missing code/token', kind: AuthLogKind.error);
-      return;
-    }
-
-    if (!Supabase.instance.isInitialized) {
-      authDebugLog('Supabase not initialized — cannot complete OAuth', kind: AuthLogKind.error);
-      return;
-    }
-
-    try {
-      await Supabase.instance.client.auth.getSessionFromUrl(uri);
-      _lastHandledUrl = raw;
-      authDebugLog('getSessionFromUrl succeeded ($source)', kind: AuthLogKind.success);
-    } catch (e, st) {
-      authDebugLog(
-        'getSessionFromUrl failed ($source)',
-        kind: AuthLogKind.error,
-        error: e,
-        stackTrace: st,
-      );
-    }
-  }
-
-  /// Parses [AuthRedirect.url] for native iOS host matching.
-  static String get loginCallbackHost {
-    final uri = Uri.parse(AuthRedirect.url);
-    return uri.host.isNotEmpty ? uri.host : 'login-callback';
+    authDebugLog(
+      'OAuth callback ($source) — Supabase will exchange code',
+      kind: AuthLogKind.deepLink,
+    );
   }
 }
