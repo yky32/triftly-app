@@ -139,6 +139,7 @@ Run this before each TestFlight build or after schema/auth changes.
 - [ ] Tap **Join** → sign in if needed → trip appears in **Trips** tab
 - [ ] Second device: same account → joined trip syncs after pull
 - [ ] Host `web/.well-known/apple-app-site-association` on `triftly.app` (see `web/.well-known/`)
+- [ ] Apple Developer → Identifiers → `com.triftly` → enable **Associated Domains** (one-time; required for TestFlight universal links)
 
 ### Quick SQL spot-check
 
