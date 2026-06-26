@@ -4,6 +4,7 @@ import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/validation/email_validator.dart';
+import '../../../../core/widgets/google_logo_icon.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
@@ -186,7 +187,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
             const SizedBox(height: AppSpacing.lg),
             SheetSocialSignInButton(
               label: 'Continue with Google',
-              leading: const SheetGoogleGlyph(),
+              leading: const GoogleLogoIcon(size: 22),
               enabled: false,
               badge: 'Soon',
             ),
