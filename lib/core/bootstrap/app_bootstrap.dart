@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/auth_deep_link_bridge.dart';
 import '../auth/auth_debug_log.dart';
 import '../environment.dart';
 import '../repositories/hive_trip_repository.dart';
@@ -38,9 +38,9 @@ class AppBootstrap {
           onTimeout: () => throw TimeoutException('Supabase.initialize timed out'),
         );
         supabaseReady = true;
+        await AuthDeepLinkBridge.install();
         if (kDebugMode) {
           authDebugLog('Supabase init completed → $url', kind: AuthLogKind.session);
-          _watchDeepLinksForDebug();
         }
       } catch (error, stack) {
         supabaseReady = false;
@@ -104,14 +104,6 @@ class AppBootstrap {
         );
       }
     }
-  }
-
-  static void _watchDeepLinksForDebug() {
-    final appLinks = AppLinks();
-    // Do not call getInitialLink() — Supabase owns that once per app lifetime.
-    appLinks.uriLinkStream.listen((uri) {
-      authDebugLog('Deep link received: $uri', kind: AuthLogKind.deepLink);
-    });
   }
 }
 

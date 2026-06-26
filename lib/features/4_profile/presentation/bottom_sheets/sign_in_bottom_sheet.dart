@@ -246,7 +246,7 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
                   enabled: Environment.hasSupabase &&
                       AppBootstrap.supabaseReady &&
                       !_submitting,
-                  onTap: _signInWithGoogle,
+                  onTap: _submitting ? null : _signInWithGoogle,
                   semanticLabel: 'Continue with Google',
                   child: const GoogleLogoIcon(size: 24),
                 ),
