@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../../../core/auth/auth_debug_log.dart';
+import '../../../../core/auth/auth_oauth_session.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
@@ -173,6 +174,14 @@ class _SignInBottomSheetState extends State<SignInBottomSheet> {
       );
 
       _closeSheetSafely();
+    } on OAuthSignInCanceled {
+      authDebugLog('Sign-in sheet: user canceled OAuth', kind: AuthLogKind.oauth);
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = null;
+      });
+      _resetSwipe();
     } catch (e, st) {
       if (_isCloudUser(session.currentUser)) {
         authDebugLog(

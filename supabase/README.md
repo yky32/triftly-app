@@ -47,7 +47,7 @@ triftly://login-callback
 
 The app handles this via `AuthRedirect.url` (`lib/core/auth/auth_redirect.dart`) and native URL schemes (`triftly` on iOS/Android).
 
-**iOS:** `AppDelegate` must call `super.application(_:open:options:)` so `app_links` / Supabase receive `triftly://login-callback` after Google OAuth.
+**iOS:** Google sign-in uses `ASWebAuthenticationSession` (in-app sheet). It auto-returns to Triftly on `triftly://login-callback` without opening Safari or leaving a browser tab. `AppDelegate` still forwards deep links via `super.application(_:open:options:)` for cold-start / Android.
 
 ### Google OAuth setup
 

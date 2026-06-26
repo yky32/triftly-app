@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../auth/auth_debug_log.dart';
 import '../auth/auth_user_mapper.dart';
 import '../auth/auth_oauth_launch.dart';
+import '../auth/auth_oauth_session.dart';
 import '../auth/auth_redirect.dart';
 import '../environment.dart';
 import '../models/user.dart';
@@ -104,13 +107,22 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signInWithGoogle() async {
     if (!_useSupabase) return _local.signInWithGoogle();
-    final launchMode = googleOAuthLaunchMode();
+
+    final client = supabase.Supabase.instance.client.auth;
     authDebugLog(
-      'Launching Google OAuth → redirectTo=${AuthRedirect.url} mode=$launchMode',
+      'Launching Google OAuth → redirectTo=${AuthRedirect.url}',
       kind: AuthLogKind.oauth,
     );
+
     try {
-      final launched = await supabase.Supabase.instance.client.auth.signInWithOAuth(
+      if (Platform.isIOS) {
+        await _signInWithGoogleInAppSession(client);
+        return;
+      }
+
+      final launchMode = googleOAuthLaunchMode();
+      authDebugLog('OAuth launch mode: $launchMode', kind: AuthLogKind.oauth);
+      final launched = await client.signInWithOAuth(
         supabase.OAuthProvider.google,
         redirectTo: AuthRedirect.url,
         authScreenLaunchMode: launchMode,
@@ -119,14 +131,34 @@ class SupabaseAuthRepository implements AuthRepository {
         throw StateError('Could not open Google sign-in in the browser');
       }
       authDebugLog(
-        'OAuth browser opened — complete sign-in in Safari, '
-        'then return to Triftly via ${AuthRedirect.url}',
+        'OAuth browser opened — complete sign-in, then return via ${AuthRedirect.url}',
         kind: AuthLogKind.oauth,
       );
     } catch (e, st) {
       authDebugLog('signInWithOAuth failed', kind: AuthLogKind.error, error: e, stackTrace: st);
       rethrow;
     }
+  }
+
+  Future<void> _signInWithGoogleInAppSession(supabase.GoTrueClient client) async {
+    final signIn = await client.getOAuthSignInUrl(
+      provider: supabase.OAuthProvider.google,
+      redirectTo: AuthRedirect.url,
+    );
+
+    final callbackUri = await AuthOAuthSession.launch(
+      oauthUrl: Uri.parse(signIn.url),
+      callbackScheme: 'triftly',
+    );
+    if (callbackUri == null) {
+      throw const OAuthSignInCanceled();
+    }
+
+    authDebugLog(
+      'In-app OAuth callback — exchanging code',
+      kind: AuthLogKind.deepLink,
+    );
+    await client.getSessionFromUrl(callbackUri);
   }
 
   @override
