@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../navigation/edge_swipe_back.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'sheet_form_primitives.dart';
@@ -31,11 +32,13 @@ class TripTimePickerSheet extends StatefulWidget {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => SheetKeyboardDismiss(
-        child: TripTimePickerSheet(
-          initialTime: initialTime,
-          accentColor: accentColor,
-          title: title,
+      builder: (_) => EdgeSwipeBack(
+        child: SheetKeyboardDismiss(
+          child: TripTimePickerSheet(
+            initialTime: initialTime,
+            accentColor: accentColor,
+            title: title,
+          ),
         ),
       ),
     );
