@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/bootstrap/app_bloc_providers.dart';
 import 'core/navigation/app_router.dart';
+import 'core/navigation/map_deep_link_bridge.dart';
 import 'core/navigation/share_deep_link_bridge.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
@@ -20,11 +21,13 @@ class _TripAppState extends State<TripApp> {
   void initState() {
     super.initState();
     ShareDeepLinkBridge.install(appRouter);
+    MapDeepLinkBridge.install();
   }
 
   @override
   void dispose() {
     ShareDeepLinkBridge.dispose();
+    MapDeepLinkBridge.dispose();
     super.dispose();
   }
 

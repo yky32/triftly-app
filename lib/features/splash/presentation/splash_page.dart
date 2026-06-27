@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/constants/app_page.dart';
+import '../../../core/navigation/shared_place_flow.dart';
 import '../../../core/navigation/share_deep_link_bridge.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -32,10 +33,13 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _runSequence() async {
-    await Future<void>.delayed(SplashPage.holdDuration);
-    if (!mounted) return;
-    await _fadeController.forward();
-    if (!mounted) return;
+    final inboundShare = SharedPlaceFlow.pendingPlace != null;
+    if (!inboundShare) {
+      await Future<void>.delayed(SplashPage.holdDuration);
+      if (!mounted) return;
+      await _fadeController.forward();
+      if (!mounted) return;
+    }
     _goToTrips();
   }
 

@@ -69,15 +69,17 @@ import UIKit
     return super.application(app, open: url, options: options)
   }
 
-  private func storeSharedMapUrl(_ url: URL) {
-    guard url.scheme == "triftly", url.host == "map",
-          let comp = URLComponents(url: url, resolvingAgainstBaseURL: false),
-          let urlParam = comp.queryItems?.first(where: { $0.name == "url" })?.value,
-          let decoded = urlParam.removingPercentEncoding else { return }
+	private func storeSharedMapUrl(_ url: URL) {
+		guard url.scheme == "triftly", url.host == "map",
+			  let comp = URLComponents(url: url, resolvingAgainstBaseURL: false),
+			  let payload = comp.queryItems?.first(where: { $0.name == "url" })?.value else { return }
 
-    AppDelegate.pendingSharedUrl = decoded
-    shareChannel?.invokeMethod("onSharedUrlReady", arguments: nil)
-  }
+		let decoded = payload.removingPercentEncoding ?? payload
+		guard !decoded.isEmpty else { return }
+
+		AppDelegate.pendingSharedUrl = decoded
+		shareChannel?.invokeMethod("onSharedUrlReady", arguments: nil)
+	}
 
   private func startOAuthSession(call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard let args = call.arguments as? [String: Any],

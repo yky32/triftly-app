@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../auth/auth_redirect.dart';
 import '../constants/app_page.dart';
+import '../navigation/shared_place_flow.dart';
 import 'scaffold_with_nav_bar.dart';
 import 'page_transitions.dart';
 import 'shared_map_redirect.dart';
@@ -169,7 +170,10 @@ void _rememberPathFromState(GoRouterState state) {
   _rememberPath(state.uri.hasQuery ? '${state.uri.path}?${state.uri.query}' : path);
 }
 
-String _routerFallbackPath() => _lastKnownPath;
+String _routerFallbackPath() {
+  if (SharedPlaceFlow.pendingPlace != null) return AppPage.plan.path;
+  return _lastKnownPath;
+}
 
 class _RouterNotFound extends StatelessWidget {
   const _RouterNotFound();
