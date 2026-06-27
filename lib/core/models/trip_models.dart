@@ -73,15 +73,41 @@ class Buddy extends Equatable {
 
 /// Cloud trip member row (excludes trip owner).
 class TripMemberSummary extends Equatable {
-  const TripMemberSummary({required this.userId, required this.role});
+  const TripMemberSummary({
+    required this.userId,
+    required this.role,
+    this.displayName,
+    this.email,
+  });
 
   final String userId;
   final String role;
+  final String? displayName;
+  final String? email;
 
   bool get isEditor => role == 'editor';
 
+  bool get isViewer => role == 'viewer';
+
+  /// Best label for UI: name → email → short id.
+  String get displayLabel {
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final mail = email?.trim();
+    if (mail != null && mail.isNotEmpty) return mail;
+    return userId.length > 8 ? '${userId.substring(0, 8)}…' : userId;
+  }
+
+  String? get subtitle {
+    final mail = email?.trim();
+    if (mail == null || mail.isEmpty) return null;
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty && name != mail) return mail;
+    return null;
+  }
+
   @override
-  List<Object?> get props => [userId, role];
+  List<Object?> get props => [userId, role, displayName, email];
 }
 
 enum TripPhase { upcoming, inProgress, completed }

@@ -81,5 +81,24 @@ void main() {
       expect(trip.canEditTripContent, isTrue);
       expect(trip.membershipBadgeLabel, isNull);
     });
+
+    test('TripMemberSummary displayLabel prefers name then email', () {
+      const withName = TripMemberSummary(
+        userId: 'uuid-1',
+        role: 'viewer',
+        displayName: 'Alice',
+        email: 'alice@example.com',
+      );
+      expect(withName.displayLabel, 'Alice');
+      expect(withName.subtitle, 'alice@example.com');
+
+      const emailOnly = TripMemberSummary(
+        userId: 'uuid-2',
+        role: 'editor',
+        email: 'bob@example.com',
+      );
+      expect(emailOnly.displayLabel, 'bob@example.com');
+      expect(emailOnly.subtitle, isNull);
+    });
   });
 }

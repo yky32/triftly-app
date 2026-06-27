@@ -28,6 +28,7 @@ Migration order:
 5. `migrations/005_rename_profiles_to_users.sql` — only if `public.profiles` already exists
 6. `migrations/006_trip_share_join.sql`
 7. `migrations/007_trip_member_editor_rls.sql` — editor write RLS, leave share, member roles
+8. `migrations/008_trip_member_profiles.sql` — member list with display name + email for owners
 
 **Already ran SQL by hand?** Mark versions as applied so CI does not re-run them:
 
@@ -144,7 +145,9 @@ Run this before each TestFlight build or after schema/auth changes.
 
 ### Shared trip roles (viewer / editor)
 
-- [ ] Owner: Share → **Who joined** lists members after buddy joins
+- [ ] Trip detail → tap **Trip buddies** row → dedicated sheet with count, avatars, names
+- [ ] Owner: Share → **Trip buddies & access** or summary row opens member sheet
+- [ ] Joined member shows **display name** and email when available (migration 008)
 - [ ] Owner: promote buddy **View → Edit**; buddy pull-to-refresh → trip shows **Shared · can edit** and editor banner
 - [ ] Editor: add spot / expense → syncs to owner after refresh
 - [ ] Viewer: trip detail shows view-only banner; no add/edit controls

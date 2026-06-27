@@ -5,11 +5,17 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/theme/segment_style.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
+import '../../../../core/widgets/triftly_motion.dart';
 
 class TripDetailSummary extends StatelessWidget {
-  const TripDetailSummary({required this.trip, super.key});
+  const TripDetailSummary({
+    required this.trip,
+    this.onBuddiesTap,
+    super.key,
+  });
 
   final Trip trip;
+  final VoidCallback? onBuddiesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +37,7 @@ class TripDetailSummary extends StatelessWidget {
                 icon: Icons.calendar_today_outlined,
                 label: DateFormatters.dateRange(trip.startDate, trip.endDate),
               ),
-              if (trip.buddies.isNotEmpty)
+              if (trip.buddies.isNotEmpty || onBuddiesTap != null)
                 _InfoChip(
                   icon: Icons.people_outline_rounded,
                   label: '${trip.buddies.length}',
@@ -39,9 +45,12 @@ class TripDetailSummary extends StatelessWidget {
               _PhaseChip(trip: trip, style: style, isDark: isDark),
             ],
           ),
-          if (trip.buddies.isNotEmpty) ...[
+          if (trip.buddies.isNotEmpty || onBuddiesTap != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            _BuddyRow(buddies: trip.buddies),
+            Pressable(
+              onTap: onBuddiesTap,
+              child: _BuddyRow(buddies: trip.buddies, showChevron: onBuddiesTap != null),
+            ),
           ],
           if (_hasFlightInfo) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -120,9 +129,10 @@ class _PhaseChip extends StatelessWidget {
 }
 
 class _BuddyRow extends StatelessWidget {
-  const _BuddyRow({required this.buddies});
+  const _BuddyRow({required this.buddies, this.showChevron = false});
 
   final List<Buddy> buddies;
+  final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
@@ -130,21 +140,35 @@ class _BuddyRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ...buddies.take(6).map(
-              (buddy) => Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: _colorFromHex(buddy.avatarColor ?? '0D9488'),
-                  child: Text(
-                    buddy.name.isNotEmpty ? buddy.name[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+        if (buddies.isEmpty && showChevron)
+          Text(
+            'Trip buddies',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+          )
+        else ...[
+          ...buddies.take(6).map(
+                (buddy) => Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: _colorFromHex(buddy.avatarColor ?? '0D9488'),
+                    child: Text(
+                      buddy.name.isNotEmpty ? buddy.name[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
                   ),
                 ),
               ),
-            ),
-        if (buddies.length > 6)
-          Text('+${buddies.length - 6}', style: Theme.of(context).textTheme.bodySmall),
+          if (buddies.length > 6)
+            Text('+${buddies.length - 6}', style: Theme.of(context).textTheme.bodySmall),
+        ],
+        if (showChevron) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
+        ],
       ],
     );
   }

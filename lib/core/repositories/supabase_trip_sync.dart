@@ -263,6 +263,20 @@ class SupabaseTripSync {
     if (!_canSync) return const [];
 
     try {
+      final profiles = await client.rpc('get_trip_member_profiles', params: {
+        'p_trip_id': tripId,
+      });
+
+      if (profiles is List) {
+        return profiles
+            .map((raw) => _memberFromMap(Map<String, dynamic>.from(raw as Map)))
+            .toList();
+      }
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.fetchTripMembers profiles RPC failed: $e\n$st');
+    }
+
+    try {
       final rows = await client
           .from('trip_members')
           .select('user_id, role')
@@ -283,6 +297,13 @@ class SupabaseTripSync {
       return const [];
     }
   }
+
+  TripMemberSummary _memberFromMap(Map<String, dynamic> row) => TripMemberSummary(
+        userId: row['user_id'] as String,
+        role: row['role'] as String,
+        displayName: row['display_name'] as String?,
+        email: row['email'] as String?,
+      );
 
   Future<List<Buddy>> _loadBuddies(String tripId) async {
     final rows = await client.from('buddies').select().eq('trip_id', tripId);
