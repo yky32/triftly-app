@@ -101,6 +101,7 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
       final trip = await HiveTripRepository.instance.joinTripFromShare(
         widget.shareToken,
         userId,
+        displayName: session.user!.displayName,
       );
       if (!mounted) return;
       if (trip == null) {

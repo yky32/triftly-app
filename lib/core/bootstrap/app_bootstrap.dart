@@ -15,6 +15,7 @@ import '../repositories/local_auth_repository.dart';
 import '../repositories/cloud_trip_sync.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/supabase_trip_sync.dart';
+import '../services/in_app_notification_store.dart';
 import '../services/profile_preferences.dart';
 import '../sync/cloud_sync_reporter.dart';
 
@@ -23,6 +24,7 @@ class AppBootstrap {
   AppBootstrap._();
 
   static late final ProfilePreferences profilePreferences;
+  static late final InAppNotificationStore notificationStore;
   static late final SessionBloc sessionBloc;
   static late final HiveTripRepository tripRepository;
   static late final CloudSyncReporterBridge cloudSyncReporter;
@@ -37,6 +39,7 @@ class AppBootstrap {
 
   static Future<void> initialize() async {
     profilePreferences = await ProfilePreferences.initialize();
+    notificationStore = await InAppNotificationStore.initialize();
 
     if (Environment.hasSupabase) {
       try {
@@ -83,6 +86,7 @@ class AppBootstrap {
     tripRepository = await HiveTripRepository.bootstrap(
       supabaseSync: supabaseSync,
       syncReporter: cloudSyncReporter,
+      notificationStore: notificationStore,
     );
     cloudSyncBloc = CloudSyncBloc(
       sessionBloc: sessionBloc,

@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../data/trip_hive_cache.dart';
 import '../models/settlement_record.dart';
+import '../models/in_app_notification.dart';
 import '../models/trip_models.dart';
+import '../services/in_app_notification_store.dart';
+import '../services/trip_member_join_notifier.dart';
 import '../models/user.dart';
 import '../sync/cloud_sync_reporter.dart';
 import '../services/local_trip_migration.dart';
@@ -18,10 +21,18 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     required TripHiveCache cache,
     SupabaseTripSync? supabaseSync,
     CloudSyncReporter? syncReporter,
+    InAppNotificationStore? notificationStore,
   })  : _store = store,
         _cache = cache,
         _supabaseSync = supabaseSync,
-        _syncReporter = syncReporter;
+        _syncReporter = syncReporter,
+        _notificationStore = notificationStore {
+    _joinNotifier = TripMemberJoinNotifier(
+      notifications: notificationStore ?? InAppNotificationStore.instance,
+      sync: supabaseSync,
+      store: store,
+    );
+  }
 
   static HiveTripRepository? _instance;
   static HiveTripRepository get instance {
@@ -33,11 +44,14 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   final TripHiveCache _cache;
   final SupabaseTripSync? _supabaseSync;
   final CloudSyncReporter? _syncReporter;
+  final InAppNotificationStore? _notificationStore;
+  late final TripMemberJoinNotifier _joinNotifier;
   Future<void>? _pullInFlight;
 
   static Future<HiveTripRepository> bootstrap({
     SupabaseTripSync? supabaseSync,
     CloudSyncReporter? syncReporter,
+    InAppNotificationStore? notificationStore,
   }) async {
     final cache = TripHiveCache();
     await cache.init();
@@ -48,6 +62,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
       cache: cache,
       supabaseSync: supabaseSync,
       syncReporter: syncReporter,
+      notificationStore: notificationStore,
     );
     store.addListener(repo.notifyListeners);
     _instance = repo;
@@ -241,6 +256,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
       await _supabaseSync
           ?.pullTripsForUser(userId, _store, _cache)
           .timeout(const Duration(seconds: 30));
+      await _joinNotifier.scanAfterPull(userId);
       reporter?.succeed();
     } catch (error) {
       reporter?.fail(error);
@@ -286,12 +302,55 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
     return remote;
   }
 
-  Future<Trip?> joinTripFromShare(String shareToken, String cloudUserId) async {
+  Future<Trip?> joinTripFromShare(
+    String shareToken,
+    String cloudUserId, {
+    String? displayName,
+  }) async {
     final tripId = await _supabaseSync?.acceptTripShare(shareToken);
     if (tripId == null) return null;
     await pullFromSupabase(cloudUserId);
+
+    var trip = _store.tripById(tripId);
+    if (trip != null) {
+      trip = _ensureJoinerPlanBuddy(trip, cloudUserId, displayName ?? 'Traveler');
+      _store.upsertCreatedTrip(trip);
+      await _cache.saveTrip(trip);
+    }
+
+    if (trip != null) {
+      await (_notificationStore ?? InAppNotificationStore.instance).add(
+        InAppNotification.youJoinedTrip(tripId: trip.id, tripName: trip.name),
+      );
+    }
+
     notifyListeners();
-    return _store.tripById(tripId);
+    return trip;
+  }
+
+  /// Links the joiner's account to a plan buddy (server + local fallback).
+  Trip _ensureJoinerPlanBuddy(Trip trip, String userId, String displayName) {
+    final linked = trip.buddies.any((b) => b.userId == userId);
+    if (linked) {
+      return trip.copyWith(
+        buddies: trip.buddies
+            .map(
+              (b) => b.userId == userId
+                  ? b.copyWith(isMe: true, name: displayName.trim().isEmpty ? b.name : displayName)
+                  : b.copyWith(isMe: false),
+            )
+            .toList(),
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    return trip.copyWith(
+      buddies: [
+        ...trip.buddies.map((b) => b.copyWith(isMe: false)),
+        Buddy.create(name: displayName, userId: userId, isMe: true),
+      ],
+      updatedAt: DateTime.now(),
+    );
   }
 
   Future<String> exportCreatedTripsJson() async {
