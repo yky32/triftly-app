@@ -71,6 +71,19 @@ class Buddy extends Equatable {
   List<Object?> get props => [id, name, avatarColor, userId, isMe];
 }
 
+/// Cloud trip member row (excludes trip owner).
+class TripMemberSummary extends Equatable {
+  const TripMemberSummary({required this.userId, required this.role});
+
+  final String userId;
+  final String role;
+
+  bool get isEditor => role == 'editor';
+
+  @override
+  List<Object?> get props => [userId, role];
+}
+
 enum TripPhase { upcoming, inProgress, completed }
 
 /// Outbound or return flight details.
@@ -154,7 +167,25 @@ class Trip extends Equatable {
   bool get isJoinedMember =>
       membershipRole == 'viewer' || membershipRole == 'editor';
 
+  bool get isViewer => membershipRole == 'viewer';
+
+  bool get isEditor => membershipRole == 'editor';
+
   bool get isReadOnlyForCurrentUser => isPreviewShare || membershipRole == 'viewer';
+
+  /// Owner-only: rename trip, delete, share link, manage members.
+  bool get canManageTripSettings => !isPreviewShare && !isJoinedMember;
+
+  /// Plan / spend / map edits (editors + owners).
+  bool get canEditTripContent => !isReadOnlyForCurrentUser && !isPreviewShare;
+
+  String? get membershipBadgeLabel {
+    return switch (membershipRole) {
+      'viewer' => 'Shared · view only',
+      'editor' => 'Shared · can edit',
+      _ => null,
+    };
+  }
 
   bool get appearsInTripList => !isPreviewShare;
 

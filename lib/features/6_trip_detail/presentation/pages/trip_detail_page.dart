@@ -14,6 +14,7 @@ import '../../../../core/widgets/glass_icon_button.dart';
 import '../../../../core/widgets/glass_toggle.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
+import '../../../../core/widgets/shared_trip_role_banner.dart';
 import '../../../5_trip_list/presentation/bottom_sheets/edit_trip_bottom_sheet.dart';
 import '../bottom_sheets/trip_detail_menu_sheet.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
@@ -40,7 +41,7 @@ class TripDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trip = TripStore.instance.tripById(tripId);
-    final effectiveReadOnly = readOnly || (trip?.isReadOnlyForCurrentUser ?? false);
+    final effectiveReadOnly = readOnly || !(trip?.canEditTripContent ?? true);
 
     return BlocProvider(
       create: (context) =>
@@ -177,7 +178,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                           onChanged: (value) => setState(() => _summaryExpanded = value),
                         ),
                       ),
-                      if (!widget.readOnly && !TripStore.isMockTripId(trip.id))
+                      if (trip.canManageTripSettings && !TripStore.isMockTripId(trip.id))
                         GlassIconButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: 'Trip options',
@@ -185,7 +186,7 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                           size: 30,
                           onPressed: () => _showTripMenu(context, trip),
                         ),
-                      if (!widget.readOnly)
+                      if (trip.canManageTripSettings)
                         GlassIconButton(
                           icon: Icons.ios_share_rounded,
                           tooltip: 'Share trip',
@@ -213,6 +214,9 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                   (showDayChips ? PlanDayChipsBar.chipsExtent : 0);
 
               return [
+                SliverToBoxAdapter(
+                  child: SharedTripRoleBanner(trip: trip),
+                ),
                 SliverToBoxAdapter(
                   child: ClipRect(
                     child: AnimatedAlign(

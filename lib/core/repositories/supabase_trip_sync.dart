@@ -33,12 +33,13 @@ class SupabaseTripSync {
   bool _isCloudOwnerId(String? ownerId) =>
       ownerId != null && !ownerId.startsWith('local-');
 
-  bool _shouldSyncTrip(Trip trip) =>
-      _canSync &&
-      _isCloudOwnerId(trip.ownerId) &&
-      !trip.isJoinedMember &&
-      !trip.isPreviewShare &&
-      !TripStore.isMockTripId(trip.id);
+  bool _shouldSyncTrip(Trip trip) {
+    if (!_canSync || TripStore.isMockTripId(trip.id) || trip.isPreviewShare) {
+      return false;
+    }
+    if (trip.isJoinedMember) return trip.isEditor;
+    return _isCloudOwnerId(trip.ownerId);
+  }
 
   Future<void> upsertTrip(Trip trip) async {
     if (!_shouldSyncTrip(trip)) return;
@@ -221,6 +222,65 @@ class SupabaseTripSync {
     } catch (e, st) {
       debugPrint('SupabaseTripSync.acceptTripShare failed: $e\n$st');
       rethrow;
+    }
+  }
+
+  Future<bool> leaveTripShare(String tripId) async {
+    if (!_canSync) return false;
+
+    try {
+      final result = await client.rpc('leave_trip_share', params: {
+        'p_trip_id': tripId,
+      });
+      return result == true;
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.leaveTripShare failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  Future<bool> setTripMemberRole({
+    required String tripId,
+    required String memberUserId,
+    required String role,
+  }) async {
+    if (!_canSync) return false;
+
+    try {
+      final result = await client.rpc('set_trip_member_role', params: {
+        'p_trip_id': tripId,
+        'p_member_user_id': memberUserId,
+        'p_role': role,
+      });
+      return result == true;
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.setTripMemberRole failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  Future<List<TripMemberSummary>> fetchTripMembers(String tripId) async {
+    if (!_canSync) return const [];
+
+    try {
+      final rows = await client
+          .from('trip_members')
+          .select('user_id, role')
+          .eq('trip_id', tripId)
+          .neq('role', 'owner');
+
+      return (rows as List)
+          .map((raw) {
+            final row = Map<String, dynamic>.from(raw as Map);
+            return TripMemberSummary(
+              userId: row['user_id'] as String,
+              role: row['role'] as String,
+            );
+          })
+          .toList();
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.fetchTripMembers failed: $e\n$st');
+      return const [];
     }
   }
 

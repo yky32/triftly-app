@@ -56,14 +56,30 @@ void main() {
     test('viewer is joined read-only and appears in trip list', () {
       final trip = _trip(membershipRole: 'viewer');
       expect(trip.isJoinedMember, isTrue);
+      expect(trip.isViewer, isTrue);
       expect(trip.isReadOnlyForCurrentUser, isTrue);
+      expect(trip.canEditTripContent, isFalse);
+      expect(trip.canManageTripSettings, isFalse);
+      expect(trip.membershipBadgeLabel, 'Shared · view only');
       expect(trip.appearsInTripList, isTrue);
     });
 
-    test('editor is joined and editable', () {
+    test('editor is joined and editable but cannot manage settings', () {
       final trip = _trip(membershipRole: 'editor');
       expect(trip.isJoinedMember, isTrue);
+      expect(trip.isEditor, isTrue);
       expect(trip.isReadOnlyForCurrentUser, isFalse);
+      expect(trip.canEditTripContent, isTrue);
+      expect(trip.canManageTripSettings, isFalse);
+      expect(trip.membershipBadgeLabel, 'Shared · can edit');
+    });
+
+    test('owner can manage settings and edit content', () {
+      final trip = _trip();
+      expect(trip.isJoinedMember, isFalse);
+      expect(trip.canManageTripSettings, isTrue);
+      expect(trip.canEditTripContent, isTrue);
+      expect(trip.membershipBadgeLabel, isNull);
     });
   });
 }

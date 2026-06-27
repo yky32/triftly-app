@@ -27,6 +27,7 @@ Migration order:
 4. `migrations/004_shared_trip_bundle.sql`
 5. `migrations/005_rename_profiles_to_users.sql` — only if `public.profiles` already exists
 6. `migrations/006_trip_share_join.sql`
+7. `migrations/007_trip_member_editor_rls.sql` — editor write RLS, leave share, member roles
 
 **Already ran SQL by hand?** Mark versions as applied so CI does not re-run them:
 
@@ -140,6 +141,15 @@ Run this before each TestFlight build or after schema/auth changes.
 - [ ] Second device: same account → joined trip syncs after pull
 - [ ] Host `web/.well-known/apple-app-site-association` on `triftly.app` (see `web/.well-known/`)
 - [ ] Apple Developer → Identifiers → `com.triftly` → enable **Associated Domains** (one-time; required for TestFlight universal links)
+
+### Shared trip roles (viewer / editor)
+
+- [ ] Owner: Share → **Who joined** lists members after buddy joins
+- [ ] Owner: promote buddy **View → Edit**; buddy pull-to-refresh → trip shows **Shared · can edit** and editor banner
+- [ ] Editor: add spot / expense → syncs to owner after refresh
+- [ ] Viewer: trip detail shows view-only banner; no add/edit controls
+- [ ] Joined buddy: Trips card menu → **Leave trip** removes from list; can re-join from link
+- [ ] Owner: Share sheet copy mentions view-only default + editor promotion
 
 ### Quick SQL spot-check
 
