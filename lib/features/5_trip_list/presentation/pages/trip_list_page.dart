@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_scope.dart';
@@ -108,10 +109,20 @@ class _ViewState extends State<_View> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () => _showNotifications(context),
-                        tooltip: 'Notifications',
+                      ListenableBuilder(
+                        listenable: AppBootstrap.notificationStore,
+                        builder: (context, _) {
+                          final unread = AppBootstrap.notificationStore.unreadCount;
+                          return Badge(
+                            isLabelVisible: unread > 0,
+                            label: Text('$unread'),
+                            child: IconButton(
+                              icon: const Icon(Icons.notifications_outlined),
+                              onPressed: () => _showNotifications(context),
+                              tooltip: 'Notifications',
+                            ),
+                          );
+                        },
                       ),
                       IconButton(
                         icon: const Icon(Icons.add_rounded),

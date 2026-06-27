@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/models/in_app_notification.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-String _relativeTime(DateTime time) {
+String relativeNotificationTime(DateTime time) {
   final diff = DateTime.now().difference(time);
   if (diff.inMinutes < 1) return 'Now';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m';
@@ -21,8 +22,10 @@ class NotificationItem {
     required this.body,
     required this.timestamp,
     required this.icon,
+    required this.category,
     this.accent,
     this.unread = false,
+    this.tripId,
   });
 
   final String id;
@@ -30,8 +33,22 @@ class NotificationItem {
   final String body;
   final DateTime timestamp;
   final IconData icon;
+  final InAppNotificationCategory category;
   final Color? accent;
   final bool unread;
+  final String? tripId;
+
+  factory NotificationItem.from(InAppNotification notification) => NotificationItem(
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        timestamp: notification.timestamp,
+        icon: notification.icon,
+        category: notification.category,
+        accent: notification.accent,
+        unread: notification.unread,
+        tripId: notification.tripId,
+      );
 }
 
 class NotificationTile extends StatelessWidget {
@@ -50,7 +67,7 @@ class NotificationTile extends StatelessWidget {
     final accent = item.accent ?? AppColors.primary;
     final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final subtitleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final timeLabel = _relativeTime(item.timestamp);
+    final timeLabel = relativeNotificationTime(item.timestamp);
 
     return Material(
       color: Colors.transparent,
@@ -120,7 +137,7 @@ class NotificationTile extends StatelessWidget {
                   width: 8,
                   height: 8,
                   margin: const EdgeInsets.only(top: 6),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
