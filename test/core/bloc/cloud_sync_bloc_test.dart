@@ -49,6 +49,23 @@ void main() {
     );
 
     blocTest<CloudSyncBloc, CloudSyncState>(
+      'nested syncs stay syncing until all complete',
+      build: buildBloc,
+      act: (bloc) async {
+        bloc.add(const CloudSyncStarted());
+        bloc.add(const CloudSyncStarted());
+        bloc.add(const CloudSyncSucceeded());
+        bloc.add(const CloudSyncSucceeded());
+      },
+      expect: () => [
+        isA<CloudSyncState>().having((s) => s.isSyncing, 'isSyncing', isTrue),
+        isA<CloudSyncState>()
+            .having((s) => s.isSyncing, 'isSyncing', isFalse)
+            .having((s) => s.lastSuccessAt, 'lastSuccessAt', isNotNull),
+      ],
+    );
+
+    blocTest<CloudSyncBloc, CloudSyncState>(
       'CloudSyncSucceeded clears error and records success time',
       build: buildBloc,
       seed: () => CloudSyncState(lastError: 'offline'),

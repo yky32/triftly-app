@@ -33,6 +33,7 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   final TripHiveCache _cache;
   final SupabaseTripSync? _supabaseSync;
   final CloudSyncReporter? _syncReporter;
+  Future<void>? _pullInFlight;
 
   static Future<HiveTripRepository> bootstrap({
     SupabaseTripSync? supabaseSync,
@@ -171,10 +172,28 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   }
 
   Future<void> pullFromSupabase(String userId, {CloudSyncReporter? syncReporter}) async {
+    final inFlight = _pullInFlight;
+    if (inFlight != null) return inFlight;
+
+    final pull = _pullFromSupabaseOnce(userId, syncReporter: syncReporter);
+    _pullInFlight = pull;
+    try {
+      await pull;
+    } finally {
+      if (identical(_pullInFlight, pull)) _pullInFlight = null;
+    }
+  }
+
+  Future<void> _pullFromSupabaseOnce(
+    String userId, {
+    CloudSyncReporter? syncReporter,
+  }) async {
     final reporter = syncReporter ?? _syncReporter;
     reporter?.begin();
     try {
-      await _supabaseSync?.pullTripsForUser(userId, _store, _cache);
+      await _supabaseSync
+          ?.pullTripsForUser(userId, _store, _cache)
+          .timeout(const Duration(seconds: 30));
       reporter?.succeed();
     } catch (error) {
       reporter?.fail(error);

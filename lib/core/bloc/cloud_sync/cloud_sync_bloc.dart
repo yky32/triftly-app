@@ -35,11 +35,16 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
 
   CloudSyncReporter get reporter => _syncReporter;
 
+  int _activeSyncCount = 0;
+
   void _onStarted(CloudSyncStarted event, Emitter<CloudSyncState> emit) {
-    emit(state.copyWith(isSyncing: true));
+    _activeSyncCount++;
+    emit(state.copyWith(isSyncing: true, clearLastError: true));
   }
 
   void _onSucceeded(CloudSyncSucceeded event, Emitter<CloudSyncState> emit) {
+    if (_activeSyncCount > 0) _activeSyncCount--;
+    if (_activeSyncCount > 0) return;
     emit(state.copyWith(
       isSyncing: false,
       lastSuccessAt: DateTime.now(),
@@ -48,6 +53,7 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
   }
 
   void _onFailed(CloudSyncFailed event, Emitter<CloudSyncState> emit) {
+    _activeSyncCount = 0;
     emit(state.copyWith(
       isSyncing: false,
       lastError: CloudSyncState.messageFrom(event.error),

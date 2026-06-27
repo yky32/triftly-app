@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/bloc/cloud_sync/cloud_sync_bloc.dart';
+import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_scope.dart';
 import '../../bloc/trip_list_bloc.dart';
 import '../widgets/trip_card.dart';
@@ -19,7 +21,8 @@ class TripListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => AppScopeBlocs.createTripListBloc()..add(TripListLoadRequested()),
+      create: (context) => AppScopeBlocs.createTripListBloc()
+        ..add(const TripListLoadRequested(syncCloud: false)),
       child: const _View(),
     );
   }
@@ -77,14 +80,31 @@ class _ViewState extends State<_View> {
         children: [
           CloudSyncBanner(
             onRetryComplete: () {
-              context.read<TripListBloc>().add(const TripListLoadRequested());
+              context
+                  .read<TripListBloc>()
+                  .add(const TripListLoadRequested(syncCloud: false));
             },
           ),
           Expanded(
             child: RefreshIndicator(
         onRefresh: () async {
-          context.read<TripListBloc>().add(const TripListLoadRequested(syncCloud: true));
-          await context.read<TripListBloc>().stream.firstWhere((s) => !s.isLoading);
+          final session = context.read<SessionBloc>().state;
+          if (session.isCloudSignedIn) {
+            final sync = context.read<CloudSyncBloc>();
+            sync.add(CloudSyncRetryRequested(
+              onComplete: () {
+                if (!context.mounted) return;
+                context.read<TripListBloc>().add(
+                      const TripListLoadRequested(syncCloud: false),
+                    );
+              },
+            ));
+            await sync.stream.firstWhere((s) => !s.isSyncing);
+            return;
+          }
+          context.read<TripListBloc>().add(
+                const TripListLoadRequested(syncCloud: false),
+              );
         },
         child: BlocBuilder<TripListBloc, TripListState>(
           builder: (context, state) {
@@ -225,7 +245,7 @@ class _ViewState extends State<_View> {
     ).then((created) {
       if (!context.mounted) return;
       if (created == true) {
-        tripListBloc.add(TripListLoadRequested());
+        tripListBloc.add(const TripListLoadRequested(syncCloud: false));
       }
     });
   }

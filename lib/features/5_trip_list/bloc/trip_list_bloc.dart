@@ -27,15 +27,22 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     TripListLoadRequested event,
     Emitter<TripListState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true));
-    if (event.syncCloud) {
-      try {
-        await _repository.pullFromCloud(_cloudUserId?.call());
-      } catch (_) {
-        // [CloudSyncBloc] records the failure; still show local trips.
-      }
-    }
+    // Show local/cache immediately — cloud sync runs in bootstrap or on pull-to-refresh.
     emit(state.copyWith(isLoading: false, trips: _repository.allTrips()));
+
+    if (!event.syncCloud) return;
+
+    final cloudUserId = _cloudUserId?.call();
+    if (cloudUserId == null || cloudUserId.startsWith('local-')) return;
+
+    try {
+      await _repository
+          .pullFromCloud(cloudUserId)
+          .timeout(const Duration(seconds: 30));
+    } catch (_) {
+      // [CloudSyncBloc] records the failure; still show local trips.
+    }
+    emit(state.copyWith(trips: _repository.allTrips()));
   }
 
   Future<void> _onTripCreated(
