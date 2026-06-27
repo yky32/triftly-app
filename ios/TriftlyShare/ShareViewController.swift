@@ -35,13 +35,13 @@ final class ShareViewController: UIViewController {
         }
 
         for item in extensionItems {
-            if let text = item.attributedContentText?.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+            if let text = item.attributedContentText?.string.trimmingCharacters(in: .whitespacesAndNewlines),
                !text.isEmpty {
                 openMainApp(with: text)
                 return
             }
 
-            if let title = item.attributedTitle?.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+            if let title = item.attributedTitle?.string.trimmingCharacters(in: .whitespacesAndNewlines),
                !title.isEmpty,
                title.contains("http") || title.contains("maps") {
                 openMainApp(with: title)
