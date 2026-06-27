@@ -5,6 +5,7 @@ import '../bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../bloc/session/session_bloc.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'trips_sync_status.dart';
 
 /// Trips-tab banner for cloud sync status and retry.
 class CloudSyncBanner extends StatelessWidget {
@@ -19,20 +20,18 @@ class CloudSyncBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SessionBloc, SessionState>(
       builder: (context, session) {
-        if (!session.isCloudSignedIn) return const SizedBox.shrink();
-
         return BlocConsumer<CloudSyncBloc, CloudSyncState>(
           listenWhen: (previous, current) =>
+              session.isCloudSignedIn &&
               previous.isSyncing &&
               !current.isSyncing &&
               !current.hasError,
           listener: (context, state) => onRetryComplete(),
-          builder: (context, state) {
-            if (!state.isConfigured) return const SizedBox.shrink();
-
+          builder: (context, sync) {
+            final status = TripsSyncStatus.resolve(session: session, sync: sync);
             final isDark = Theme.of(context).brightness == Brightness.dark;
 
-            if (state.hasError) {
+            if (status.isError) {
               return Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
                 child: Material(
@@ -50,29 +49,31 @@ class CloudSyncBanner extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Could not sync trips',
+                                status.label,
                                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                       color: AppColors.error,
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                state.lastError!,
-                                style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              if (status.errorDetail != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  status.errorDetail!,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
                           ),
                         ),
                         TextButton(
-                          onPressed: state.isSyncing
+                          onPressed: sync.isSyncing
                               ? null
                               : () => context.read<CloudSyncBloc>().add(
                                     CloudSyncRetryRequested(onComplete: onRetryComplete),
                                   ),
-                          child: state.isSyncing
+                          child: sync.isSyncing
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
@@ -87,41 +88,30 @@ class CloudSyncBanner extends StatelessWidget {
               );
             }
 
-            if (state.isSyncing) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Syncing trips…',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (state.lastSuccessAt == null) return const SizedBox.shrink();
-
             return Padding(
               padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.cloud_done_outlined,
-                    size: 16,
-                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
-                  ),
+                  if (status.isSyncing)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      session.isCloudSignedIn
+                          ? Icons.cloud_done_outlined
+                          : Icons.cloud_off_outlined,
+                      size: 16,
+                      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                    ),
                   const SizedBox(width: 6),
-                  Text(
-                    state.lastSuccessLabel,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  Expanded(
+                    child: Text(
+                      status.label,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
                 ],
               ),
