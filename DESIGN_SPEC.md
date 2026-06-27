@@ -25,6 +25,8 @@
 - ChicTrip — bloated, too many sections, pushy upsell
 - Wanderlog — information overload, dense UI
 
+**Post-launch branding:** Icon system, neobank-grade polish, and full visual identity pass are **deferred until after launch**. See [`docs/POST_LAUNCH_BRANDING.md`](docs/POST_LAUNCH_BRANDING.md). Until then, keep **Material Icons + Satoshi**; do not mix icon families in one-off PRs.
+
 ---
 
 ## 1. Design System

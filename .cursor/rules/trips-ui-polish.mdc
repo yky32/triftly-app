@@ -22,6 +22,27 @@ Required modal flags (handled by helper):
 
 Dismiss via **swipe down** unless the sheet has its own confirm action.
 
+## Confirmations (`confirm_bottom_sheet.dart`)
+
+Use **`ConfirmBottomSheet.show`** — **not** centered `AlertDialog` or `showDialog` for destructive / yes-no flows.
+
+```dart
+final ok = await ConfirmBottomSheet.show(
+  context,
+  title: 'Delete trip?',
+  message: '“${trip.name}” will be removed from your list.',
+  confirmLabel: 'Delete',
+  destructive: true,
+);
+if (ok && context.mounted) { /* act */ }
+```
+
+- Launched via `TriftlyBottomSheet.show` (same flags as other sheets).
+- **Liquid glass** floating card: `GlassSurface` + `SpendGlassShell.tint`, frosted icon well.
+- **Single action:** `SwipeToConfirm` (same as sign-out in `user_detail_bottom_sheet.dart`) — swipe right to confirm; dismiss by swiping the sheet down.
+- `destructive: true` → `SwipeToConfirmStyle.destructive` — track fills **full red** at 100% swipe (sign-out pattern).
+- Optional `swipeLabel` (default: `Slide to {confirmLabel}`).
+
 ## Sheet scaffold (`sheet_scaffold.dart`)
 
 Two sheet types share the same chrome:

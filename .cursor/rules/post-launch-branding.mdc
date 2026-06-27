@@ -1,0 +1,24 @@
+---
+description: Defer branding/icon-system work until after launch — see docs/POST_LAUNCH_BRANDING.md
+alwaysApply: true
+---
+
+# Post-launch branding (deferred)
+
+**Branding UI is intentionally after launch.** Do not start a full icon rebrand, custom SVG icon set, or neobank visual overhaul unless the user explicitly opens the branding epic.
+
+## Until then
+
+- Keep **Material Icons** (`Icons.*`) and **Satoshi** as documented in `DESIGN_SPEC.md`.
+- Do **not** add Phosphor, Lucide, SF Symbols, or mixed icon packages in routine feature PRs.
+- Functional UI polish (glass surfaces, sheets, sync banner behavior) is in scope; **aesthetic rebranding is not**.
+
+## When user asks for branding / Mox-like icons
+
+1. Read `docs/POST_LAUNCH_BRANDING.md` for scope, candidates, and checklist.
+2. Confirm they want to **start the post-launch epic** (not a one-off icon swap).
+3. Prefer a single icon wrapper + one package/asset pipeline — never mix families across screens.
+
+## Sync pill (`TripsSyncCenterBanner`)
+
+Center app-bar pill is shipped with Material cloud icons. Icon refresh is tracked in the branding backlog — not a launch blocker.

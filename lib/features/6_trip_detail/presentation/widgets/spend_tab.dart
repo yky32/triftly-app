@@ -12,6 +12,7 @@ import '../../../../core/utils/date_formatters.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/services/split_calculator.dart';
+import '../../../../core/widgets/confirm_bottom_sheet.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
 import '../bottom_sheets/settlement_bottom_sheet.dart';
@@ -367,24 +368,13 @@ class _ExpenseDismissible extends StatelessWidget {
         child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
       ),
       confirmDismiss: (_) async {
-        return await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Delete expense?'),
-                content: Text('Remove "${expense.title}" from this trip.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
-            ) ??
-            false;
+        return ConfirmBottomSheet.show(
+          context,
+          title: 'Delete expense?',
+          message: 'Remove "${expense.title}" from this trip.',
+          confirmLabel: 'Delete',
+          destructive: true,
+        );
       },
       onDismissed: (_) => onDelete(),
       child: child,

@@ -5,11 +5,12 @@ import '../bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../bloc/session/session_bloc.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'glass_surface.dart';
 import 'trips_sync_status.dart';
 
-/// Trips-tab banner for cloud sync status and retry.
-class CloudSyncBanner extends StatelessWidget {
-  const CloudSyncBanner({
+/// Centered sync pill for the Trips app bar.
+class TripsSyncCenterBanner extends StatelessWidget {
+  const TripsSyncCenterBanner({
     required this.onRetryComplete,
     super.key,
   });
@@ -30,91 +31,81 @@ class CloudSyncBanner extends StatelessWidget {
           builder: (context, sync) {
             final status = TripsSyncStatus.resolve(session: session, sync: sync);
             final isDark = Theme.of(context).brightness == Brightness.dark;
+            final tertiary =
+                isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
 
-            if (status.isError) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-                child: Material(
-                  color: AppColors.error.withValues(alpha: isDark ? 0.18 : 0.08),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.cloud_off_outlined, size: 18, color: AppColors.error),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                status.label,
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                      color: AppColors.error,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                              if (status.errorDetail != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  status.errorDetail!,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: sync.isSyncing
-                              ? null
-                              : () => context.read<CloudSyncBloc>().add(
-                                    CloudSyncRetryRequested(onComplete: onRetryComplete),
-                                  ),
-                          child: sync.isSyncing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
+            void retry() {
+              context.read<CloudSyncBloc>().add(
+                    CloudSyncRetryRequested(onComplete: onRetryComplete),
+                  );
             }
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-              child: Row(
-                children: [
-                  if (status.isSyncing)
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Icon(
-                      session.isCloudSignedIn
-                          ? Icons.cloud_done_outlined
-                          : Icons.cloud_off_outlined,
-                      size: 16,
-                      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+            final icon = status.isSyncing
+                ? SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: status.isError ? AppColors.error : tertiary,
                     ),
-                  const SizedBox(width: 6),
-                  Expanded(
+                  )
+                : Icon(
+                    status.isError
+                        ? Icons.cloud_off_outlined
+                        : session.isCloudSignedIn
+                            ? Icons.cloud_done_outlined
+                            : Icons.cloud_off_outlined,
+                    size: 14,
+                    color: status.isError ? AppColors.error : tertiary,
+                  );
+
+            final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: status.isError ? AppColors.error : tertiary,
+                  fontWeight: FontWeight.w500,
+                );
+
+            final pill = GlassSurface(
+              blur: 18,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              tint: status.isError
+                  ? AppColors.error.withValues(alpha: isDark ? 0.18 : 0.08)
+                  : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  icon,
+                  const SizedBox(width: 5),
+                  Flexible(
                     child: Text(
-                      status.label,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      status.centerLabel,
+                      style: labelStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (status.isError) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '· Retry',
+                      style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ],
               ),
+            );
+
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 168),
+              child: status.isError
+                  ? Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: sync.isSyncing ? null : retry,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        child: pill,
+                      ),
+                    )
+                  : pill,
             );
           },
         );

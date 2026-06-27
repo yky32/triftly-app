@@ -9,6 +9,7 @@ import '../../../../core/environment.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/widgets/confirm_bottom_sheet.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../bottom_sheets/appearance_bottom_sheet.dart';
@@ -47,20 +48,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _confirmClearOfflineData(BuildContext context, SessionState session) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear offline data?'),
-        content: const Text(
+    final confirmed = await ConfirmBottomSheet.show(
+      context,
+      title: 'Clear offline data?',
+      message:
           'Removes cached trips from this device. Cloud trips will be downloaded again if you are signed in.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Clear')),
-        ],
-      ),
+      confirmLabel: 'Clear',
+      icon: Icons.storage_outlined,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     final user = session.user;
     final cloudUserId =

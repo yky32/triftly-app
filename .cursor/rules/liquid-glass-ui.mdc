@@ -50,6 +50,7 @@ Frosted, light surfaces for trip summaries, metrics, and inline stats. **Do not*
 | Expense transaction rows | ❌ `AppCard` (standard card) |
 | Settlement / form sheets | ❌ `SheetSoftCard` (see `trips-ui-polish.mdc`) |
 | Bottom nav island | ✅ `GlassSurface` pill |
+| Confirm / delete prompts | ✅ `ConfirmBottomSheet` (floating glass card) |
 
 ## Empty states on glass surfaces
 
@@ -62,6 +63,7 @@ For the full decision tree (when to use `EmptyState` vs glass heroes vs inline c
 
 ## Reference implementations
 
+- `confirm_bottom_sheet.dart` — glass confirm / delete sheet
 - `spend_overview_metric_card.dart` — shell + metric card
 - `spend_wallet_card.dart` — global wallet hero on `SpendGlassShell`
 - `empty_state.dart` — tab-root empty heroes on glass (`SpendGlassShell` + frosted CTA)

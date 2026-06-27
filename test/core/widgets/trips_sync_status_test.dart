@@ -70,6 +70,27 @@ void main() {
         ),
       );
       expect(status.label, 'Synced just now');
+      expect(status.centerLabel, 'Just synced');
+    });
+
+    test('center labels are compact', () {
+      expect(
+        TripsSyncStatus.resolve(
+          session: guest,
+          sync: CloudSyncState(isConfigured: true),
+        ).centerLabel,
+        'Sign in to sync',
+      );
+      expect(
+        TripsSyncStatus.resolve(
+          session: signedIn,
+          sync: CloudSyncState(
+            isConfigured: true,
+            lastSuccessAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          ),
+        ).centerLabel,
+        '5m',
+      );
     });
   });
 }

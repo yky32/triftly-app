@@ -6,6 +6,7 @@ import '../../../../core/services/trip_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/destination_flags.dart';
+import '../../../../core/widgets/confirm_bottom_sheet.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
 import '../../bloc/trip_list_bloc.dart';
@@ -191,33 +192,26 @@ class _TripMenu extends StatelessWidget {
           onSaved: (updated) => bloc.add(TripListTripUpdated(trip: updated)),
         );
       case _TripMenuAction.delete:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete trip?'),
-            content: Text('“${trip.name}” will be removed from your list.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
-            ],
-          ),
+        final confirmed = await ConfirmBottomSheet.show(
+          context,
+          title: 'Delete trip?',
+          message: '“${trip.name}” will be removed from your list.',
+          confirmLabel: 'Delete',
+          destructive: true,
         );
-        if (confirmed == true && context.mounted) {
+        if (confirmed && context.mounted) {
           bloc.add(TripListTripDeleted(tripId: trip.id));
         }
       case _TripMenuAction.leave:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Leave trip?'),
-            content: Text('“${trip.name}” will be removed from your Trips. You can re-join from the share link.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
-            ],
-          ),
+        final confirmed = await ConfirmBottomSheet.show(
+          context,
+          title: 'Leave trip?',
+          message:
+              '“${trip.name}” will be removed from your Trips. You can re-join from the share link.',
+          confirmLabel: 'Leave',
+          icon: Icons.logout_rounded,
         );
-        if (confirmed == true && context.mounted) {
+        if (confirmed && context.mounted) {
           bloc.add(TripListTripLeft(tripId: trip.id));
         }
     }

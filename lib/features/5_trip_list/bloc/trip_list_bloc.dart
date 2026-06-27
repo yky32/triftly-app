@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/repositories/hive_trip_repository.dart';
@@ -19,10 +20,29 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     on<TripListTripUpdated>(_onTripUpdated);
     on<TripListTripDeleted>(_onTripDeleted);
     on<TripListTripLeft>(_onTripLeft);
+    _attachRepositoryListener();
   }
 
   final TripRepository _repository;
   final String? Function()? _cloudUserId;
+  ChangeNotifier? _repositoryListenable;
+  VoidCallback? _repositoryListener;
+
+  void _attachRepositoryListener() {
+    if (_repository is! ChangeNotifier) return;
+    final listenable = _repository as ChangeNotifier;
+    _repositoryListenable = listenable;
+    _repositoryListener = () => add(const TripListLoadRequested(syncCloud: false));
+    listenable.addListener(_repositoryListener!);
+  }
+
+  @override
+  Future<void> close() {
+    if (_repositoryListenable != null && _repositoryListener != null) {
+      _repositoryListenable!.removeListener(_repositoryListener!);
+    }
+    return super.close();
+  }
 
   Future<void> _onLoadRequested(
     TripListLoadRequested event,

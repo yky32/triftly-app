@@ -9,6 +9,7 @@ import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/today_plan_utils.dart';
+import '../../../../core/widgets/confirm_bottom_sheet.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/glass_icon_button.dart';
 import '../../../../core/widgets/glass_toggle.dart';
@@ -324,18 +325,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
       case TripDetailMenuAction.edit:
         await EditTripBottomSheet.show(context, trip: trip);
       case TripDetailMenuAction.delete:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete trip?'),
-            content: Text('“${trip.name}” will be removed from your list.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
-            ],
-          ),
+        final confirmed = await ConfirmBottomSheet.show(
+          context,
+          title: 'Delete trip?',
+          message: '“${trip.name}” will be removed from your list.',
+          confirmLabel: 'Delete',
+          destructive: true,
         );
-        if (confirmed == true && context.mounted) {
+        if (confirmed && context.mounted) {
           bloc.add(const TripDetailTripDeleted());
         }
     }

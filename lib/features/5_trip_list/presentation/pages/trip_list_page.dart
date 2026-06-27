@@ -70,32 +70,57 @@ class _ViewState extends State<_View> {
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const TriftlyAppBarTitle(title: 'Trips'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => _showNotifications(context),
-            tooltip: 'Notifications',
+        title: const SizedBox.shrink(),
+        centerTitle: false,
+        flexibleSpace: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: DefaultTextStyle(
+                      style: Theme.of(context).appBarTheme.titleTextStyle ??
+                          Theme.of(context).textTheme.titleLarge!,
+                      child: const TriftlyAppBarTitle(title: 'Trips'),
+                    ),
+                  ),
+                ),
+                TripsSyncCenterBanner(
+                  onRetryComplete: () {
+                    context
+                        .read<TripListBloc>()
+                        .add(const TripListLoadRequested(syncCloud: false));
+                  },
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () => _showNotifications(context),
+                        tooltip: 'Notifications',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_rounded),
+                        onPressed: () => _showCreateTrip(context),
+                        tooltip: 'New trip',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _showCreateTrip(context),
-            tooltip: 'New trip',
-          ),
-        ],
+        ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CloudSyncBanner(
-            onRetryComplete: () {
-              context
-                  .read<TripListBloc>()
-                  .add(const TripListLoadRequested(syncCloud: false));
-            },
-          ),
-          Expanded(
-            child: RefreshIndicator(
+      body: RefreshIndicator(
         onRefresh: () async {
           final session = context.read<SessionBloc>().state;
           if (session.isCloudSignedIn) {
@@ -132,9 +157,6 @@ class _ViewState extends State<_View> {
             return _buildTripList(context, state);
           },
         ),
-            ),
-          ),
-        ],
       ),
       ),
     );
