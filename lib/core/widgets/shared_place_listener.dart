@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../constants/app_page.dart';
 import '../models/shared_place.dart';
 import '../models/trip_models.dart';
 import '../navigation/shared_place_flow.dart';
@@ -27,6 +28,7 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SharedPlaceBridge.install(onSharedUrlReady: _pollInboundShare);
     WidgetsBinding.instance.addPostFrameCallback((_) => _pollInboundShare());
   }
 
@@ -106,7 +108,8 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
   void _openAddSpotForTrip(String tripId, SharedPlace place) {
     SharedPlaceFlow.consumePending();
     SharedPlaceFlow.arm(tripId: tripId, place: place);
-    widget.router.push('/plan/$tripId');
+    // Shell routes require go — push breaks StatefulShellRoute matching.
+    widget.router.go('${AppPage.plan.path}/$tripId');
   }
 
   @override

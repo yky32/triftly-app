@@ -4,6 +4,14 @@ import 'package:flutter/services.dart';
 abstract final class SharedPlaceBridge {
   static const _channel = MethodChannel('app/share');
 
+  static Future<void> install({required Future<void> Function() onSharedUrlReady}) async {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onSharedUrlReady') {
+        await onSharedUrlReady();
+      }
+    });
+  }
+
   static Future<String?> consumePending() async {
     try {
       final result = await _channel.invokeMethod<String>('getPendingSharedUrl');

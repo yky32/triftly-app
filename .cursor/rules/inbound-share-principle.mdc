@@ -30,7 +30,7 @@ Supports onboarding pillars: **easy plan creation**, **easy fill-up**, **easy sh
 | `app/share` MethodChannel | Hand off payload to Flutter (`getPendingSharedUrl`) |
 | `SharedMapParser` | Extract name, address, lat/lng from Maps URLs and share text |
 | `SharedPlaceFlow` | Pending place + armed trip id for Add Spot |
-| `SharedPlaceListener` | Poll on launch/resume; show trip picker; route to trip detail |
+| `SharedPlaceListener` | Poll on launch/resume; show trip picker; **`go`** to trip detail (not `push` on shell routes) |
 | `AddSpotBottomSheet` | `initialName` / `initialAddress` from shared place |
 
 ## iOS share extension

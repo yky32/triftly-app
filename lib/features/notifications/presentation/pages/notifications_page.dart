@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/constants/app_page.dart';
 import '../../../../core/models/in_app_notification.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -138,7 +139,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   item: items[i],
                   onTap: items[i].tripId == null
                       ? null
-                      : () => context.push('/plan/${items[i].tripId}'),
+                      : () => context.go('${AppPage.plan.path}/${items[i].tripId}'),
                 ),
               ],
             ],

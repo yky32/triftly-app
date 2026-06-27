@@ -9,6 +9,7 @@ import UIKit
   static var pendingOAuthCallback: String?
 
   private var authChannel: FlutterMethodChannel?
+  private var shareChannel: FlutterMethodChannel?
   private var oauthSession: ASWebAuthenticationSession?
 
   override func application(
@@ -18,8 +19,8 @@ import UIKit
     "AIzaSyDN6sSxZP-Xf47aRGGPuABsjyM_f6cC_MU".withCString { ProvideGoogleMapsAPIKey($0) }
     GeneratedPluginRegistrant.register(with: self)
     if let controller = window?.rootViewController as? FlutterViewController {
-      let shareChannel = FlutterMethodChannel(name: "app/share", binaryMessenger: controller.binaryMessenger)
-      shareChannel.setMethodCallHandler { call, result in
+      shareChannel = FlutterMethodChannel(name: "app/share", binaryMessenger: controller.binaryMessenger)
+      shareChannel?.setMethodCallHandler { call, result in
         if call.method == "getPendingSharedUrl" {
           let url = AppDelegate.pendingSharedUrl
           AppDelegate.pendingSharedUrl = nil
@@ -50,6 +51,7 @@ import UIKit
     }
 
     if let url = launchOptions?[.url] as? URL {
+      storeSharedMapUrl(url)
       deliverOAuthCallback(url)
     }
 
@@ -61,16 +63,20 @@ import UIKit
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
-    if url.scheme == "triftly", url.host == "map",
-       let comp = URLComponents(url: url, resolvingAgainstBaseURL: false),
-       let urlParam = comp.queryItems?.first(where: { $0.name == "url" })?.value,
-       let decoded = urlParam.removingPercentEncoding {
-      AppDelegate.pendingSharedUrl = decoded
-    }
-
+    storeSharedMapUrl(url)
     deliverOAuthCallback(url)
 
     return super.application(app, open: url, options: options)
+  }
+
+  private func storeSharedMapUrl(_ url: URL) {
+    guard url.scheme == "triftly", url.host == "map",
+          let comp = URLComponents(url: url, resolvingAgainstBaseURL: false),
+          let urlParam = comp.queryItems?.first(where: { $0.name == "url" })?.value,
+          let decoded = urlParam.removingPercentEncoding else { return }
+
+    AppDelegate.pendingSharedUrl = decoded
+    shareChannel?.invokeMethod("onSharedUrlReady", arguments: nil)
   }
 
   private func startOAuthSession(call: FlutterMethodCall, result: @escaping FlutterResult) {
