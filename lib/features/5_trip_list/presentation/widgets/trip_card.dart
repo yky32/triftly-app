@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/destination_flags.dart';
 import '../../../../core/widgets/confirm_bottom_sheet.dart';
+import '../../../../core/widgets/glass_context_menu.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
 import '../../bloc/trip_list_bloc.dart';
@@ -40,7 +41,7 @@ class TripCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: 48,
@@ -89,6 +90,7 @@ class TripCard extends StatelessWidget {
                   ),
                 ),
                 if (!TripStore.isMockTripId(trip.id)) _TripMenu(trip: trip),
+                const SizedBox(width: AppSpacing.xs),
                 _StatusBadge(trip: trip),
               ],
             ),
@@ -163,22 +165,47 @@ class _TripMenu extends StatelessWidget {
 
   final Trip trip;
 
+  Future<void> _openMenu(BuildContext context) async {
+    final entries = trip.isJoinedMember
+        ? [
+            GlassMenuEntry(
+              value: _TripMenuAction.leave,
+              label: 'Leave',
+              icon: Icons.logout_rounded,
+            ),
+          ]
+        : [
+            const GlassMenuEntry(
+              value: _TripMenuAction.edit,
+              label: 'Edit',
+              icon: Icons.edit_outlined,
+            ),
+            const GlassMenuEntry(
+              value: _TripMenuAction.delete,
+              label: 'Delete',
+              icon: Icons.delete_outline_rounded,
+              destructive: true,
+            ),
+          ];
+
+    final action = await GlassContextMenu.show<_TripMenuAction>(
+      context: context,
+      entries: entries,
+    );
+    if (action != null && context.mounted) {
+      await _handleAction(context, action);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_TripMenuAction>(
-      icon: Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary, size: 20),
-      onSelected: (action) => _handleAction(context, action),
-      itemBuilder: (_) {
-        if (trip.isJoinedMember) {
-          return const [
-            PopupMenuItem(value: _TripMenuAction.leave, child: Text('Leave trip')),
-          ];
-        }
-        return const [
-          PopupMenuItem(value: _TripMenuAction.edit, child: Text('Edit trip')),
-          PopupMenuItem(value: _TripMenuAction.delete, child: Text('Delete trip')),
-        ];
-      },
+    return GestureDetector(
+      onTap: () => _openMenu(context),
+      behavior: HitTestBehavior.opaque,
+      child: const Padding(
+        padding: EdgeInsets.all(6),
+        child: Icon(Icons.more_vert_rounded, color: AppColors.textTertiary, size: 20),
+      ),
     );
   }
 

@@ -165,23 +165,7 @@ class _NavSlot extends StatelessWidget {
         highlightColor: Colors.transparent,
         child: SizedBox(
           height: 48,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              icon,
-              const SizedBox(height: 4),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                width: selected ? 4 : 0,
-                height: selected ? 4 : 0,
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.primary : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
+          child: Center(child: icon),
         ),
       ),
     );

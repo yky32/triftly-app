@@ -167,6 +167,14 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                           size: 30,
                           onPressed: () => SpendNavigation.openGlobalSpend(context),
                         ),
+                      if (!trip.isPreviewShare && !TripStore.isMockTripId(trip.id))
+                        GlassIconButton(
+                          icon: Icons.people_outline_rounded,
+                          tooltip: 'Travel buddies',
+                          bare: true,
+                          size: 30,
+                          onPressed: () => TripMembersBottomSheet.show(context, trip),
+                        ),
                       Semantics(
                         label: _summaryExpanded ? 'Hide trip details' : 'Show trip details',
                         child: GlassToggle(

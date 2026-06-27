@@ -6,15 +6,14 @@ import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/constants/app_page.dart';
 import '../../../../core/environment.dart';
 import '../../../../core/models/trip_models.dart';
+import '../../../../core/navigation/share_invite_flow.dart';
 import '../../../../core/repositories/hive_trip_repository.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/widgets/triftly_motion.dart';
-import '../../../4_profile/presentation/bottom_sheets/sign_in_bottom_sheet.dart';
+import '../bottom_sheets/join_trip_bottom_sheet.dart';
 import 'trip_detail_page.dart';
 
-/// Shared trip preview at `/s/:token` — join to add to Trips list.
+/// Shared trip preview at `/s/:token` — routes buddies by install/auth state.
 class SharedTripViewPage extends StatefulWidget {
   const SharedTripViewPage({required this.shareToken, super.key});
 
@@ -28,6 +27,9 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
   late Future<SharedTripLoadResult> _loadFuture;
   bool _joining = false;
   String? _joinError;
+  bool _joinSheetShown = false;
+  bool _joinPromptDismissed = false;
+  bool _redirectedToSignIn = false;
 
   @override
   void initState() {
@@ -49,15 +51,44 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
     return SharedTripLoadResult.notFound;
   }
 
-  Future<void> _joinTrip(SessionState session) async {
+  void _redirectToSignIn() {
+    if (_redirectedToSignIn) return;
+    _redirectedToSignIn = true;
+    ShareInviteFlow.beginSignIn(widget.shareToken);
+    context.go(AppPage.profile.path);
+  }
+
+  Future<void> _promptJoin(Trip trip) async {
+    if (_joining || _joinSheetShown) return;
+    setState(() {
+      _joinSheetShown = true;
+      _joinPromptDismissed = false;
+    });
+
+    final confirmed = await JoinTripBottomSheet.show(
+      context,
+      tripName: trip.name,
+    );
+    if (!mounted) return;
+
+    if (!confirmed) {
+      setState(() {
+        _joinSheetShown = false;
+        _joinPromptDismissed = true;
+      });
+      return;
+    }
+
+    await _performJoin();
+  }
+
+  Future<void> _performJoin() async {
     if (_joining) return;
 
+    final session = context.read<SessionBloc>().state;
     if (!session.isCloudSignedIn) {
-      await SignInBottomSheet.show(context);
-      if (!mounted) return;
-      final updated = context.read<SessionBloc>().state;
-      if (!updated.isCloudSignedIn) return;
-      return _joinTrip(updated);
+      _redirectToSignIn();
+      return;
     }
 
     setState(() {
@@ -79,6 +110,7 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
         });
         return;
       }
+      ShareInviteFlow.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,6 +152,7 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
 
         final result = snapshot.data;
         if (result == null || result.trip == null) {
+          ShareInviteFlow.clear();
           return Scaffold(
             appBar: AppBar(),
             body: EmptyState(
@@ -138,27 +171,87 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
         final alreadyJoined = result.alreadyJoined || trip.isJoinedMember || isOwner;
 
         if (alreadyJoined) {
+          ShareInviteFlow.clear();
           return TripDetailPage(
             tripId: trip.id,
             readOnly: trip.isReadOnlyForCurrentUser,
           );
         }
 
-        return Column(
+        if (!session.isCloudSignedIn) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _redirectToSignIn();
+          });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!Environment.hasSupabase || !AppBootstrap.supabaseReady) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: EmptyState(
+              expand: true,
+              icon: Icons.cloud_off_outlined,
+              title: 'Sign in unavailable offline',
+              subtitle: 'Connect to the internet to join shared trips.',
+              action: () => context.go(AppPage.plan.path),
+              actionLabel: 'Go to Trips',
+            ),
+          );
+        }
+
+        if (!_joinSheetShown && !_joining) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _promptJoin(trip);
+          });
+        }
+
+        return Stack(
           children: [
-            Expanded(
-              child: TripDetailPage(
-                tripId: trip.id,
-                readOnly: true,
+            TripDetailPage(
+              tripId: trip.id,
+              readOnly: true,
+            ),
+            if (_joinPromptDismissed && !_joining)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 24,
+                child: SafeArea(
+                  top: false,
+                  child: FilledButton(
+                    onPressed: () => _promptJoin(trip),
+                    child: Text('Join “${trip.name}”'),
+                  ),
+                ),
               ),
-            ),
-            _JoinBanner(
-              tripName: trip.name,
-              joining: _joining,
-              error: _joinError,
-              supabaseReady: Environment.hasSupabase && AppBootstrap.supabaseReady,
-              onJoin: () => _joinTrip(session),
-            ),
+            if (_joining)
+              const ColoredBox(
+                color: Color(0x33000000),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (_joinError != null)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 24,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.error.withValues(alpha: 0.12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      _joinError!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.error,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -175,85 +268,4 @@ class SharedTripLoadResult {
   static const notFound = SharedTripLoadResult._();
   static SharedTripLoadResult found(Trip trip, {bool alreadyJoined = false}) =>
       SharedTripLoadResult._(trip: trip, alreadyJoined: alreadyJoined);
-}
-
-class _JoinBanner extends StatelessWidget {
-  const _JoinBanner({
-    required this.tripName,
-    required this.joining,
-    required this.supabaseReady,
-    required this.onJoin,
-    this.error,
-  });
-
-  final String tripName;
-  final bool joining;
-  final bool supabaseReady;
-  final VoidCallback onJoin;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (error != null) ...[
-              Text(
-                error!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.error),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            Pressable(
-              onTap: joining || !supabaseReady ? null : onJoin,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: supabaseReady ? AppColors.primary : AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (joining)
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    else
-                      Text(
-                        supabaseReady
-                            ? 'Join “$tripName”'
-                            : 'Sign in unavailable offline',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              supabaseReady
-                  ? 'Join as a viewer — plan, spend, and map sync to your Trips. The owner can promote you to editor.'
-                  : 'Connect Supabase to join shared trips.',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

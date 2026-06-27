@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../../../../core/bloc/session/session_bloc.dart';
 import '../../../../core/bootstrap/app_bootstrap.dart';
 import '../../../../core/environment.dart';
+import '../../../../core/navigation/share_invite_flow.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -28,11 +30,39 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String _versionLabel = '…';
+  bool _inviteSignInPrompted = false;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePresentInviteSignIn());
+  }
+
+  Future<void> _maybePresentInviteSignIn() async {
+    if (_inviteSignInPrompted || !ShareInviteFlow.awaitingSignIn) return;
+    _inviteSignInPrompted = true;
+
+    await SignInBottomSheet.show(context);
+    if (!mounted) return;
+
+    final session = context.read<SessionBloc>().state;
+    final token = ShareInviteFlow.pendingToken;
+    if (session.isCloudSignedIn && token != null) {
+      ShareInviteFlow.clearAwaitingSignIn();
+      context.go('/s/$token');
+      return;
+    }
+
+    ShareInviteFlow.clear();
+  }
+
+  void _resumeInviteAfterSignIn(BuildContext context) {
+    if (!ShareInviteFlow.awaitingSignIn) return;
+    final token = ShareInviteFlow.pendingToken;
+    if (token == null) return;
+    ShareInviteFlow.clearAwaitingSignIn();
+    context.go('/s/$token');
   }
 
   Future<void> _loadVersion() async {
@@ -72,7 +102,11 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final themeController = ThemeScope.of(context);
 
-    return Scaffold(
+    return BlocListener<SessionBloc, SessionState>(
+      listenWhen: (prev, next) =>
+          !prev.isCloudSignedIn && next.isCloudSignedIn && ShareInviteFlow.awaitingSignIn,
+      listener: (context, state) => _resumeInviteAfterSignIn(context),
+      child: Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const TriftlyAppBarTitle(title: 'Me')),
@@ -150,6 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           );
         },
+      ),
       ),
     );
   }

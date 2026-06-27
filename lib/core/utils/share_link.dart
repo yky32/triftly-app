@@ -9,6 +9,28 @@ abstract final class ShareLink {
     return '$baseHost/s/$token';
   }
 
+  /// Play Store listing for buddies without the app installed.
+  static const androidPlayStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.triftly';
+
+  /// App Store listing — set [iosAppStoreId] when the public listing is live.
+  static const iosAppStoreId = String.fromEnvironment('IOS_APP_STORE_ID');
+
+  static String get iosAppStoreUrl => iosAppStoreId.isEmpty
+      ? 'https://apps.apple.com/us/search?term=triftly'
+      : 'https://apps.apple.com/app/id$iosAppStoreId';
+
+  static String storeUrlForUserAgent(String userAgent) {
+    final ua = userAgent.toLowerCase();
+    if (ua.contains('iphone') || ua.contains('ipad') || ua.contains('ipod')) {
+      return iosAppStoreUrl;
+    }
+    if (ua.contains('android')) {
+      return androidPlayStoreUrl;
+    }
+    return baseHost;
+  }
+
   static String? tokenFromUri(Uri? uri) {
     if (uri == null) return null;
 

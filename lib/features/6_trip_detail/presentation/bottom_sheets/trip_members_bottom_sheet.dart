@@ -34,12 +34,15 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
   List<TripMemberSummary> _joined = const [];
   bool _loading = false;
   String? _updatingUserId;
+  bool _loadScheduled = false;
 
   Trip get trip => widget.trip;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loadScheduled) return;
+    _loadScheduled = true;
     _loadJoined();
   }
 

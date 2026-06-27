@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-itunes-app" content="app-id=" />
+  <title>Join trip on Triftly</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f9f7;
+      --text: #1c1917;
+      --muted: #a8a29e;
+      --primary: #0d9488;
+      --card: rgba(255, 255, 255, 0.82);
+      --border: rgba(255, 255, 255, 0.75);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111111;
+        --text: #f5f5f4;
+        --muted: #78716c;
+        --card: rgba(30, 30, 32, 0.82);
+        --border: rgba(255, 255, 255, 0.12);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #ccfbf1 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(420px, 100%);
+      padding: 28px 24px;
+      border-radius: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.12);
+      text-align: center;
+    }
+    .icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(13, 148, 136, 0.12);
+      font-size: 28px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .actions {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+    a.button {
+      display: block;
+      padding: 14px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      background: var(--primary);
+      color: white;
+    }
+    a.secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid rgba(13, 148, 136, 0.35);
+    }
+    .status {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="icon" aria-hidden="true">✈️</div>
+    <h1>Join this trip on Triftly</h1>
+    <p id="subtitle">Opening the app…</p>
+    <div class="actions" id="actions" hidden>
+      <a class="button" id="store-link" href="#">Get Triftly</a>
+      <a class="button secondary" id="retry-link" href="#">Open in app</a>
+    </div>
+    <p class="status" id="status"></p>
+  </main>
+  <script>
+    (function () {
+      var IOS_STORE = "https://apps.apple.com/us/search?term=triftly";
+      var ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.triftly";
+      var match = location.pathname.match(/\/s\/([^/]+)/);
+      var token = match ? match[1] : "";
+      var universalLink = token ? "https://triftly.app/s/" + token : "https://triftly.app";
+      var customScheme = token ? "triftly://s/" + token : "triftly://";
+      var ua = navigator.userAgent || "";
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      var isAndroid = /Android/i.test(ua);
+      var storeUrl = isIOS ? IOS_STORE : isAndroid ? ANDROID_STORE : "https://triftly.app";
+      var leftPage = false;
+
+      document.getElementById("store-link").href = storeUrl;
+      document.getElementById("retry-link").href = universalLink;
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) leftPage = true;
+      });
+
+      function showFallback(message) {
+        document.getElementById("subtitle").textContent =
+          "Install Triftly to preview the trip and join your buddy.";
+        document.getElementById("status").textContent = message || "";
+        document.getElementById("actions").hidden = false;
+      }
+
+      if (!token) {
+        showFallback("This invite link looks incomplete.");
+        return;
+      }
+
+      // If the app is installed, universal links / custom scheme should leave the browser.
+      window.location.href = universalLink;
+      setTimeout(function () {
+        if (!leftPage) {
+          if (isIOS) window.location.href = customScheme;
+        }
+      }, 700);
+      setTimeout(function () {
+        if (!leftPage) {
+          showFallback("App not detected — download Triftly to continue.");
+          window.location.href = storeUrl;
+        }
+      }, 2600);
+    })();
+  </script>
+</body>
+</html>
