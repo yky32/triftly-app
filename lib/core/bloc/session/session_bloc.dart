@@ -42,7 +42,10 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
   Future<void> verifyEmailOtp({required String email, required String token}) =>
       _auth.verifyEmailOtp(email: email, token: token);
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    add(const SessionSignOutRequested());
+    await stream.firstWhere((state) => state.user == null);
+  }
 
   Future<void> updateDisplayName(String displayName) async {
     final trimmed = displayName.trim();
@@ -56,7 +59,8 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
   }
 
   void _onAuthUserChanged(SessionAuthUserChanged event, Emitter<SessionState> emit) {
-    emit(state.copyWith(user: event.user));
+    // Auth stream is source of truth — do not use copyWith(user: null); it cannot clear user.
+    emit(SessionState(user: event.user, fallbackCurrency: state.fallbackCurrency));
   }
 
   Future<void> _onDefaultCurrencyChanged(
@@ -86,7 +90,8 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
     SessionSignOutRequested event,
     Emitter<SessionState> emit,
   ) async {
-    await signOut();
+    await _auth.signOut();
+    emit(SessionState(user: null, fallbackCurrency: state.fallbackCurrency));
   }
 
   @override

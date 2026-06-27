@@ -57,7 +57,16 @@ class _ViewState extends State<_View> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<SessionBloc, SessionState>(
+      listenWhen: (prev, next) =>
+          prev.isCloudSignedIn != next.isCloudSignedIn ||
+          prev.user?.id != next.user?.id,
+      listener: (context, session) {
+        context.read<TripListBloc>().add(
+              TripListLoadRequested(syncCloud: session.isCloudSignedIn),
+            );
+      },
+      child: Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -126,6 +135,7 @@ class _ViewState extends State<_View> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

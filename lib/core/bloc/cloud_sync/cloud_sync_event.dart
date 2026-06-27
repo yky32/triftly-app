@@ -41,6 +41,10 @@ final class CloudSyncErrorCleared extends CloudSyncEvent {
   const CloudSyncErrorCleared();
 }
 
+final class CloudSyncSignedOut extends CloudSyncEvent {
+  const CloudSyncSignedOut();
+}
+
 /// User tapped Retry — bloc orchestrates cloud pull.
 final class CloudSyncRetryRequested extends CloudSyncEvent {
   const CloudSyncRetryRequested({this.onComplete});

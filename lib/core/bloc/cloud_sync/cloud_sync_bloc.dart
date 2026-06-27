@@ -26,6 +26,7 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
     on<CloudSyncFailed>(_onFailed);
     on<CloudSyncPushFailed>(_onPushFailed);
     on<CloudSyncErrorCleared>(_onErrorCleared);
+    on<CloudSyncSignedOut>(_onSignedOut);
     on<CloudSyncRetryRequested>(_onRetryRequested);
   }
 
@@ -68,6 +69,11 @@ class CloudSyncBloc extends Bloc<CloudSyncEvent, CloudSyncState> {
 
   void _onErrorCleared(CloudSyncErrorCleared event, Emitter<CloudSyncState> emit) {
     emit(state.copyWith(clearLastError: true));
+  }
+
+  void _onSignedOut(CloudSyncSignedOut event, Emitter<CloudSyncState> emit) {
+    _activeSyncCount = 0;
+    emit(CloudSyncState(isConfigured: state.isConfigured));
   }
 
   Future<void> _onRetryRequested(

@@ -63,6 +63,29 @@ void main() {
       await bloc.close();
     });
 
+    test('sign out clears cloud user from session state', () async {
+      final auth = _FakeAuthRepository();
+      final cloudUser = User(
+        id: '2f48d84b-fc85-4abc-82da-b6c10194bed5',
+        displayName: 'Wayne Yu',
+        email: 'wayne@example.com',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+      await auth.restoreSession(cloudUser);
+
+      final bloc = SessionBloc(
+        auth: auth,
+        preferences: ProfilePreferences.instance,
+      );
+
+      expect(bloc.state.isCloudSignedIn, isTrue);
+      await bloc.signOut();
+
+      expect(bloc.state.user, isNull);
+      expect(bloc.state.isCloudSignedIn, isFalse);
+      await bloc.close();
+    });
+
     blocTest<SessionBloc, SessionState>(
       'SessionDefaultCurrencyChanged updates fallback for guest',
       build: () => SessionBloc(

@@ -3,12 +3,13 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../auth/auth_deep_link_bridge.dart';
 import '../auth/auth_debug_log.dart';
 import '../bloc/cloud_sync/cloud_sync_bloc.dart';
 import '../bloc/session/session_bloc.dart';
 import '../environment.dart';
+import '../models/user.dart';
 import '../repositories/hive_trip_repository.dart';
 import '../repositories/local_auth_repository.dart';
 import '../repositories/cloud_trip_sync.dart';
@@ -32,6 +33,7 @@ class AppBootstrap {
 
   static String? _lastCloudSyncUserId;
   static DateTime? _lastCloudSyncAt;
+  static User? _lastAuthUser;
 
   static Future<void> initialize() async {
     profilePreferences = await ProfilePreferences.initialize();
@@ -88,8 +90,27 @@ class AppBootstrap {
       tripRepository: tripRepository,
     );
 
+    _lastAuthUser = auth.currentUser;
+
     auth.authStateChanges.listen((user) async {
-      if (user == null || !CloudTripSync.isCloudUserId(user.id)) return;
+      final signedOut =
+          user == null && CloudTripSync.isCloudUserId(_lastAuthUser?.id);
+      _lastAuthUser = user;
+
+      if (user == null) {
+        if (signedOut) {
+          _lastCloudSyncUserId = null;
+          _lastCloudSyncAt = null;
+          authDebugLog(
+            'Signed out — clearing local trip cache',
+            kind: AuthLogKind.session,
+          );
+          await tripRepository.clearOfflineData();
+          cloudSyncBloc.add(const CloudSyncSignedOut());
+        }
+        return;
+      }
+      if (!CloudTripSync.isCloudUserId(user.id)) return;
 
       final now = DateTime.now();
       if (_lastCloudSyncUserId == user.id &&
