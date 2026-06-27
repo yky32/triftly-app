@@ -39,6 +39,8 @@ Supports onboarding pillars: **easy plan creation**, **easy fill-up**, **easy sh
 
 ## iOS share extension
 
+- Target **`TriftlyShare`** (Share Extension) must be embedded in Runner via **Embed Foundation Extensions** — bundle ID `com.triftly.TriftlyShare`.
+- CI/Fastlane provisions both `com.triftly` and `com.triftly.TriftlyShare` App Store profiles.
 - Activation: `public.url`, `public.plain-text`, web URLs (Google Maps shares).
 - Open main app via `extensionContext?.open(triftly://map?url=…)` — **not** `UIApplication` from extension.
 - User may need **Edit Actions → enable Triftly** once (iOS share sheet discovery).

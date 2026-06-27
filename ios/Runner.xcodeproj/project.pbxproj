@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		TS001SHARE1E8E89220040F4C2 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = TS002SHARE1E8E89220040F4C2 /* ShareViewController.swift */; };
+		TS005SHARE1E8E89220040F4C2 /* TriftlyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
@@ -35,6 +37,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				TS005SHARE1E8E89220040F4C2 /* TriftlyShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -42,6 +45,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TriftlyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		2FC312CFB79012DE897888F6 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -84,6 +88,34 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		TS00DSHARE1E8E89220040F4C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		TS008SHARE1E8E89220040F4C2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = TS007SHARE1E8E89220040F4C2;
+			remoteInfo = TriftlyShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		TS00BSHARE1E8E89220040F4C2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = TS007SHARE1E8E89220040F4C2 /* TriftlyShare */;
+			targetProxy = TS008SHARE1E8E89220040F4C2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXGroup section */
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
@@ -147,6 +179,7 @@
 			isa = PBXGroup;
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
+				TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -201,11 +234,28 @@
 			buildRules = (
 			);
 			dependencies = (
+				TS00BSHARE1E8E89220040F4C2 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		TS007SHARE1E8E89220040F4C2 /* TriftlyShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = TS00FSHARE1E8E89220040F4C2 /* Build configuration list for PBXNativeTarget "TriftlyShare" */;
+			buildPhases = (
+				TS00CSHARE1E8E89220040F4C2 /* Sources */,
+				TS00DSHARE1E8E89220040F4C2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TriftlyShare;
+			productName = TriftlyShare;
+			productReference = TS006SHARE1E8E89220040F4C2 /* TriftlyShare.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -224,6 +274,9 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 					};
+					TS007SHARE1E8E89220040F4C2 = {
+						CreatedOnToolsVersion = 15.0;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
@@ -240,6 +293,7 @@
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
+				TS007SHARE1E8E89220040F4C2 /* TriftlyShare */,
 			);
 		};
 /* End PBXProject section */
@@ -349,6 +403,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		TS00CSHARE1E8E89220040F4C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TS001SHARE1E8E89220040F4C2 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -626,6 +688,80 @@
 			};
 			name = Release;
 		};
+		TS00GSHARE1E8E89220040F4C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = TS0D1E8E89220040F4C2A1B2 /* TriftlyShare-Debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 3G34999H3A;
+				INFOPLIST_FILE = TriftlyShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Triftly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.TriftlyShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		TS00HSHARE1E8E89220040F4C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = TS0R1E8E89220040F4C2A1B2 /* TriftlyShare-Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 3G34999H3A;
+				INFOPLIST_FILE = TriftlyShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Triftly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.TriftlyShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		TS00ISHARE1E8E89220040F4C2 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = TS0R1E8E89220040F4C2A1B2 /* TriftlyShare-Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 3G34999H3A;
+				INFOPLIST_FILE = TriftlyShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Triftly;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.triftly.TriftlyShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -645,6 +781,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		TS00FSHARE1E8E89220040F4C2 /* Build configuration list for PBXNativeTarget "TriftlyShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				TS00GSHARE1E8E89220040F4C2 /* Debug */,
+				TS00HSHARE1E8E89220040F4C2 /* Release */,
+				TS00ISHARE1E8E89220040F4C2 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

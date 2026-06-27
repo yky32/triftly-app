@@ -362,7 +362,27 @@ def persist_ci_signing_env!
 
   File.open(ENV["GITHUB_ENV"], "a") do |file|
     file.puts "SIGH_NAME=#{ENV['SIGH_NAME']}"
+    file.puts "SIGH_NAME_TRIFTLY_SHARE=#{ENV['SIGH_NAME_TRIFTLY_SHARE']}" if ENV["SIGH_NAME_TRIFTLY_SHARE"]
   end
+end
+
+TRIFTLY_SHARE_BUNDLE_ID = "com.triftly.TriftlyShare"
+
+def fetch_appstore_profile!(app_identifier:, force: false)
+  api_key_params = app_store_connect_api_key_params
+  profile_options = {
+    app_identifier: app_identifier,
+    team_id: "3G34999H3A",
+    force: force
+  }
+  if api_key_params
+    profile_options[:api_key] = app_store_connect_api_key(**api_key_params)
+    profile_options[:cert_id] = distribution_cert_id_for_ci if ENV["CI"]
+  else
+    profile_options[:username] = ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com"
+  end
+  get_provisioning_profile(**profile_options)
+  ENV["SIGH_NAME"]
 end
 
 def ci_signing_keychain_path
@@ -433,7 +453,9 @@ end
 
 def write_ci_export_options_plist!
   profile_name = ENV["SIGH_NAME"]
+  share_profile_name = ENV["SIGH_NAME_TRIFTLY_SHARE"]
   UI.user_error!("SIGH_NAME is required to export the App Store IPA on CI.") unless profile_name
+  UI.user_error!("SIGH_NAME_TRIFTLY_SHARE is required to export the App Store IPA on CI.") unless share_profile_name
 
   plist_path = File.join(IOS_DIR, "ExportOptions.ci.plist")
   plist_content = <<~PLIST
@@ -451,6 +473,8 @@ def write_ci_export_options_plist!
       <dict>
         <key>com.triftly</key>
         <string>#{profile_name}</string>
+        <key>#{TRIFTLY_SHARE_BUNDLE_ID}</key>
+        <string>#{share_profile_name}</string>
       </dict>
     </dict>
     </plist>
@@ -711,7 +735,7 @@ platform :ios do
 
     if ENV["CI"] && export_method == "app-store"
       UI.message("🔧 CI: applying App Store signing to Xcode project...")
-      if ENV["SIGH_NAME"]
+      if ENV["SIGH_NAME"] && ENV["SIGH_NAME_TRIFTLY_SHARE"]
         update_code_signing_settings(
           use_automatic_signing: false,
           path: "#{IOS_DIR}/Runner.xcodeproj",
@@ -721,9 +745,18 @@ platform :ios do
           code_sign_identity: "Apple Distribution",
           targets: ["Runner"]
         )
+        update_code_signing_settings(
+          use_automatic_signing: false,
+          path: "#{IOS_DIR}/Runner.xcodeproj",
+          team_id: "3G34999H3A",
+          bundle_identifier: TRIFTLY_SHARE_BUNDLE_ID,
+          profile_name: ENV["SIGH_NAME_TRIFTLY_SHARE"],
+          code_sign_identity: "Apple Distribution",
+          targets: ["TriftlyShare"]
+        )
       else
         UI.user_error!(
-          "SIGH_NAME is not set. Run the Prepare App Store signing workflow step first."
+          "SIGH_NAME and SIGH_NAME_TRIFTLY_SHARE must be set. Run the Prepare App Store signing workflow step first."
         )
       end
 
@@ -764,7 +797,8 @@ platform :ios do
           signingStyle: "manual",
           teamID: "3G34999H3A",
           provisioningProfiles: {
-            "com.triftly" => ENV["SIGH_NAME"]
+            "com.triftly" => ENV["SIGH_NAME"],
+            TRIFTLY_SHARE_BUNDLE_ID => ENV["SIGH_NAME_TRIFTLY_SHARE"]
           }.compact
         },
         export_team_id: "3G34999H3A",
@@ -1104,31 +1138,26 @@ platform :ios do
       
       domains_signing_ready = prepare_associated_domains_signing!(app_identifier: "com.triftly")
 
-      # Get or create App Store provisioning profile
-      UI.message("📋 Getting App Store provisioning profile...")
-      if api_key_params
-        profile_options = {
-          app_identifier: "com.triftly",
-          api_key: app_store_connect_api_key(**api_key_params),
-          team_id: "3G34999H3A",
-          force: ENV["CI"] && domains_signing_ready
-        }
-        if ENV["CI"]
-          profile_options[:cert_id] = distribution_cert_id_for_ci
-        end
-        if profile_options[:force]
-          UI.message("🔄 Regenerating App Store profile (Associated Domains entitlements)")
-        end
-        get_provisioning_profile(**profile_options)
-      else
-        get_provisioning_profile(
-          app_identifier: "com.triftly",
-          username: ENV["FASTLANE_USER"] || "wayneyu.dev@gmail.com",
-          team_id: "3G34999H3A"
-        )
+      # Get or create App Store provisioning profiles (app + share extension)
+      UI.message("📋 Getting App Store provisioning profile for com.triftly...")
+      main_profile = fetch_appstore_profile!(
+        app_identifier: "com.triftly",
+        force: ENV["CI"] && domains_signing_ready
+      )
+      if ENV["CI"] && domains_signing_ready
+        UI.message("🔄 Regenerating App Store profile (Associated Domains entitlements)")
       end
 
-      UI.success("✅ App Store distribution certificate and profile are ready!")
+      UI.message("📋 Getting App Store provisioning profile for #{TRIFTLY_SHARE_BUNDLE_ID}...")
+      share_profile = fetch_appstore_profile!(
+        app_identifier: TRIFTLY_SHARE_BUNDLE_ID,
+        force: ENV["CI"]
+      )
+
+      ENV["SIGH_NAME"] = main_profile
+      ENV["SIGH_NAME_TRIFTLY_SHARE"] = share_profile
+
+      UI.success("✅ App Store distribution certificate and profiles are ready!")
       persist_ci_signing_env!
       UI.message("📝 You can now build for App Store using: bundle exec fastlane ios build_ipa export_method:app-store")
     rescue => ex

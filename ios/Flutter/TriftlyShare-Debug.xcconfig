@@ -1,2 +1,5 @@
 // TriftlyShare extension: version only (no Pods/Flutter linkage)
 #include "Generated.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER = com.triftly.TriftlyShare
+APPLICATION_EXTENSION_API_ONLY = YES
+SKIP_INSTALL = YES
