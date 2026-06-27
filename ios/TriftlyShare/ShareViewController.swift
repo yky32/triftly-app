@@ -2,7 +2,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Share Extension: when user taps Share in Google Maps (or any app) and selects Triftly,
-/// we receive the shared URL/text and open the main app with triftly://map?url=... so the map shows the location.
+/// we receive the shared URL/text and open the main app with triftly://map?url=...
 final class ShareViewController: UIViewController {
 
     override func viewDidLoad() {
@@ -24,8 +24,9 @@ final class ShareViewController: UIViewController {
                     provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] url, _ in
                         if let shareURL = (url as? URL) ?? (url as? NSURL) as URL? {
                             self?.openMainApp(with: shareURL.absoluteString)
+                        } else {
+                            self?.finish()
                         }
-                        self?.finish()
                     }
                     return
                 }
@@ -33,8 +34,9 @@ final class ShareViewController: UIViewController {
                     provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] text, _ in
                         if let string = text as? String {
                             self?.openMainApp(with: string)
+                        } else {
+                            self?.finish()
                         }
-                        self?.finish()
                     }
                     return
                 }
@@ -45,15 +47,14 @@ final class ShareViewController: UIViewController {
 
     private func openMainApp(with urlOrText: String) {
         let encoded = urlOrText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlOrText
-        guard let openURL = URL(string: "triftly://map?url=\(encoded)") else { return }
-        var responder: UIResponder? = self
-        while responder != nil {
-            if let application = responder as? UIApplication {
-                application.open(openURL)
-                break
-            }
-            responder = responder?.next
+        guard let openURL = URL(string: "triftly://map?url=\(encoded)") else {
+            finish()
+            return
         }
+
+        extensionContext?.open(openURL, completionHandler: { [weak self] _ in
+            self?.finish()
+        })
     }
 
     private func finish() {

@@ -1,6 +1,6 @@
 ---
 description: Trips & Tools UI — sheets, segment, swipe confirm, date picker
-globs: lib/features/5_trip_list/**,lib/features/6_trip_detail/**,lib/features/2_tools/**,lib/core/widgets/sheet_scaffold.dart,lib/core/widgets/sheet_form_primitives.dart,lib/core/widgets/triftly_bottom_sheet.dart,lib/core/widgets/swipe_to_confirm.dart,lib/core/widgets/trip_date_picker_sheet.dart,lib/core/constants/currency_options.dart
+globs: lib/features/5_trip_list/**,lib/features/6_trip_detail/**,lib/features/2_tools/**,lib/core/widgets/sheet_scaffold.dart,lib/core/widgets/sheet_form_primitives.dart,lib/core/widgets/triftly_bottom_sheet.dart,lib/core/widgets/swipe_to_confirm.dart,lib/core/widgets/trip_date_picker_sheet.dart,lib/core/widgets/glass_context_menu.dart,lib/core/constants/currency_options.dart
 alwaysApply: false
 ---
 
@@ -100,6 +100,13 @@ See **`filter-tabs-ui.mdc`** for the full filter-tab pattern (liquid glass + ico
 ## Add Spot sheet (`add_spot_bottom_sheet.dart`)
 - Same chrome as create trip. `SwipeToConfirm` **"Slide to add spot"**.
 - `BlocProvider.value(value: tripDetailBloc)` required.
+
+## Inline action menus (plan spot, trip card, buddies)
+- Use **`GlassContextMenu.show`** — **not** `PopupMenuButton`.
+- See **`liquid-glass-ui.mdc`** → Context menus for trigger, entries, width, and destructive styling.
+- **Plan spot row** (`plan_tab.dart` `_SpotActionsMenu`): maps, visited toggle, expense, edit, delete — delete is `destructive: true`.
+- **Trip card** (`trip_card.dart` `_TripMenu`): edit / delete or leave.
+- **Trip detail app bar ⋮** → `TripDetailMenuSheet` (bottom sheet with `SheetOptionRow`) — not `GlassContextMenu`.
 
 ## Currency (`currency_options.dart`)
 - Chips: **flag + symbol** only (e.g. 🇯🇵 ¥). No country name on chips.
