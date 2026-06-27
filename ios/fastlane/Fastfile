@@ -487,10 +487,31 @@ rescue => ex
   0
 end
 
-def duplicate_build_upload_error?(error_msg)
-  error_msg.include?("already been used") ||
-    error_msg.include?("ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE") ||
-    error_msg.include?("bundle version must be higher")
+def error_full_text(error)
+  parts = [error.message, error.to_s]
+  parts << error.inspect if error.respond_to?(:inspect)
+  parts << (error.backtrace || []).join("\n")
+  parts.compact.join("\n")
+end
+
+def duplicate_build_upload_error?(error)
+  text = error_full_text(error)
+  text.include?("already been used") ||
+    text.include?("ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE") ||
+    text.include?("INVALID.DUPLICATE") ||
+    text.include?("bundle version must be higher") ||
+    text.include?("previously uploaded version")
+end
+
+def parse_duplicate_build_number(error)
+  text = error_full_text(error)
+  if (match = text.match(/previousBundleVersion\s*:\s*(\d+)/i))
+    return match[1].to_i
+  end
+  if (match = text.match(/previously uploaded version:\s*['"]?(\d+)/i))
+    return match[1].to_i
+  end
+  nil
 end
 
 def write_build_number_to_pubspec(version_name, new_build)
@@ -501,7 +522,7 @@ def write_build_number_to_pubspec(version_name, new_build)
 end
 
 # Helper function to increment build number in pubspec.yaml
-def increment_build_number_in_pubspec
+def increment_build_number_in_pubspec(minimum_build: nil)
   pubspec_path = File.join(PROJECT_ROOT, "pubspec.yaml")
   
   unless File.exist?(pubspec_path)
@@ -519,7 +540,7 @@ def increment_build_number_in_pubspec
   current_build = version_match[2].to_i
   asc_latest = latest_app_store_build_number(version_name: version_name)
   asc_latest_any = latest_app_store_build_number
-  remote_high = [asc_latest, asc_latest_any].max
+  remote_high = [asc_latest, asc_latest_any, minimum_build.to_i].max
   new_build = [current_build, remote_high].max + 1
 
   if remote_high >= current_build
@@ -868,10 +889,14 @@ platform :ios do
     release_notes = generate_release_notes
     UI.message("📝 Uploading TestFlight What to Test notes with this build.")
     UI.message("")
-    
+
+    upload_attempts = 0
+    max_upload_attempts = 3
+
     begin
+      upload_attempts += 1
       upload_to_testflight(**testflight_upload_options(ipa_path, changelog: release_notes))
-      
+
       UI.success("✅ Successfully uploaded to App Store Connect!")
       if uploaded_build
         UI.message("📱 Look for build #{uploaded_build} (version #{uploaded_version}) in TestFlight → 构建版本上传. Processing usually 5–30 min; if missing after 24h, contact Apple or re-upload with next build number.")
@@ -883,14 +908,34 @@ platform :ios do
         commit_and_push_build_number(version_name, new_build_number)
       end
     rescue => ex
-      error_msg = ex.message
-      
-      if duplicate_build_upload_error?(error_msg) && !skip_build
+      should_retry_duplicate = duplicate_build_upload_error?(ex)
+
+      unless should_retry_duplicate || skip_build
+        asc_latest = latest_app_store_build_number(version_name: uploaded_version)
+        if uploaded_build && uploaded_build.to_i > asc_latest
+          should_retry_duplicate = true
+          UI.important(
+            "⚠️  Upload failed and App Store Connect latest (#{asc_latest}) " \
+            "is behind our build (#{uploaded_build}); treating as duplicate/race."
+          )
+        end
+      end
+
+      if should_retry_duplicate && !skip_build && upload_attempts < max_upload_attempts
+        duplicate_floor = [
+          parse_duplicate_build_number(ex),
+          uploaded_build&.to_i
+        ].compact.max
+
         UI.important("")
-        UI.important("🔢 Build number already on App Store Connect. Bumping, rebuilding, and retrying upload...")
+        UI.important(
+          "🔢 Build number already on App Store Connect" \
+          "#{duplicate_floor ? " (#{duplicate_floor})" : ""}. " \
+          "Bumping, rebuilding, and retrying upload (attempt #{upload_attempts + 1}/#{max_upload_attempts})..."
+        )
         UI.important("")
 
-        version_name, new_build_number = increment_build_number_in_pubspec
+        version_name, new_build_number = increment_build_number_in_pubspec(minimum_build: duplicate_floor)
         build_ipa(export_method: "app-store")
         ipa_path = ensure_runner_ipa_path!
 
@@ -902,10 +947,12 @@ platform :ios do
         end
 
         release_notes = generate_release_notes
-        upload_to_testflight(**testflight_upload_options(ipa_path, changelog: release_notes))
-        UI.success("✅ Successfully uploaded to App Store Connect after build number bump!")
-        commit_and_push_build_number(version_name, new_build_number) if version_name && new_build_number
-      elsif error_msg.include?("Couldn't find app") || error_msg.include?("not found on the account")
+        retry
+      end
+
+      error_msg = ex.message
+
+      if error_msg.include?("Couldn't find app") || error_msg.include?("not found on the account")
         UI.important("")
         UI.important("🔧 App not found in App Store Connect. Attempting to create it automatically...")
         UI.important("")
