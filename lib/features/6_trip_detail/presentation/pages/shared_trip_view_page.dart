@@ -75,18 +75,36 @@ class _SharedTripViewPageState extends State<SharedTripViewPage> {
       if (trip == null) {
         setState(() {
           _joining = false;
-          _joinError = 'Could not join this trip';
+          _joinError = 'This link is invalid or expired';
         });
         return;
       }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('“${trip.name}” added to Trips'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       context.go('${AppPage.plan.path}/${trip.id}');
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _joining = false;
-        _joinError = error.toString();
+        _joinError = _friendlyJoinError(error);
       });
     }
+  }
+
+  static String _friendlyJoinError(Object error) {
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('not authenticated')) {
+      return 'Sign in to join this trip';
+    }
+    if (msg.contains('network') || msg.contains('socket') || msg.contains('timeout')) {
+      return 'Couldn’t reach the server — try again';
+    }
+    return 'Couldn’t join — check the link and try again';
   }
 
   @override
@@ -228,7 +246,7 @@ class _JoinBanner extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             Text(
               supabaseReady
-                  ? 'Adds this trip to your Trips tab — plan, spend, and map stay in sync.'
+                  ? 'Join as a viewer — plan, spend, and map sync to your Trips. The owner can promote you to editor.'
                   : 'Connect Supabase to join shared trips.',
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,

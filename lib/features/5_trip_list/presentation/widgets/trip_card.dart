@@ -74,6 +74,16 @@ class TripCard extends StatelessWidget {
                         trip.destination,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                      if (trip.membershipBadgeLabel != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          trip.membershipBadgeLabel!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -157,10 +167,17 @@ class _TripMenu extends StatelessWidget {
     return PopupMenuButton<_TripMenuAction>(
       icon: Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary, size: 20),
       onSelected: (action) => _handleAction(context, action),
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: _TripMenuAction.edit, child: Text('Edit trip')),
-        PopupMenuItem(value: _TripMenuAction.delete, child: Text('Delete trip')),
-      ],
+      itemBuilder: (_) {
+        if (trip.isJoinedMember) {
+          return const [
+            PopupMenuItem(value: _TripMenuAction.leave, child: Text('Leave trip')),
+          ];
+        }
+        return const [
+          PopupMenuItem(value: _TripMenuAction.edit, child: Text('Edit trip')),
+          PopupMenuItem(value: _TripMenuAction.delete, child: Text('Delete trip')),
+        ];
+      },
     );
   }
 
@@ -188,11 +205,26 @@ class _TripMenu extends StatelessWidget {
         if (confirmed == true && context.mounted) {
           bloc.add(TripListTripDeleted(tripId: trip.id));
         }
+      case _TripMenuAction.leave:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Leave trip?'),
+            content: Text('“${trip.name}” will be removed from your Trips. You can re-join from the share link.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          bloc.add(TripListTripLeft(tripId: trip.id));
+        }
     }
   }
 }
 
-enum _TripMenuAction { edit, delete }
+enum _TripMenuAction { edit, delete, leave }
 
 class _BuddyDots extends StatelessWidget {
   final List<Buddy> buddies;

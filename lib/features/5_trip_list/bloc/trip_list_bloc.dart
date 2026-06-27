@@ -18,6 +18,7 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     on<TripListTripCreated>(_onTripCreated);
     on<TripListTripUpdated>(_onTripUpdated);
     on<TripListTripDeleted>(_onTripDeleted);
+    on<TripListTripLeft>(_onTripLeft);
   }
 
   final TripRepository _repository;
@@ -66,6 +67,14 @@ class TripListBloc extends Bloc<TripListEvent, TripListState> {
     Emitter<TripListState> emit,
   ) async {
     await _repository.deactivateTrip(event.tripId);
+    emit(state.copyWith(trips: _repository.allTrips()));
+  }
+
+  Future<void> _onTripLeft(
+    TripListTripLeft event,
+    Emitter<TripListState> emit,
+  ) async {
+    await _repository.leaveJoinedTrip(event.tripId);
     emit(state.copyWith(trips: _repository.allTrips()));
   }
 }

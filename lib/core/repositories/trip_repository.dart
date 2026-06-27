@@ -12,6 +12,13 @@ abstract class TripRepository {
   Future<void> upsertTrip(Trip trip);
   Future<void> updateTrip(Trip trip);
   Future<void> deactivateTrip(String tripId);
+  Future<void> leaveJoinedTrip(String tripId);
+  Future<List<TripMemberSummary>> tripMembers(String tripId);
+  Future<bool> setTripMemberRole({
+    required String tripId,
+    required String memberUserId,
+    required String role,
+  });
 
   void addSpot(String tripId, Spot spot);
   void updateSpot(String tripId, Spot spot);

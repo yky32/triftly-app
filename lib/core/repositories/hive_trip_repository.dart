@@ -107,12 +107,47 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
 
   @override
   Future<void> deactivateTrip(String tripId) async {
+    final existing = _store.tripById(tripId);
+    if (existing?.isJoinedMember ?? false) {
+      await leaveJoinedTrip(tripId);
+      return;
+    }
     _store.deactivateCreatedTrip(tripId);
     final trip = _store.tripById(tripId);
     if (trip != null) await _persistTrip(trip);
     await _cache.removeTrip(tripId);
     await _supabaseSync?.deactivateTrip(tripId);
     notifyListeners();
+  }
+
+  @override
+  Future<void> leaveJoinedTrip(String tripId) async {
+    final trip = _store.tripById(tripId);
+    if (trip == null || !trip.isJoinedMember) return;
+
+    await _supabaseSync?.leaveTripShare(tripId);
+    _store.deactivateCreatedTrip(tripId);
+    await _cache.removeTrip(tripId);
+    notifyListeners();
+  }
+
+  @override
+  Future<List<TripMemberSummary>> tripMembers(String tripId) async {
+    return _supabaseSync?.fetchTripMembers(tripId) ?? const [];
+  }
+
+  @override
+  Future<bool> setTripMemberRole({
+    required String tripId,
+    required String memberUserId,
+    required String role,
+  }) async {
+    return _supabaseSync?.setTripMemberRole(
+          tripId: tripId,
+          memberUserId: memberUserId,
+          role: role,
+        ) ??
+        false;
   }
 
   @override

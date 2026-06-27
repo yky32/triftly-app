@@ -36,3 +36,10 @@ final class TripListTripDeleted extends TripListEvent {
   @override
   List<Object?> get props => [tripId];
 }
+
+final class TripListTripLeft extends TripListEvent {
+  final String tripId;
+  const TripListTripLeft({required this.tripId});
+  @override
+  List<Object?> get props => [tripId];
+}
