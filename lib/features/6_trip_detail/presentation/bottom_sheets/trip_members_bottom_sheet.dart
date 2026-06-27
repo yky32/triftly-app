@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/bloc/session/session_bloc.dart';
@@ -7,10 +8,14 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/buddy_avatar.dart';
+import '../../../../core/widgets/confirm_bottom_sheet.dart';
+import '../../../../core/widgets/glass_context_menu.dart';
+import '../../../../core/widgets/glass_icon_button.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/spend_glass_shell.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
+import '../../bloc/trip_detail_bloc.dart';
 import 'share_trip_bottom_sheet.dart';
 
 /// Trip buddies & joined-member access — avatar, name, role management.
@@ -35,8 +40,23 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
   bool _loading = false;
   String? _updatingUserId;
   bool _loadScheduled = false;
+  late Trip _trip;
 
-  Trip get trip => widget.trip;
+  Trip get trip => _trip;
+
+  @override
+  void initState() {
+    super.initState();
+    _trip = widget.trip;
+  }
+
+  @override
+  void didUpdateWidget(covariant TripMembersBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.trip.updatedAt != widget.trip.updatedAt) {
+      _trip = widget.trip;
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -54,6 +74,25 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
       _joined = members;
       _loading = false;
     });
+  }
+
+  Future<void> _persistTrip(Trip updated) async {
+    await AppScope.of(context).tripRepository.updateTrip(updated);
+    if (!mounted) return;
+    try {
+      context.read<TripDetailBloc>().add(TripDetailTripUpdated(trip: updated));
+    } catch (_) {}
+    setState(() => _trip = updated);
+  }
+
+  bool _buddyReferencedInExpenses(String buddyId) {
+    final detail = AppScope.of(context).tripRepository.detailSync(trip.id);
+    if (detail == null) return false;
+    return detail.expenses.any(
+      (expense) =>
+          expense.isActive &&
+          (expense.paidById == buddyId || expense.splits.any((split) => split.buddyId == buddyId)),
+    );
   }
 
   Future<void> _setRole(TripMemberSummary member, String role) async {
@@ -74,9 +113,190 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
     }
   }
 
-  void _inviteMore() {
-    Navigator.of(context).pop();
-    ShareTripBottomSheet.show(context, trip);
+  void _shareTrip() => ShareTripBottomSheet.show(context, trip);
+
+  Future<void> _addPlanBuddy() async {
+    final result = await _PlanBuddyFormSheet.show(context);
+    if (result == null || !mounted) return;
+
+    await _persistTrip(
+      trip.copyWith(
+        buddies: [...trip.buddies, Buddy.create(name: result.name, userId: result.userId).copyWith(avatarColor: result.avatarColor)],
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _editPlanBuddy(Buddy buddy) async {
+    final result = await _PlanBuddyFormSheet.show(context, buddy: buddy);
+    if (result == null || !mounted) return;
+
+    final updatedBuddies = trip.buddies
+        .map((b) => b.id == buddy.id ? b.copyWith(name: result.name, avatarColor: result.avatarColor) : b)
+        .toList();
+    await _persistTrip(trip.copyWith(buddies: updatedBuddies, updatedAt: DateTime.now()));
+  }
+
+  Future<void> _removePlanBuddy(Buddy buddy) async {
+    if (buddy.isMe) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You cannot remove yourself from the plan group')),
+      );
+      return;
+    }
+
+    if (_buddyReferencedInExpenses(buddy.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${buddy.name} is in expenses — remove them from splits first')),
+      );
+      return;
+    }
+
+    final confirmed = await ConfirmBottomSheet.show(
+      context,
+      title: 'Remove ${buddy.name}?',
+      message: 'They will be removed from splits and itinerary.',
+      confirmLabel: 'Remove',
+      destructive: true,
+      icon: Icons.person_remove_outlined,
+    );
+    if (!confirmed || !mounted) return;
+
+    final updatedBuddies = trip.buddies.where((b) => b.id != buddy.id).toList();
+    await _persistTrip(trip.copyWith(buddies: updatedBuddies, updatedAt: DateTime.now()));
+  }
+
+  Future<void> _linkPlanBuddy(Buddy buddy) async {
+    final available = _joined
+        .where((member) => !trip.buddies.any((b) => b.userId == member.userId && b.id != buddy.id))
+        .toList();
+    if (available.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No joined accounts available to link')),
+      );
+      return;
+    }
+
+    final picked = await _LinkBuddySheet.show(context, members: available);
+    if (picked == null || !mounted) return;
+
+    final updatedBuddies = trip.buddies
+        .map(
+          (b) => b.id == buddy.id
+              ? b.copyWith(userId: picked.userId, name: picked.displayLabel)
+              : b,
+        )
+        .toList();
+    await _persistTrip(trip.copyWith(buddies: updatedBuddies, updatedAt: DateTime.now()));
+  }
+
+  Future<void> _handlePlanBuddyAction(Buddy buddy, _PlanBuddyAction action) async {
+    switch (action) {
+      case _PlanBuddyAction.edit:
+        await _editPlanBuddy(buddy);
+      case _PlanBuddyAction.remove:
+        await _removePlanBuddy(buddy);
+      case _PlanBuddyAction.link:
+        await _linkPlanBuddy(buddy);
+    }
+  }
+
+  Future<void> _addJoinedToPlan(TripMemberSummary member) async {
+    if (trip.buddies.any((b) => b.userId == member.userId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${member.displayLabel} is already on the plan')),
+      );
+      return;
+    }
+
+    await _persistTrip(
+      trip.copyWith(
+        buddies: [
+          ...trip.buddies,
+          Buddy.create(name: member.displayLabel, userId: member.userId),
+        ],
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _removeJoinedMember(TripMemberSummary member) async {
+    final confirmed = await ConfirmBottomSheet.show(
+      context,
+      title: 'Remove ${member.displayLabel}?',
+      message: 'They will lose access to this trip.',
+      confirmLabel: 'Remove',
+      destructive: true,
+      icon: Icons.person_remove_outlined,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _updatingUserId = member.userId);
+    final ok = await AppScope.of(context).tripRepository.removeTripMember(
+          tripId: trip.id,
+          memberUserId: member.userId,
+        );
+    if (!mounted) return;
+    setState(() => _updatingUserId = null);
+
+    if (ok) {
+      await _loadJoined();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not remove member')),
+      );
+    }
+  }
+
+  Future<void> _handleJoinedMemberAction(TripMemberSummary member, _JoinedMemberAction action) async {
+    switch (action) {
+      case _JoinedMemberAction.addToPlan:
+        await _addJoinedToPlan(member);
+      case _JoinedMemberAction.remove:
+        await _removeJoinedMember(member);
+    }
+  }
+
+  List<GlassMenuEntry<_PlanBuddyAction>> _planBuddyMenuEntries(Buddy buddy) {
+    return [
+      const GlassMenuEntry(
+        value: _PlanBuddyAction.edit,
+        label: 'Edit',
+        icon: Icons.edit_outlined,
+      ),
+      if (trip.canManageTripSettings && buddy.userId == null && _joined.isNotEmpty)
+        const GlassMenuEntry(
+          value: _PlanBuddyAction.link,
+          label: 'Link account',
+          icon: Icons.link_rounded,
+        ),
+      if (!buddy.isMe)
+        const GlassMenuEntry(
+          value: _PlanBuddyAction.remove,
+          label: 'Remove',
+          icon: Icons.person_remove_outlined,
+          destructive: true,
+        ),
+    ];
+  }
+
+  List<GlassMenuEntry<_JoinedMemberAction>> _joinedMemberMenuEntries(TripMemberSummary member) {
+    final onPlan = trip.buddies.any((b) => b.userId == member.userId);
+    return [
+      if (!onPlan)
+        const GlassMenuEntry(
+          value: _JoinedMemberAction.addToPlan,
+          label: 'Add to plan',
+          icon: Icons.group_add_outlined,
+        ),
+      const GlassMenuEntry(
+        value: _JoinedMemberAction.remove,
+        label: 'Remove access',
+        icon: Icons.person_remove_outlined,
+        destructive: true,
+      ),
+    ];
   }
 
   @override
@@ -86,7 +306,8 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
     final ownerName = _ownerDisplayName(session, trip);
     final planCount = trip.buddies.length;
     final joinedCount = _joined.length;
-    final headlineCount = (trip.canManageTripSettings ? 1 : 0) + planCount + joinedCount;
+    final effectivePlanCount = planCount > 0 ? planCount : (trip.canManageTripSettings ? 1 : 0);
+    final headlineCount = effectivePlanCount + joinedCount;
 
     return SheetScaffold(
       showCloseButton: false,
@@ -95,7 +316,7 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
         children: [
           SheetSectionHeader(
             title: 'Trip buddies',
-            caption: _headerCaption(planCount, joinedCount),
+            caption: _headerCaption(effectivePlanCount, joinedCount),
           ),
           const SizedBox(height: AppSpacing.md),
           SpendGlassShell(
@@ -127,46 +348,88 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
                     ],
                   ),
                 ),
+                if (trip.canEditTripContent || trip.canManageTripSettings) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  GlassToolbarCluster(
+                    children: [
+                      if (trip.canEditTripContent)
+                        GlassIconButton(
+                          icon: Icons.person_add_outlined,
+                          tooltip: 'Add',
+                          bare: true,
+                          size: 30,
+                          onPressed: _addPlanBuddy,
+                        ),
+                      if (trip.canManageTripSettings)
+                        GlassIconButton(
+                          icon: Icons.ios_share_rounded,
+                          tooltip: 'Share trip',
+                          bare: true,
+                          size: 30,
+                          onPressed: _shareTrip,
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          if (trip.canManageTripSettings) ...[
-            const SheetSectionHeader(title: 'Owner', caption: 'Trip settings'),
-            const SizedBox(height: AppSpacing.sm),
-            _PersonTile(
-              avatar: BuddyAvatar(name: ownerName, size: 40),
-              name: ownerName,
-              subtitle: session.user?.email,
-              trailing: _RoleBadge(label: 'Owner', accent: AppColors.primary),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          if (trip.buddies.isNotEmpty) ...[
+          if (trip.buddies.isNotEmpty || trip.canManageTripSettings) ...[
             SheetSectionHeader(
+              icon: Icons.people_outline_rounded,
               title: 'Plan group',
-              caption: '$planCount ${planCount == 1 ? 'name' : 'names'} for splits & itinerary',
+              caption: '$effectivePlanCount ${effectivePlanCount == 1 ? 'name' : 'names'} for splits & itinerary',
             ),
             const SizedBox(height: AppSpacing.sm),
             SheetSoftCard(
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  for (var i = 0; i < trip.buddies.length; i++) ...[
-                    if (i > 0) const SheetSoftListDivider(),
-                    _PersonTile(
-                      avatar: BuddyAvatar(
-                        name: trip.buddies[i].name,
-                        colorHex: trip.buddies[i].avatarColor,
-                        size: 40,
+                  if (trip.buddies.isEmpty && trip.canManageTripSettings)
+                    _PlanBuddyRow(
+                      avatar: BuddyAvatar(name: ownerName, size: 40),
+                      name: ownerName,
+                      subtitle: session.user?.email,
+                      badges: _planBuddyBadges(isMe: true, isOwner: true),
+                      canShowMenu: false,
+                    )
+                  else
+                    for (var i = 0; i < trip.buddies.length; i++) ...[
+                      if (i > 0) const SheetSoftListDivider(),
+                      Builder(
+                        builder: (menuContext) {
+                          final buddy = trip.buddies[i];
+                          final linked = buddy.userId != null;
+                          return _PlanBuddyRow(
+                            avatar: BuddyAvatar(
+                              name: buddy.name,
+                              colorHex: buddy.avatarColor,
+                              size: 40,
+                            ),
+                            name: buddy.name,
+                            subtitle: _planBuddySubtitle(session, buddy, linked),
+                            badges: _planBuddyBadges(
+                              isMe: buddy.isMe,
+                              isOwner: trip.canManageTripSettings && buddy.isMe,
+                              linked: linked,
+                            ),
+                            canShowMenu: trip.canEditTripContent,
+                            onMenu: trip.canEditTripContent
+                                ? () async {
+                                    final action = await GlassContextMenu.show<_PlanBuddyAction>(
+                                      context: menuContext,
+                                      entries: _planBuddyMenuEntries(buddy),
+                                    );
+                                    if (action != null && mounted) {
+                                      await _handlePlanBuddyAction(buddy, action);
+                                    }
+                                  }
+                                : null,
+                          );
+                        },
                       ),
-                      name: trip.buddies[i].name,
-                      subtitle: trip.buddies[i].isMe ? 'You on this trip' : null,
-                      trailing: trip.buddies[i].isMe
-                          ? _RoleBadge(label: 'You', accent: AppColors.textTertiary)
-                          : null,
-                    ),
-                  ],
+                    ],
                 ],
               ),
             ),
@@ -201,24 +464,45 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
                 children: [
                   for (var i = 0; i < _joined.length; i++) ...[
                     if (i > 0) const SheetSoftListDivider(),
-                    _JoinedMemberTile(
-                      member: _joined[i],
-                      canManage: trip.canManageTripSettings,
-                      busy: _updatingUserId == _joined[i].userId,
-                      onRoleChanged: (role) => _setRole(_joined[i], role),
+                    Builder(
+                      builder: (menuContext) {
+                        final member = _joined[i];
+                        return _JoinedMemberTile(
+                          member: member,
+                          canManage: trip.canManageTripSettings,
+                          busy: _updatingUserId == member.userId,
+                          onRoleChanged: (role) => _setRole(member, role),
+                          onMenu: trip.canManageTripSettings
+                              ? () async {
+                                  final action = await GlassContextMenu.show<_JoinedMemberAction>(
+                                    context: menuContext,
+                                    entries: _joinedMemberMenuEntries(member),
+                                  );
+                                  if (action != null && mounted) {
+                                    await _handleJoinedMemberAction(member, action);
+                                  }
+                                }
+                              : null,
+                        );
+                      },
                     ),
                   ],
                 ],
               ),
             ),
-          if (trip.canManageTripSettings) ...[
-            const SizedBox(height: AppSpacing.lg),
-            SheetPrimaryButton(label: 'Invite more buddies', onPressed: _inviteMore),
-          ],
           const SizedBox(height: AppSpacing.sm),
         ],
       ),
     );
+  }
+
+  String? _planBuddySubtitle(SessionState session, Buddy buddy, bool linked) {
+    if (trip.canManageTripSettings && buddy.isMe) {
+      return session.user?.email ?? 'You on this trip';
+    }
+    if (buddy.isMe) return 'You on this trip';
+    if (linked) return 'Linked Triftly account';
+    return null;
   }
 
   static String _headerCaption(int planCount, int joinedCount) {
@@ -236,20 +520,54 @@ class _TripMembersBottomSheetState extends State<TripMembersBottomSheet> {
     if (user != null && user.displayName.trim().isNotEmpty) return user.displayName;
     return 'You';
   }
+
+  static Widget? _planBuddyBadges({
+    required bool isMe,
+    required bool isOwner,
+    bool linked = false,
+  }) {
+    if (!isMe && !linked) return null;
+
+    final badges = <Widget>[
+      if (isOwner) _RoleBadge(label: 'Owner', accent: AppColors.primary),
+      if (isMe) _RoleBadge(label: 'You', accent: AppColors.textTertiary),
+      if (linked && !isMe) _RoleBadge(label: 'Linked', accent: AppColors.primary),
+    ];
+
+    if (badges.isEmpty) return null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < badges.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          badges[i],
+        ],
+      ],
+    );
+  }
 }
 
-class _PersonTile extends StatelessWidget {
-  const _PersonTile({
+enum _PlanBuddyAction { edit, remove, link }
+
+enum _JoinedMemberAction { addToPlan, remove }
+
+class _PlanBuddyRow extends StatelessWidget {
+  const _PlanBuddyRow({
     required this.avatar,
     required this.name,
     this.subtitle,
-    this.trailing,
+    this.badges,
+    this.canShowMenu = false,
+    this.onMenu,
   });
 
   final Widget avatar;
   final String name;
   final String? subtitle;
-  final Widget? trailing;
+  final Widget? badges;
+  final bool canShowMenu;
+  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +599,11 @@ class _PersonTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          if (badges != null) ...[
+            badges!,
+            if (canShowMenu && onMenu != null) const SizedBox(width: 4),
+          ],
+          if (canShowMenu && onMenu != null) _RowMenuButton(onPressed: onMenu!),
         ],
       ),
     );
@@ -294,12 +616,14 @@ class _JoinedMemberTile extends StatelessWidget {
     required this.canManage,
     required this.busy,
     required this.onRoleChanged,
+    this.onMenu,
   });
 
   final TripMemberSummary member;
   final bool canManage;
   final bool busy;
   final ValueChanged<String> onRoleChanged;
+  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +663,7 @@ class _JoinedMemberTile extends StatelessWidget {
               height: 24,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          else if (canManage)
+          else if (canManage) ...[
             SizedBox(
               width: 132,
               child: SheetChoiceChipRow(
@@ -347,13 +671,35 @@ class _JoinedMemberTile extends StatelessWidget {
                 selectedIndex: member.isEditor ? 1 : 0,
                 onSelected: (index) => onRoleChanged(index == 1 ? 'editor' : 'viewer'),
               ),
-            )
-          else
+            ),
+            if (onMenu != null) ...[
+              const SizedBox(width: 2),
+              _RowMenuButton(onPressed: onMenu!),
+            ],
+          ] else
             _RoleBadge(
               label: member.isEditor ? 'Can edit' : 'View only',
               accent: member.isEditor ? AppColors.primary : AppColors.textTertiary,
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _RowMenuButton extends StatelessWidget {
+  const _RowMenuButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      behavior: HitTestBehavior.opaque,
+      child: const Padding(
+        padding: EdgeInsets.all(6),
+        child: Icon(Icons.more_vert_rounded, color: AppColors.textTertiary, size: 20),
       ),
     );
   }
@@ -382,6 +728,191 @@ class _RoleBadge extends StatelessWidget {
           letterSpacing: 0.35,
           color: accent,
         ),
+      ),
+    );
+  }
+}
+
+class _PlanBuddyFormResult {
+  const _PlanBuddyFormResult({required this.name, required this.avatarColor, this.userId});
+
+  final String name;
+  final String avatarColor;
+  final String? userId;
+}
+
+class _PlanBuddyFormSheet extends StatefulWidget {
+  const _PlanBuddyFormSheet({this.buddy});
+
+  final Buddy? buddy;
+
+  static Future<_PlanBuddyFormResult?> show(BuildContext context, {Buddy? buddy}) {
+    return TriftlyBottomSheet.show<_PlanBuddyFormResult>(
+      context,
+      child: _PlanBuddyFormSheet(buddy: buddy),
+    );
+  }
+
+  @override
+  State<_PlanBuddyFormSheet> createState() => _PlanBuddyFormSheetState();
+}
+
+class _PlanBuddyFormSheetState extends State<_PlanBuddyFormSheet> {
+  static const _palette = [
+    'FF6B6B', '4ECDC4', '45B7D1', '96CEB4',
+    'FFEAA7', 'DDA0DD', '74B9FF', 'A29BFE',
+  ];
+
+  late final TextEditingController _nameController;
+  late String _selectedColor;
+
+  bool get _isEdit => widget.buddy != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.buddy?.name ?? '');
+    _selectedColor = widget.buddy?.avatarColor ?? _palette.first;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  bool get _canSave => _nameController.text.trim().isNotEmpty;
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    HapticFeedback.lightImpact();
+    Navigator.of(context).pop(
+      _PlanBuddyFormResult(
+        name: name,
+        avatarColor: _selectedColor,
+        userId: widget.buddy?.userId,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SheetScaffold.swipeForm(
+      compact: true,
+      swipeLabel: _isEdit ? 'Slide to save changes' : 'Slide to add buddy',
+      swipeEnabled: _canSave,
+      onSwipeConfirmed: _submit,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SheetSectionHeader(
+            title: _isEdit ? 'Edit buddy' : 'Add buddy',
+            caption: 'For splits & itinerary',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SheetSoftCard(
+            child: Row(
+              children: [
+                SheetIconTile(
+                  icon: _isEdit ? Icons.edit_outlined : Icons.person_add_outlined,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: SheetInlineField(
+                    controller: _nameController,
+                    hint: 'Name',
+                    textInputAction: TextInputAction.done,
+                    onChanged: () => setState(() {}),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const SheetSectionHeader(title: 'Avatar color'),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _palette.map((hex) {
+              final selected = hex == _selectedColor;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedColor = hex);
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Color(int.parse('FF$hex', radix: 16)),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? AppColors.primary : Colors.transparent,
+                      width: 2.5,
+                    ),
+                  ),
+                  child: selected
+                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkBuddySheet extends StatelessWidget {
+  const _LinkBuddySheet({required this.members});
+
+  final List<TripMemberSummary> members;
+
+  static Future<TripMemberSummary?> show(
+    BuildContext context, {
+    required List<TripMemberSummary> members,
+  }) {
+    return TriftlyBottomSheet.show<TripMemberSummary>(
+      context,
+      child: _LinkBuddySheet(members: members),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SheetScaffold(
+      showCloseButton: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SheetSectionHeader(
+            title: 'Link account',
+            caption: 'Match a plan name to a joined Triftly account',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SheetSoftCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var i = 0; i < members.length; i++) ...[
+                  if (i > 0) const SheetSoftListDivider(),
+                  ListTile(
+                    leading: BuddyAvatar(name: members[i].displayLabel, size: 40),
+                    title: Text(
+                      members[i].displayLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: members[i].subtitle != null ? Text(members[i].subtitle!) : null,
+                    onTap: () => Navigator.of(context).pop(members[i]),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -19,6 +19,10 @@ abstract class TripRepository {
     required String memberUserId,
     required String role,
   });
+  Future<bool> removeTripMember({
+    required String tripId,
+    required String memberUserId,
+  });
 
   void addSpot(String tripId, Spot spot);
   void updateSpot(String tripId, Spot spot);

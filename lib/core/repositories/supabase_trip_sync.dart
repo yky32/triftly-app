@@ -259,6 +259,25 @@ class SupabaseTripSync {
     }
   }
 
+  Future<bool> removeTripMember({
+    required String tripId,
+    required String memberUserId,
+  }) async {
+    if (!_canSync) return false;
+
+    try {
+      await client
+          .from('trip_members')
+          .delete()
+          .eq('trip_id', tripId)
+          .eq('user_id', memberUserId);
+      return true;
+    } catch (e, st) {
+      debugPrint('SupabaseTripSync.removeTripMember failed: $e\n$st');
+      return false;
+    }
+  }
+
   Future<List<TripMemberSummary>> fetchTripMembers(String tripId) async {
     if (!_canSync) return const [];
 

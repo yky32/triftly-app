@@ -6,9 +6,15 @@ import 'triftly_motion.dart';
 
 /// Shared form chrome for trip sheets (create trip, add spot, etc.).
 class SheetSectionHeader extends StatelessWidget {
-  const SheetSectionHeader({required this.title, this.caption, super.key});
+  const SheetSectionHeader({
+    this.title,
+    this.icon,
+    this.caption,
+    super.key,
+  }) : assert(title != null || icon != null);
 
-  final String title;
+  final String? title;
+  final IconData? icon;
   final String? caption;
 
   @override
@@ -25,15 +31,23 @@ class SheetSectionHeader extends StatelessWidget {
       height: 1.35,
       color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
     );
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+
+    final Widget header = icon != null
+        ? Semantics(
+            label: title ?? 'Section',
+            child: Icon(icon, size: 22, color: titleColor),
+          )
+        : Text(title!, style: titleStyle);
 
     if (caption == null) {
-      return Text(title, style: titleStyle);
+      return header;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: titleStyle),
+        header,
         const SizedBox(height: 4),
         Text(caption!, style: captionStyle),
       ],

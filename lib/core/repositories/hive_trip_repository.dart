@@ -151,6 +151,18 @@ class HiveTripRepository extends ChangeNotifier implements TripRepository {
   }
 
   @override
+  Future<bool> removeTripMember({
+    required String tripId,
+    required String memberUserId,
+  }) async {
+    return _supabaseSync?.removeTripMember(
+          tripId: tripId,
+          memberUserId: memberUserId,
+        ) ??
+        false;
+  }
+
+  @override
   void addSpot(String tripId, Spot spot) {
     _store.addSpot(tripId, spot);
     _persistDetail(tripId);
