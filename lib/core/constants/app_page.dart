@@ -13,8 +13,8 @@ enum AppPage {
   plan(
     name: 'plan',
     path: '/plan',
-    icon: Icons.calendar_today_outlined,
-    activeIcon: Icons.calendar_today,
+    icon: Icons.flight_outlined,
+    activeIcon: Icons.flight,
     label: 'Plan',
     showInNavBar: true,
     shellBranchIndex: 0,
