@@ -74,17 +74,15 @@ void main() {
         ),
       );
       expect(status.label, 'Synced just now');
-      expect(status.centerLabel, TripsSyncStatus.justSyncedCenterLabel(now, now));
+      expect(status.centerLabel, TripsSyncStatus.justSyncedCenterLabel(now));
     });
 
-    test('just synced center label uses MM:SS elapsed', () {
-      final syncedAt = DateTime(2026, 1, 1, 12, 0, 0);
+    test('just synced center label shows local clock time', () {
+      final syncedAt = DateTime(2026, 1, 1, 14, 32, 8);
       expect(
-        TripsSyncStatus.justSyncedCenterLabel(
-          syncedAt,
-          syncedAt.add(const Duration(seconds: 32)),
-        ),
-        'Just synced 00:32',
+        TripsSyncStatus.justSyncedCenterLabel(syncedAt),
+        'Just synced ${syncedAt.toLocal().hour.toString().padLeft(2, '0')}:'
+        '${syncedAt.toLocal().minute.toString().padLeft(2, '0')}',
       );
     });
 

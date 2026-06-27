@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -43,43 +41,13 @@ class GuestOfflinePill extends StatelessWidget {
 }
 
 /// Centered sync pill for the Trips app bar.
-class TripsSyncCenterBanner extends StatefulWidget {
+class TripsSyncCenterBanner extends StatelessWidget {
   const TripsSyncCenterBanner({
     required this.onRetryComplete,
     super.key,
   });
 
   final VoidCallback onRetryComplete;
-
-  @override
-  State<TripsSyncCenterBanner> createState() => _TripsSyncCenterBannerState();
-}
-
-class _TripsSyncCenterBannerState extends State<TripsSyncCenterBanner> {
-  Timer? _justSyncedTick;
-
-  @override
-  void dispose() {
-    _justSyncedTick?.cancel();
-    super.dispose();
-  }
-
-  void _syncJustSyncedTick(CloudSyncState sync, SessionState session) {
-    _justSyncedTick?.cancel();
-    _justSyncedTick = null;
-
-    if (!session.isCloudSignedIn || sync.isSyncing || sync.lastSuccessAt == null) {
-      return;
-    }
-
-    final age = DateTime.now().difference(sync.lastSuccessAt!);
-    if (age.inSeconds >= 45) return;
-
-    _justSyncedTick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {});
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,10 +59,8 @@ class _TripsSyncCenterBannerState extends State<TripsSyncCenterBanner> {
               previous.isSyncing &&
               !current.isSyncing &&
               !current.hasError,
-          listener: (context, state) => widget.onRetryComplete(),
+          listener: (context, state) => onRetryComplete(),
           builder: (context, sync) {
-            _syncJustSyncedTick(sync, session);
-
             final status = TripsSyncStatus.resolve(session: session, sync: sync);
             final isDark = Theme.of(context).brightness == Brightness.dark;
             final tertiary =
@@ -106,7 +72,7 @@ class _TripsSyncCenterBannerState extends State<TripsSyncCenterBanner> {
 
             void retry() {
               context.read<CloudSyncBloc>().add(
-                    CloudSyncRetryRequested(onComplete: widget.onRetryComplete),
+                    CloudSyncRetryRequested(onComplete: onRetryComplete),
                   );
             }
 

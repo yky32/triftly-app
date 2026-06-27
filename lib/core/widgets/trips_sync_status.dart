@@ -25,12 +25,12 @@ class TripsSyncStatus {
 
   bool get isGuestMode => !session.isCloudSignedIn;
 
-  /// Elapsed [MM:SS] since [syncedAt] for the compact pill.
-  static String justSyncedCenterLabel(DateTime syncedAt, [DateTime? now]) {
-    final diff = (now ?? DateTime.now()).difference(syncedAt);
-    final mm = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final ss = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return 'Just synced $mm:$ss';
+  /// Local clock time [HH:mm] when [syncedAt] occurred — for the compact pill.
+  static String justSyncedCenterLabel(DateTime syncedAt) {
+    final local = syncedAt.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return 'Just synced $hh:$mm';
   }
 
   /// Shorter copy for the centered app-bar pill.
