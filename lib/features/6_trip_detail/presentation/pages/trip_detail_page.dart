@@ -5,6 +5,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/bootstrap/app_scope.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/trip_store.dart';
+import '../../../../core/navigation/shared_place_flow.dart';
 import '../../../../core/navigation/sign_out_branch_reset.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -18,6 +19,7 @@ import '../../bloc/trip_detail_bloc.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
 import '../../../../core/widgets/shared_trip_role_banner.dart';
 import '../../../5_trip_list/presentation/bottom_sheets/edit_trip_bottom_sheet.dart';
+import '../bottom_sheets/add_spot_bottom_sheet.dart';
 import '../bottom_sheets/trip_detail_menu_sheet.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
 import '../bottom_sheets/trip_members_bottom_sheet.dart';
@@ -50,15 +52,24 @@ class TripDetailPage extends StatelessWidget {
       child: BlocProvider(
         create: (context) =>
             AppScopeBlocs.createTripDetailBloc(tripId)..add(TripDetailLoadRequested()),
-        child: _View(readOnly: effectiveReadOnly, initialTabIndex: initialTabIndex),
+        child: _View(
+          tripId: tripId,
+          readOnly: effectiveReadOnly,
+          initialTabIndex: initialTabIndex,
+        ),
       ),
     );
   }
 }
 
 class _View extends StatefulWidget {
-  const _View({this.readOnly = false, this.initialTabIndex = 0});
+  const _View({
+    required this.tripId,
+    this.readOnly = false,
+    this.initialTabIndex = 0,
+  });
 
+  final String tripId;
   final bool readOnly;
   final int initialTabIndex;
 
@@ -81,6 +92,20 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openInboundSharedPlace());
+  }
+
+  void _openInboundSharedPlace() {
+    if (widget.readOnly) return;
+    final place = SharedPlaceFlow.consumeArmedForTrip(widget.tripId);
+    if (place == null || !mounted) return;
+
+    AddSpotBottomSheet.show(
+      context,
+      bloc: context.read<TripDetailBloc>(),
+      initialName: place.nameLine,
+      initialAddress: place.addressLine,
+    );
   }
 
   @override

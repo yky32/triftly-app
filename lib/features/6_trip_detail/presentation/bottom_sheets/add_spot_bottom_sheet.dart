@@ -9,13 +9,44 @@ import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/triftly_motion.dart';
 import '../../../../core/widgets/trip_time_picker_sheet.dart';
+import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 
 class AddSpotBottomSheet extends StatefulWidget {
-  const AddSpotBottomSheet({this.editSpot, this.initialCategory, super.key});
+  const AddSpotBottomSheet({
+    this.editSpot,
+    this.initialCategory,
+    this.initialName,
+    this.initialAddress,
+    super.key,
+  });
 
   final Spot? editSpot;
   final String? initialCategory;
+  final String? initialName;
+  final String? initialAddress;
+
+  static Future<void> show(
+    BuildContext context, {
+    required TripDetailBloc bloc,
+    Spot? editSpot,
+    String? initialCategory,
+    String? initialName,
+    String? initialAddress,
+  }) {
+    return TriftlyBottomSheet.show(
+      context,
+      child: BlocProvider.value(
+        value: bloc,
+        child: AddSpotBottomSheet(
+          editSpot: editSpot,
+          initialCategory: initialCategory,
+          initialName: initialName,
+          initialAddress: initialAddress,
+        ),
+      ),
+    );
+  }
 
   @override
   State<AddSpotBottomSheet> createState() => _AddSpotBottomSheetState();
@@ -56,6 +87,12 @@ class _AddSpotBottomSheetState extends State<AddSpotBottomSheet> {
 
     if (widget.initialCategory != null) {
       _category = widget.initialCategory!;
+    }
+    if (widget.initialName != null && widget.initialName!.trim().isNotEmpty) {
+      _nameController.text = widget.initialName!.trim();
+    }
+    if (widget.initialAddress != null && widget.initialAddress!.trim().isNotEmpty) {
+      _addressController.text = widget.initialAddress!.trim();
     }
   }
 

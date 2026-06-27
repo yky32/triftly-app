@@ -4,6 +4,7 @@ import 'core/navigation/app_router.dart';
 import 'core/navigation/share_deep_link_bridge.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/widgets/shared_place_listener.dart';
 
 class TripApp extends StatefulWidget {
   const TripApp({required this.themeController, super.key});
@@ -35,13 +36,16 @@ class _TripAppState extends State<TripApp> {
         listenable: widget.themeController,
         builder: (context, _) {
           return AppBlocProviders(
-            child: MaterialApp.router(
-              title: 'Triftly',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.light,
-              darkTheme: AppTheme.dark,
-              themeMode: widget.themeController.themeMode,
-              routerConfig: appRouter,
+            child: SharedPlaceListener(
+              router: appRouter,
+              child: MaterialApp.router(
+                title: 'Triftly',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: widget.themeController.themeMode,
+                routerConfig: appRouter,
+              ),
             ),
           );
         },

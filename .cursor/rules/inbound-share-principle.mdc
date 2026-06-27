@@ -1,0 +1,63 @@
+---
+description: Inbound share — Maps/other apps → Triftly Add Spot (product principle + implementation)
+globs: lib/core/**/shared_*,lib/core/utils/shared_map_parser.dart,lib/features/**/shared_place*,ios/TriftlyShare/**,android/app/**/MainActivity.kt
+alwaysApply: false
+---
+
+# Inbound share product principle
+
+**Goal:** Reduce friction from “found a place” → “on the trip plan” to the fewest taps, using apps users already use (Google Maps, Apple Maps, Safari, Messages).
+
+## North star
+
+> Share from anywhere → Triftly appears in the system share row → user lands in **Add Spot** with name/address prefilled → slide to save.
+
+Supports onboarding pillars: **easy plan creation**, **easy fill-up**, **easy sharing**, **one datasource for buddies** (spot syncs to cloud trip).
+
+## UX rules (do not regress)
+
+1. **Never dead-end** — if parsing fails, still open Add Spot with the raw URL/text in the address field.
+2. **Minimize decisions** — one trip picker sheet max; prefer the single editable in-progress trip when unambiguous.
+3. **Preserve context** — prefill **name** + **address**; user only confirms day/category if needed.
+4. **Read-only trips** — skip joined viewer trips in the picker; explain if nothing is editable.
+5. **No Google partnership required** — iOS Share Extension + URL/text parsing; no Maps SDK for inbound share.
+
+## Technical pattern
+
+| Layer | Responsibility |
+|--------|----------------|
+| `TriftlyShare` (iOS) / `ACTION_SEND` (Android) | Receive URL or plain text from share sheet |
+| `app/share` MethodChannel | Hand off payload to Flutter (`getPendingSharedUrl`) |
+| `SharedMapParser` | Extract name, address, lat/lng from Maps URLs and share text |
+| `SharedPlaceFlow` | Pending place + armed trip id for Add Spot |
+| `SharedPlaceListener` | Poll on launch/resume; show trip picker; route to trip detail |
+| `AddSpotBottomSheet` | `initialName` / `initialAddress` from shared place |
+
+## iOS share extension
+
+- Activation: `public.url`, `public.plain-text`, web URLs (Google Maps shares).
+- Open main app via `extensionContext?.open(triftly://map?url=…)` — **not** `UIApplication` from extension.
+- User may need **Edit Actions → enable Triftly** once (iOS share sheet discovery).
+
+## Parsing expectations
+
+| Input | Extract |
+|-------|---------|
+| `google.com/maps/place/Name/@lat,lng` | Name, coordinates, maps URL as address |
+| `maps.google.com/?q=…` | Query or coordinates |
+| Plain text `Place · City\nhttps://maps…` | Title line + URL |
+| Unrecognized | Raw string → address field |
+
+## Out of scope (later phases)
+
+- Short-link expansion (`goo.gl` / `maps.app.goo.gl`) without network
+- Share extension UI to pick trip before opening app (App Group)
+- Android share target manifest parity beyond `ACTION_SEND`
+- Auto-assign day (default: current plan day in trip detail)
+
+## Reference files
+
+- `ios/TriftlyShare/ShareViewController.swift`
+- `lib/core/utils/shared_map_parser.dart`
+- `lib/core/widgets/shared_place_listener.dart`
+- `lib/core/widgets/shared_place_trip_picker_sheet.dart`
