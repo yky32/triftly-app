@@ -73,4 +73,12 @@ enum AppPage {
       orElse: () => AppPage.plan,
     );
   }
+
+  /// Me tab uses account-circle icons when cloud-signed-in; other tabs unchanged.
+  IconData resolveNavIcon({required bool selected, required bool isCloudSignedIn}) {
+    if (this == AppPage.profile && isCloudSignedIn) {
+      return selected ? Icons.account_circle : Icons.account_circle_outlined;
+    }
+    return selected ? activeIcon : icon;
+  }
 }

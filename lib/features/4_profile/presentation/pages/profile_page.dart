@@ -190,20 +190,21 @@ class _IdentityCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 if (subtitle.isNotEmpty)
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
               ],
@@ -307,6 +308,7 @@ class _SettingsTile extends StatelessWidget {
         children: [
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
