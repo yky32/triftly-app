@@ -18,6 +18,7 @@ import '../../../../core/widgets/shared_trip_role_banner.dart';
 import '../../../5_trip_list/presentation/bottom_sheets/edit_trip_bottom_sheet.dart';
 import '../bottom_sheets/trip_detail_menu_sheet.dart';
 import '../bottom_sheets/share_trip_bottom_sheet.dart';
+import '../bottom_sheets/trip_members_bottom_sheet.dart';
 import '../widgets/plan_day_chips_bar.dart';
 import '../widgets/trip_detail_sticky_tab_header.dart';
 import '../widgets/trip_detail_tab_segment.dart';
@@ -224,7 +225,12 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
                       curve: Curves.easeOutCubic,
                       heightFactor: _summaryExpanded ? 1 : 0,
                       alignment: Alignment.topCenter,
-                      child: TripDetailSummary(trip: trip),
+                      child: TripDetailSummary(
+                        trip: trip,
+                        onBuddiesTap: trip.isPreviewShare
+                            ? null
+                            : () => TripMembersBottomSheet.show(context, trip),
+                      ),
                     ),
                   ),
                 ),

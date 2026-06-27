@@ -90,6 +90,13 @@ Two sheet types share the same chrome:
 - Tab shells & empty states: `app-shell-ui.mdc`
 - Profile / Me: `profile-me-ui.mdc`
 
+## Trip buddies sheet (`trip_members_bottom_sheet.dart`)
+- Utility sheet (pattern B): `SheetScaffold` + `SheetSectionHeader` + `SheetSoftCard`
+- Headline count: `SpendGlassShell` (liquid glass) — not solid teal blocks
+- Rows: `BuddyAvatar` + name + optional email subtitle
+- Role control: `SheetChoiceChipRow` (**View** / **Edit**) — not `SegmentedButton`
+- Entry: trip summary people row (chevron) or Share → **Trip buddies & access**
+
 ## Tools tab (`2_tools/`)
 - Nav label **Tools**; page title **Tools** (title-only AppBar).
 - Sections: Travel kits → Essentials → Japan → More.
