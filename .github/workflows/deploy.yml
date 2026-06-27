@@ -10,6 +10,11 @@ on:
       - 'LICENSE'
       - 'README.md'
   workflow_dispatch:
+    inputs:
+      changelog_prefix:
+        description: Optional line added at the top of TestFlight "What to Test" notes
+        required: false
+        type: string
 
 concurrency:
   group: deploy-main
@@ -136,9 +141,34 @@ jobs:
           bundle exec fastlane ios prune_excess_certificates_for_ci
           bundle exec fastlane ios setup_appstore_signing
 
+      - name: Preview TestFlight release notes
+        env:
+          CHANGELOG_PREFIX: ${{ github.event.inputs.changelog_prefix }}
+        run: |
+          LAST_BUILD=$(git log -1 --pretty=format:%H --grep='Auto-increment build number' || true)
+          {
+            echo "## TestFlight — What's in this build"
+            echo ""
+            if [ -n "$LAST_BUILD" ]; then
+              git log "${LAST_BUILD}..HEAD" --pretty=format:'- %s' --no-merges \
+                | grep -v 'Auto-increment build number' \
+                | grep -v '^chore: Auto-increment' || true
+            else
+              git log -15 --pretty=format:'- %s' --no-merges
+            fi
+            echo ""
+            if [ -n "$CHANGELOG_PREFIX" ]; then
+              echo "**Prefix:** $CHANGELOG_PREFIX"
+            fi
+          } | tee release-notes-preview.md
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            cat release-notes-preview.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Deploy to TestFlight
         env:
           CI: true
+          TESTFLIGHT_CHANGELOG_PREFIX: ${{ github.event.inputs.changelog_prefix }}
           SIGH_NAME: ${{ env.SIGH_NAME }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}

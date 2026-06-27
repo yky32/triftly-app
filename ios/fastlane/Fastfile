@@ -236,7 +236,7 @@ def build_app_store_connect_api_key
   end
 end
 
-def testflight_upload_options(ipa_path)
+def testflight_upload_options(ipa_path, changelog: nil)
   scrub_apple_id_auth_for_ci!
 
   options = {
@@ -247,6 +247,7 @@ def testflight_upload_options(ipa_path)
     distribute_external: false,
     notify_external_testers: false
   }
+  options[:changelog] = changelog if changelog && !changelog.to_s.strip.empty?
 
   api_key = build_app_store_connect_api_key
   if api_key
@@ -535,69 +536,61 @@ def increment_build_number_in_pubspec
   [version_name, new_build]
 end
 
-# Helper function to generate release notes from git commits
+BUILD_NUMBER_COMMIT_PATTERN = "Auto-increment build number".freeze
+
+def build_number_commit?(message)
+  message.include?(BUILD_NUMBER_COMMIT_PATTERN) || message.start_with?("chore: Auto-increment")
+end
+
+def pubspec_version_label
+  pubspec_path = File.join(PROJECT_ROOT, "pubspec.yaml")
+  return nil unless File.exist?(pubspec_path)
+
+  match = File.read(pubspec_path).match(/^version:\s*(\d+\.\d+\.\d+)\+(\d+)/)
+  return nil unless match
+
+  "#{match[1]} (#{match[2]})"
+end
+
+# Commits since the last CI build-number bump — used for TestFlight "What to Test".
 def generate_release_notes
-  begin
-    # Check if we're in a git repository
-    unless system("cd #{PROJECT_ROOT} && git rev-parse --git-dir > /dev/null 2>&1")
-      UI.important("⚠️  Not a git repository, using default release notes")
-      return "[Feature: Manual build]\n[Build time: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}]"
-    end
-    
-    # Get the last 3 commit messages (excluding merge commits)
-    # Use a separator to split commits, then get subject line for each
-    commit_output = `cd #{PROJECT_ROOT} && git log -10 --pretty=format:"%H|%s" --no-merges`.strip
-    
-    # Filter out build number auto-commit messages and collect valid commits
-    valid_commits = []
-    commit_output.split("\n").each do |line|
-      next if line.empty?
-      
-      # Extract commit message (after the | separator)
-      parts = line.split("|", 2)
-      next if parts.length < 2
-      
-      commit_msg = parts[1].strip
-      
-      # Skip if it's a build number commit
-      next if commit_msg.include?("Auto-increment build number") || commit_msg.include?("chore: Auto-increment")
-      
-      # Clean up the commit message (limit length)
-      cleaned = commit_msg[0..150] if commit_msg.length > 150
-      cleaned ||= commit_msg
-      
-      valid_commits << cleaned unless cleaned.empty?
-      
-      # Stop when we have 3 valid commits
-      break if valid_commits.length >= 3
-    end
-    
-    # Fallback if still no valid commits
-    if valid_commits.empty?
-      valid_commits = ["Manual build"]
-    end
-    
-    # Get current datetime
-    build_time = Time.now.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Format release notes with last 3 commits
-    release_notes_parts = []
-    valid_commits.each_with_index do |commit_msg, index|
-      release_notes_parts << "[Feature #{index + 1}: #{commit_msg}]"
-    end
-    release_notes_parts << "[Build time: #{build_time}]"
-    
-    release_notes = release_notes_parts.join("\n")
-    
-    UI.message("📝 Generated release notes from last #{valid_commits.length} commit(s):")
-    UI.message(release_notes)
-    
-    return release_notes
-  rescue => ex
-    UI.important("⚠️  Failed to generate release notes from git: #{ex.message}")
-    build_time = Time.now.strftime('%Y-%m-%d %H:%M:%S')
-    return "[Feature: Manual build]\n[Build time: #{build_time}]"
+  build_time = Time.now.strftime("%Y-%m-%d %H:%M")
+  version_label = pubspec_version_label
+
+  unless system("cd #{PROJECT_ROOT} && git rev-parse --git-dir > /dev/null 2>&1")
+    UI.important("⚠️  Not a git repository, using default release notes")
+    return "Manual build\n#{version_label}\n#{build_time}"
   end
+
+  last_build_sha = `cd #{PROJECT_ROOT} && git log -1 --pretty=format:%H --grep='#{BUILD_NUMBER_COMMIT_PATTERN}'`.strip
+  git_range = last_build_sha.empty? ? "-15" : "#{last_build_sha}..HEAD"
+
+  commit_output = `cd #{PROJECT_ROOT} && git log #{git_range} --pretty=format:"%s" --no-merges`.strip
+  valid_commits = commit_output.split("\n").map(&:strip).reject do |message|
+    message.empty? || build_number_commit?(message)
+  end
+
+  valid_commits = ["Manual build"] if valid_commits.empty?
+
+  lines = ["What's in this build", ""]
+  valid_commits.each { |message| lines << "• #{message[0..200]}" }
+  lines << ""
+  lines << "Version #{version_label}" if version_label
+  lines << "Built #{build_time}"
+
+  prefix = ENV["TESTFLIGHT_CHANGELOG_PREFIX"].to_s.strip
+  lines.unshift(prefix, "") unless prefix.empty?
+
+  release_notes = lines.join("\n")[0..3900]
+
+  UI.message("📝 TestFlight What to Test (#{valid_commits.length} commit(s) since last build):")
+  UI.message(release_notes)
+
+  release_notes
+rescue => ex
+  UI.important("⚠️  Failed to generate release notes from git: #{ex.message}")
+  fallback = ["Manual build", ("Version #{version_label}" if version_label), "Built #{build_time}"].compact.join("\n")
+  fallback
 end
 
 # Helper function to commit and push build number change
@@ -873,12 +866,11 @@ platform :ios do
     UI.message("")
     
     release_notes = generate_release_notes
-    UI.message("📝 Suggested release notes (add manually in App Store Connect after build appears):")
-    UI.message(release_notes)
+    UI.message("📝 Uploading TestFlight What to Test notes with this build.")
     UI.message("")
     
     begin
-      upload_to_testflight(**testflight_upload_options(ipa_path))
+      upload_to_testflight(**testflight_upload_options(ipa_path, changelog: release_notes))
       
       UI.success("✅ Successfully uploaded to App Store Connect!")
       if uploaded_build
@@ -909,7 +901,8 @@ platform :ios do
           UI.message("📋 Retrying upload: version #{uploaded_version}, build #{uploaded_build}")
         end
 
-        upload_to_testflight(**testflight_upload_options(ipa_path))
+        release_notes = generate_release_notes
+        upload_to_testflight(**testflight_upload_options(ipa_path, changelog: release_notes))
         UI.success("✅ Successfully uploaded to App Store Connect after build number bump!")
         commit_and_push_build_number(version_name, new_build_number) if version_name && new_build_number
       elsif error_msg.include?("Couldn't find app") || error_msg.include?("not found on the account")
@@ -924,8 +917,8 @@ platform :ios do
           UI.important("🔄 Retrying upload to TestFlight...")
           UI.important("")
           
-          # Retry the upload with release notes
-          upload_to_testflight(**testflight_upload_options(ipa_path))
+          release_notes = generate_release_notes
+          upload_to_testflight(**testflight_upload_options(ipa_path, changelog: release_notes))
           
           UI.success("✅ Successfully uploaded to App Store Connect!")
           UI.message("📱 Check App Store Connect for build processing status")
