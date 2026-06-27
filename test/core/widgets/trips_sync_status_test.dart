@@ -65,15 +65,27 @@ void main() {
     });
 
     test('logged in after recent sync', () {
+      final now = DateTime.now();
       final status = TripsSyncStatus.resolve(
         session: signedIn,
         sync: CloudSyncState(
           isConfigured: true,
-          lastSuccessAt: DateTime.now(),
+          lastSuccessAt: now,
         ),
       );
       expect(status.label, 'Synced just now');
-      expect(status.centerLabel, 'Just synced');
+      expect(status.centerLabel, TripsSyncStatus.justSyncedCenterLabel(now, now));
+    });
+
+    test('just synced center label uses MM:SS elapsed', () {
+      final syncedAt = DateTime(2026, 1, 1, 12, 0, 0);
+      expect(
+        TripsSyncStatus.justSyncedCenterLabel(
+          syncedAt,
+          syncedAt.add(const Duration(seconds: 32)),
+        ),
+        'Just synced 00:32',
+      );
     });
 
     test('center labels are compact', () {

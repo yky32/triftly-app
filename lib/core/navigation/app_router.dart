@@ -9,6 +9,7 @@ import '../../features/4_profile/presentation/pages/profile_page.dart';
 import '../../features/3_spend/presentation/pages/spend_page.dart';
 import '../../features/3_spend/presentation/pages/spend_recent_all_page.dart';
 import '../../features/5_trip_list/presentation/pages/trip_list_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/6_trip_detail/presentation/pages/trip_detail_page.dart';
 import '../../features/6_trip_detail/presentation/pages/shared_trip_view_page.dart';
 import '../../features/splash/presentation/splash_page.dart';
@@ -54,6 +55,14 @@ final appRouter = GoRouter(
               name: AppPage.plan.name,
               builder: (context, state) => const TripListPage(),
               routes: [
+                GoRoute(
+                  path: 'notifications',
+                  name: 'notifications',
+                  pageBuilder: (context, state) => triftlyPage(
+                    state: state,
+                    child: const NotificationsPage(),
+                  ),
+                ),
                 GoRoute(
                   path: ':tripId',
                   name: 'trip_detail',

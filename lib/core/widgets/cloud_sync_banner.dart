@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -41,13 +43,43 @@ class GuestOfflinePill extends StatelessWidget {
 }
 
 /// Centered sync pill for the Trips app bar.
-class TripsSyncCenterBanner extends StatelessWidget {
+class TripsSyncCenterBanner extends StatefulWidget {
   const TripsSyncCenterBanner({
     required this.onRetryComplete,
     super.key,
   });
 
   final VoidCallback onRetryComplete;
+
+  @override
+  State<TripsSyncCenterBanner> createState() => _TripsSyncCenterBannerState();
+}
+
+class _TripsSyncCenterBannerState extends State<TripsSyncCenterBanner> {
+  Timer? _justSyncedTick;
+
+  @override
+  void dispose() {
+    _justSyncedTick?.cancel();
+    super.dispose();
+  }
+
+  void _syncJustSyncedTick(CloudSyncState sync, SessionState session) {
+    _justSyncedTick?.cancel();
+    _justSyncedTick = null;
+
+    if (!session.isCloudSignedIn || sync.isSyncing || sync.lastSuccessAt == null) {
+      return;
+    }
+
+    final age = DateTime.now().difference(sync.lastSuccessAt!);
+    if (age.inSeconds >= 45) return;
+
+    _justSyncedTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,23 +91,27 @@ class TripsSyncCenterBanner extends StatelessWidget {
               previous.isSyncing &&
               !current.isSyncing &&
               !current.hasError,
-          listener: (context, state) => onRetryComplete(),
+          listener: (context, state) => widget.onRetryComplete(),
           builder: (context, sync) {
+            _syncJustSyncedTick(sync, session);
+
             final status = TripsSyncStatus.resolve(session: session, sync: sync);
             final isDark = Theme.of(context).brightness == Brightness.dark;
             final tertiary =
                 isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
 
-            final isGuest = status.isGuestMode;
-            if (isGuest) {
+            if (status.isGuestMode) {
               return const GuestOfflinePill();
             }
 
             void retry() {
               context.read<CloudSyncBloc>().add(
-                    CloudSyncRetryRequested(onComplete: onRetryComplete),
+                    CloudSyncRetryRequested(onComplete: widget.onRetryComplete),
                   );
             }
+
+            final showJustSynced = sync.lastSuccessAt != null &&
+                DateTime.now().difference(sync.lastSuccessAt!).inSeconds < 45;
 
             final icon = status.isSyncing
                 ? SizedBox(
@@ -128,7 +164,7 @@ class TripsSyncCenterBanner extends StatelessWidget {
             );
 
             return ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 168),
+              constraints: BoxConstraints(maxWidth: showJustSynced ? 200 : 168),
               child: status.isError
                   ? Material(
                       color: Colors.transparent,

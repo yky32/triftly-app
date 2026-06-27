@@ -1,0 +1,81 @@
+---
+description: Filter tabs — liquid glass segment control with icons (Upcoming · Active · Done pattern)
+globs: lib/core/widgets/triftly_segment_control.dart,lib/core/theme/segment_style.dart,lib/features/**/presentation/pages/**,lib/features/**/presentation/widgets/*segment*.dart
+alwaysApply: false
+---
+
+# Filter tabs (segment control)
+
+Use for **2–4 in-page filters** that slice a list or feed (trips by phase, notifications by type, etc.).
+
+**Do not use** `FilterChip`, Material `SegmentedButton`, raw `Row` of buttons, or `SheetChoiceChipRow` for page-level filters.  
+`SheetChoiceChipRow` is for **bottom-sheet mode toggles** only (see `trips-ui-polish.mdc`).
+
+## Primitives
+
+| Widget | Role |
+|--------|------|
+| `TriftlySegmentControl` | Liquid-glass pill track (`GlassSurface`) + sliding selected pill |
+| `SegmentItem` | One tab — label, filled/outlined icons, tone, optional count / live dot |
+| `SegmentStyle` | Three-tone palette — Active (orange), Upcoming (blue), Done (grey) |
+
+Every tab **must** have an icon pair: `iconOutlined` when idle, `iconFilled` when selected.
+
+## Reference implementation — Trips page
+
+**Sample:** `TripPhaseSegment` → **Upcoming · Active · Done** on `trip_list_page.dart`.
+
+```dart
+// Thin wrapper maps domain enum → SegmentItem list
+return TriftlySegmentControl(
+  items: tripPhaseSegmentOrder.map((phase) => SegmentItem(
+    label: _labels[phase]!,
+    iconFilled: _icons[phase]!,
+    iconOutlined: _iconsOutlined[phase]!,
+    toneIndex: phase.toneIndex,
+    count: counts[phase],
+    showLiveIndicator: phase == TripPhase.inProgress, // Active only
+  )).toList(),
+  selectedIndex: selected.segmentIndex,
+  onChanged: (index) => onChanged(tripPhaseSegmentOrder[index]),
+);
+```
+
+### Layout on the page
+
+```dart
+Padding(
+  padding: const EdgeInsets.fromLTRB(
+    AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md,
+  ),
+  child: TripPhaseSegment(/* selected, counts, onChanged */),
+),
+```
+
+Place **above** the scrollable list; filter state lives in the page `State` (or bloc), not inside the segment widget.
+
+## Visual rules
+
+- Track: frosted `GlassSurface` — **not** solid `surfaceElevated` containers
+- Selected pill: tone color + white glass blend (light) + soft shadow; slides with `AnimatedPositioned`
+- **Active** tab only: `showLiveIndicator: true` → pulsing dot + ripple rings
+- Unselected labels/icons: `AppColors.textTertiary`; selected use `SegmentStyle.foreground`
+- Optional badge: pass `count` on `SegmentItem` (shown when `> 0`)
+- Haptics: `HapticFeedback.selectionClick()` on change (built into control)
+
+## Adding a new filter bar
+
+1. Create a small wrapper widget (e.g. `notifications_filter_segment.dart`) — **do not** inline a one-off row in the page.
+2. Map filter enum → `SegmentItem` list with icons + `toneIndex` (0–2).
+3. Use `TriftlySegmentControl` directly; do not fork styling.
+4. Reuse `TripPhaseSegment` on Spend tab when filtering by trip phase (`app-shell-ui.mdc`).
+
+## Other uses (same control, different job)
+
+- **Trip detail tabs** (Plan · Spend · Map): `TripDetailTabSegment` — section switcher, not a list filter; same glass segment, no counts/live dot.
+
+## Related rules
+
+- Liquid glass primitives: `liquid-glass-ui.mdc` (`GlassSurface`)
+- Sheet mode chips: `trips-ui-polish.mdc` (`SheetChoiceChipRow`)
+- Tab shells & phase empty states: `app-shell-ui.mdc`

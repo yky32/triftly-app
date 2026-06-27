@@ -86,6 +86,9 @@ Two sheet types share the same chrome:
 | `SheetResultBanner` | Converted / lookup result |
 
 ## Segment control (`trip_phase_segment.dart`)
+
+See **`filter-tabs-ui.mdc`** for the full filter-tab pattern (liquid glass + icons).
+
 - **Active** tab only: live ripple rings + pulsing dot when selected.
 - Phase colors: Active = orange, Upcoming = light blue, Done = grey.
 

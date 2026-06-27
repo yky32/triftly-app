@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -66,7 +67,12 @@ class _ViewState extends State<_View> {
               TripListLoadRequested(syncCloud: session.isCloudSignedIn),
             );
       },
-      child: Scaffold(
+      child: BlocListener<CloudSyncBloc, CloudSyncState>(
+        listenWhen: (prev, next) => prev.isSyncing && !next.isSyncing && !next.hasError,
+        listener: (context, _) {
+          context.read<TripListBloc>().add(const TripListLoadRequested(syncCloud: false));
+        },
+        child: Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -157,6 +163,7 @@ class _ViewState extends State<_View> {
             return _buildTripList(context, state);
           },
         ),
+      ),
       ),
       ),
     );
@@ -283,15 +290,6 @@ class _ViewState extends State<_View> {
   }
 
   void _showNotifications(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: const Text('You\'re all caught up.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-        ],
-      ),
-    );
+    context.pushNamed('notifications');
   }
 }

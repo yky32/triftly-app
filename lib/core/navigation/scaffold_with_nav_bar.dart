@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../bloc/cloud_sync/cloud_sync_bloc.dart';
+import '../bloc/session/session_bloc.dart';
+import '../constants/app_page.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'liquid_nav_island.dart';
@@ -36,10 +40,18 @@ class ScaffoldWithNavBar extends StatelessWidget {
                 child: LiquidNavIsland(
                   currentIndex: navigationShell.currentIndex,
                   onTap: (index) {
+                    final planIndex = AppPage.plan.shellBranchIndex!;
+                    final switchingToPlan =
+                        index == planIndex && navigationShell.currentIndex != planIndex;
+
                     navigationShell.goBranch(
                       index,
                       initialLocation: index == navigationShell.currentIndex,
                     );
+
+                    if (switchingToPlan) {
+                      _syncTripsOnTabFocus(context);
+                    }
                   },
                 ),
               ),
@@ -49,4 +61,14 @@ class ScaffoldWithNavBar extends StatelessWidget {
       ),
     );
   }
+}
+
+void _syncTripsOnTabFocus(BuildContext context) {
+  final session = context.read<SessionBloc>().state;
+  if (!session.isCloudSignedIn) return;
+
+  final syncBloc = context.read<CloudSyncBloc>();
+  if (syncBloc.state.isSyncing) return;
+
+  syncBloc.add(const CloudSyncRetryRequested());
 }

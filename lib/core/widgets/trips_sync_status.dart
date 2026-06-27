@@ -25,6 +25,14 @@ class TripsSyncStatus {
 
   bool get isGuestMode => !session.isCloudSignedIn;
 
+  /// Elapsed [MM:SS] since [syncedAt] for the compact pill.
+  static String justSyncedCenterLabel(DateTime syncedAt, [DateTime? now]) {
+    final diff = (now ?? DateTime.now()).difference(syncedAt);
+    final mm = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final ss = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return 'Just synced $mm:$ss';
+  }
+
   /// Shorter copy for the centered app-bar pill.
   String get centerLabel {
     if (!sync.isConfigured) return 'Guest Mode = Offline';
@@ -37,8 +45,12 @@ class TripsSyncStatus {
 
     if (sync.lastSuccessAt == null) return 'Not synced';
 
+    final at = sync.lastSuccessAt!;
+    if (DateTime.now().difference(at).inSeconds < 45) {
+      return justSyncedCenterLabel(at);
+    }
+
     final full = sync.lastSuccessLabel;
-    if (full == 'Synced just now') return 'Just synced';
     if (full.startsWith('Synced ') && full.endsWith(' ago')) {
       final middle = full.substring(7, full.length - 5);
       final parts = middle.split(' ');

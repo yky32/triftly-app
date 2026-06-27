@@ -79,7 +79,7 @@ Personal wallet across trips — distinct from trip-detail Spend tab glass metri
 | `SpendWalletTripRow` | Single trip row inside `SpendListCard` |
 | `SpendExpenseDetailSheet` | Utility sheet (pattern B) before navigating to trip Spend |
 
-- Phase filter: reuse `TripPhaseSegment` like Trips list.
+- Phase filter: reuse `TripPhaseSegment` like Trips list — see `filter-tabs-ui.mdc`.
 - Pull-to-refresh on `SpendOverviewBloc`.
 - Global wallet hero uses the same `SpendGlassShell` as trip Spend metrics — see `liquid-glass-ui.mdc`.
 - Trip-detail Spend metrics: see `liquid-glass-ui.mdc`.

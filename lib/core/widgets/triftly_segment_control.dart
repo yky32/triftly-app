@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/segment_style.dart';
+import 'glass_surface.dart';
 
 /// One slot in [TriftlySegmentControl] — label, icons, tone, optional count / live dot.
 class SegmentItem {
@@ -45,27 +46,28 @@ class TriftlySegmentControl extends StatelessWidget {
     final selectedStyle = selectedItem.style;
     final showLiveRipple = selectedItem.showLiveIndicator;
 
-    return Container(
-      height: 48,
+    return GlassSurface(
+      blur: 28,
+      bordered: false,
+      borderRadius: BorderRadius.circular(AppRadii.pill),
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final slotWidth = constraints.maxWidth / items.length;
+          const inset = 1.0;
 
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
+          return SizedBox(
+            height: 40,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 320),
                 curve: Curves.easeOutCubic,
-                left: selectedIndex * slotWidth,
-                top: 0,
-                bottom: 0,
-                width: slotWidth,
+                left: selectedIndex * slotWidth + inset,
+                top: inset,
+                bottom: inset,
+                width: slotWidth - inset * 2,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -77,8 +79,17 @@ class TriftlySegmentControl extends StatelessWidget {
                       ),
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: selectedStyle.pill(isDark),
+                        color: isDark
+                            ? selectedStyle.pill(isDark)
+                            : Color.alphaBlend(
+                                Colors.white.withValues(alpha: 0.72),
+                                selectedStyle.pill(false),
+                              ),
                         borderRadius: BorderRadius.circular(AppRadii.pill),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: isDark ? 0.14 : 0.82),
+                          width: 0.6,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: selectedStyle.foreground(isDark).withValues(
@@ -164,6 +175,7 @@ class TriftlySegmentControl extends StatelessWidget {
                 }),
               ),
             ],
+            ),
           );
         },
       ),
