@@ -6,6 +6,7 @@ import '../../../../core/bootstrap/app_scope.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/trip_store.dart';
 import '../../../../core/navigation/shared_place_flow.dart';
+import '../../../../core/share/inbound_debug_log.dart';
 import '../../../../core/navigation/sign_out_branch_reset.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -100,6 +101,10 @@ class _ViewState extends State<_View> with SingleTickerProviderStateMixin {
     final place = SharedPlaceFlow.consumeArmedForTrip(widget.tripId);
     if (place == null || !mounted) return;
 
+    inboundDebugLog(
+      'Opening Add Spot sheet → tripId=${widget.tripId} · ${inboundPlaceSummary(place)}',
+      kind: InboundLogKind.success,
+    );
     AddSpotBottomSheet.show(
       context,
       bloc: context.read<TripDetailBloc>(),

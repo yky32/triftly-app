@@ -9,6 +9,7 @@ import '../../../../core/utils/maps_launcher.dart';
 import '../../../../core/utils/today_plan_utils.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/flight_leg_display.dart';
+import '../../../../core/widgets/glass_context_menu.dart';
 import '../../../../core/widgets/triftly_bottom_sheet.dart';
 import '../../bloc/trip_detail_bloc.dart';
 import '../bottom_sheets/add_expense_bottom_sheet.dart';
@@ -417,21 +418,53 @@ class _SpotActionsMenu extends StatelessWidget {
   final Spot spot;
   final Trip trip;
 
+  Future<void> _openMenu(BuildContext context) async {
+    final action = await GlassContextMenu.show<_SpotAction>(
+      context: context,
+      width: 196,
+      entries: [
+        const GlassMenuEntry(
+          value: _SpotAction.maps,
+          label: 'Open in Maps',
+          icon: Icons.map_outlined,
+        ),
+        GlassMenuEntry(
+          value: _SpotAction.visited,
+          label: spot.visited ? 'Mark not visited' : 'Mark visited',
+          icon: spot.visited ? Icons.radio_button_unchecked : Icons.check_circle_outline,
+        ),
+        const GlassMenuEntry(
+          value: _SpotAction.expense,
+          label: 'Add expense',
+          icon: Icons.payments_outlined,
+        ),
+        const GlassMenuEntry(
+          value: _SpotAction.edit,
+          label: 'Edit spot',
+          icon: Icons.edit_outlined,
+        ),
+        const GlassMenuEntry(
+          value: _SpotAction.delete,
+          label: 'Delete spot',
+          icon: Icons.delete_outline_rounded,
+          destructive: true,
+        ),
+      ],
+    );
+    if (action != null && context.mounted) {
+      _handleAction(context, action);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_SpotAction>(
-      icon: const Icon(Icons.more_vert_rounded, size: 20),
-      onSelected: (action) => _handleAction(context, action),
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: _SpotAction.maps, child: Text('Open in Maps')),
-        PopupMenuItem(
-          value: _SpotAction.visited,
-          child: Text(spot.visited ? 'Mark not visited' : 'Mark visited'),
-        ),
-        const PopupMenuItem(value: _SpotAction.expense, child: Text('Add expense')),
-        const PopupMenuItem(value: _SpotAction.edit, child: Text('Edit spot')),
-        const PopupMenuItem(value: _SpotAction.delete, child: Text('Delete spot')),
-      ],
+    return GestureDetector(
+      onTap: () => _openMenu(context),
+      behavior: HitTestBehavior.opaque,
+      child: const Padding(
+        padding: EdgeInsets.all(6),
+        child: Icon(Icons.more_vert_rounded, color: AppColors.textTertiary, size: 20),
+      ),
     );
   }
 

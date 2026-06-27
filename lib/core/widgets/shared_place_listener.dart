@@ -7,6 +7,7 @@ import '../models/trip_models.dart';
 import '../navigation/shared_place_flow.dart';
 import '../services/shared_place_bridge.dart';
 import '../services/trip_store.dart';
+import '../share/inbound_debug_log.dart';
 import '../utils/shared_map_parser.dart';
 import 'shared_place_trip_picker_sheet.dart';
 
@@ -28,6 +29,7 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    inboundDebugLog('SharedPlaceListener installed', kind: InboundLogKind.flow);
     SharedPlaceBridge.install(onSharedUrlReady: _pollInboundShare);
     WidgetsBinding.instance.addPostFrameCallback((_) => _pollInboundShare());
   }
@@ -41,32 +43,93 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      inboundDebugLog('App resumed — polling inbound share', kind: InboundLogKind.flow);
       _pollInboundShare();
     }
   }
 
   Future<void> _pollInboundShare() async {
-    if (_handling) return;
+    var source = 'flow-pending';
+    var place = SharedPlaceFlow.consumePending();
+    if (place == null) {
+      final raw = await SharedPlaceBridge.consumePending();
+      if (raw == null) return;
+      source = 'native-bridge';
+      place = SharedMapParser.parse(raw) ?? SharedPlace(raw: raw, address: raw);
+      inboundDebugLog(
+        'Parsed ($source) → ${inboundPlaceSummary(place)}',
+        kind: InboundLogKind.parse,
+      );
+    } else {
+      inboundDebugLog(
+        'Consumed ($source) → ${inboundPlaceSummary(place)}',
+        kind: InboundLogKind.flow,
+      );
+    }
 
-    final raw = await SharedPlaceBridge.consumePending();
-    if (raw == null) return;
+    if (SharedPlaceFlow.shouldSuppress(place.raw)) {
+      inboundDebugLog(
+        'Poll ignored (duplicate) · ${inboundPlaceSummary(place)}',
+        kind: InboundLogKind.suppress,
+      );
+      return;
+    }
 
-    final place = SharedMapParser.parse(raw) ?? SharedPlace(raw: raw, address: raw);
-    SharedPlaceFlow.setPending(place);
+    if (_handling) {
+      SharedPlaceFlow.stage(place);
+      inboundDebugLog(
+        'Queued while handling · ${inboundPlaceSummary(place)}',
+        kind: InboundLogKind.flow,
+      );
+      return;
+    }
+
     await _presentTripPicker(place);
+  }
+
+  /// Waits until splash / deep-link routing settles so sheets can present.
+  Future<BuildContext?> _awaitNavigatorContext() async {
+    for (var attempt = 0; attempt < 40; attempt++) {
+      final context = widget.router.routerDelegate.navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        final path = widget.router.routerDelegate.currentConfiguration.fullPath;
+        if (path != '/splash' && !path.startsWith('triftly:')) {
+          return context;
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    return widget.router.routerDelegate.navigatorKey.currentContext;
   }
 
   Future<void> _presentTripPicker(SharedPlace place) async {
     if (_handling) return;
     _handling = true;
+    SharedPlaceFlow.beginHandling(place.raw);
+    var handled = false;
 
     try {
-      final context = widget.router.routerDelegate.navigatorKey.currentContext;
-      if (context == null || !context.mounted) return;
+      inboundDebugLog(
+        'Present flow → ${inboundPlaceSummary(place)}',
+        kind: InboundLogKind.flow,
+      );
+
+      final context = await _awaitNavigatorContext();
+      if (context == null || !context.mounted) {
+        SharedPlaceFlow.stage(place);
+        inboundDebugLog(
+          'Navigator not ready — re-staged · ${inboundPlaceSummary(place)}',
+          kind: InboundLogKind.route,
+        );
+        return;
+      }
 
       final trips = _editableTrips();
       if (trips.isEmpty) {
         SharedPlaceFlow.clear();
+        await SharedPlaceBridge.consumePending();
+        if (!context.mounted) return;
+        inboundDebugLog('No editable trips — showing snackbar', kind: InboundLogKind.flow);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Create a trip first, then share places from Maps'),
@@ -76,11 +139,27 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
         return;
       }
 
+      // One editable trip — skip picker, open Add Spot directly.
       if (trips.length == 1) {
+        inboundDebugLog(
+          'Single trip auto-select → ${trips.first.name} (${trips.first.id})',
+          kind: InboundLogKind.flow,
+        );
         _openAddSpotForTrip(trips.first.id, place);
+        handled = true;
         return;
       }
 
+      // Multiple trips — bottom sheet to pick destination trip first.
+      if (!context.mounted) {
+        SharedPlaceFlow.stage(place);
+        inboundDebugLog('Context lost before picker — re-staged', kind: InboundLogKind.route);
+        return;
+      }
+      inboundDebugLog(
+        'Showing trip picker (${trips.length} editable trips)',
+        kind: InboundLogKind.flow,
+      );
       final pickedId = await SharedPlaceTripPickerSheet.show(
         context,
         place: place,
@@ -88,12 +167,27 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
       );
       if (pickedId == null || !context.mounted) {
         SharedPlaceFlow.consumePending();
+        inboundDebugLog('Trip picker dismissed', kind: InboundLogKind.flow);
         return;
       }
 
+      final picked = trips.firstWhere((t) => t.id == pickedId);
+      inboundDebugLog(
+        'Trip picked → ${picked.name} ($pickedId)',
+        kind: InboundLogKind.flow,
+      );
       _openAddSpotForTrip(pickedId, place);
+      handled = true;
     } finally {
       _handling = false;
+      if (handled) {
+        SharedPlaceFlow.markHandled(place.raw);
+      } else {
+        SharedPlaceFlow.clearActive();
+      }
+      if (SharedPlaceFlow.pendingPlace != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _pollInboundShare());
+      }
     }
   }
 
@@ -108,6 +202,10 @@ class _SharedPlaceListenerState extends State<SharedPlaceListener> with WidgetsB
   void _openAddSpotForTrip(String tripId, SharedPlace place) {
     SharedPlaceFlow.consumePending();
     SharedPlaceFlow.arm(tripId: tripId, place: place);
+    inboundDebugLog(
+      'Navigate + arm Add Spot → tripId=$tripId · ${inboundPlaceSummary(place)}',
+      kind: InboundLogKind.success,
+    );
     // Shell routes require go — push breaks StatefulShellRoute matching.
     widget.router.go('${AppPage.plan.path}/$tripId');
   }

@@ -27,13 +27,14 @@ abstract final class GlassContextMenu {
   static Future<T?> show<T>({
     required BuildContext context,
     required List<GlassMenuEntry<T>> entries,
+    double width = _menuWidth,
   }) {
     final box = context.findRenderObject()! as RenderBox;
     final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
     final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
     final screen = overlay.size;
 
-    final left = (origin.dx + box.size.width - _menuWidth).clamp(8.0, screen.width - _menuWidth - 8);
+    final left = (origin.dx + box.size.width - width).clamp(8.0, screen.width - width - 8);
     final top = origin.dy + box.size.height + 6;
 
     return showGeneralDialog<T>(
@@ -48,7 +49,7 @@ abstract final class GlassContextMenu {
             Positioned(
               left: left,
               top: top,
-              width: _menuWidth,
+              width: width,
               child: _GlassMenuPanel<T>(
                 entries: entries,
                 onSelected: (value) => Navigator.of(dialogContext).pop(value),
