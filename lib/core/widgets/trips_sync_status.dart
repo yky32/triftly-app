@@ -23,11 +23,13 @@ class TripsSyncStatus {
 
   bool get isSyncing => kind == TripsSyncKind.syncing;
 
+  bool get isGuestMode => !session.isCloudSignedIn;
+
   /// Shorter copy for the centered app-bar pill.
   String get centerLabel {
-    if (!sync.isConfigured) return 'Local only';
+    if (!sync.isConfigured) return 'Guest Mode = Offline';
 
-    if (!session.isCloudSignedIn) return 'Sign in to sync';
+    if (!session.isCloudSignedIn) return 'Guest Mode = Offline';
 
     if (sync.hasError) return 'Sync failed';
 
@@ -60,7 +62,7 @@ class TripsSyncStatus {
     if (!sync.isConfigured) {
       return TripsSyncStatus._(
         kind: TripsSyncKind.idle,
-        label: 'Local only — cloud sync unavailable',
+        label: 'Guest mode — cloud sync unavailable',
         session: session,
         sync: sync,
       );
@@ -69,7 +71,7 @@ class TripsSyncStatus {
     if (!session.isCloudSignedIn) {
       return TripsSyncStatus._(
         kind: TripsSyncKind.idle,
-        label: 'Sign in to sync trips across devices',
+        label: 'Guest mode — trips stay offline on this device',
         session: session,
         sync: sync,
       );

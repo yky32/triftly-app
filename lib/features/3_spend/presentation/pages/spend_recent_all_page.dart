@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/navigation/sign_out_branch_reset.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/triftly_app_bar_title.dart';
@@ -13,11 +14,12 @@ class SpendRecentAllPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const TriftlyAppBarTitle(title: 'Recent spending'),
-      ),
-      body: BlocBuilder<SpendOverviewBloc, SpendOverviewState>(
+    return SignOutBranchReset(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const TriftlyAppBarTitle(title: 'Recent spending'),
+        ),
+        body: BlocBuilder<SpendOverviewBloc, SpendOverviewState>(
         builder: (context, state) {
           final lines = state.overview?.recentTransactions ?? [];
           if (lines.isEmpty) {
@@ -44,6 +46,7 @@ class SpendRecentAllPage extends StatelessWidget {
             },
           );
         },
+      ),
       ),
     );
   }

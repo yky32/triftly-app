@@ -18,21 +18,24 @@ void main() {
   );
 
   group('TripsSyncStatus', () {
-    test('logged out shows sign-in prompt', () {
+    test('logged out shows guest offline indicator', () {
       final status = TripsSyncStatus.resolve(
         session: guest,
         sync: CloudSyncState(isConfigured: true),
       );
-      expect(status.label, 'Sign in to sync trips across devices');
+      expect(status.isGuestMode, isTrue);
+      expect(status.label, 'Guest mode — trips stay offline on this device');
+      expect(status.centerLabel, 'Guest Mode = Offline');
       expect(status.isError, isFalse);
     });
 
-    test('logged out without cloud config shows local-only', () {
+    test('logged out without cloud config shows guest offline', () {
       final status = TripsSyncStatus.resolve(
         session: guest,
         sync: CloudSyncState(isConfigured: false),
       );
-      expect(status.label, 'Local only — cloud sync unavailable');
+      expect(status.label, 'Guest mode — cloud sync unavailable');
+      expect(status.centerLabel, 'Guest Mode = Offline');
     });
 
     test('logged in while syncing', () {
@@ -79,7 +82,7 @@ void main() {
           session: guest,
           sync: CloudSyncState(isConfigured: true),
         ).centerLabel,
-        'Sign in to sync',
+        'Guest Mode = Offline',
       );
       expect(
         TripsSyncStatus.resolve(

@@ -9,6 +9,7 @@ import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/me_identity_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/cloud_sync_banner.dart';
 import '../../../../core/widgets/sheet_form_primitives.dart';
 import '../../../../core/widgets/sheet_scaffold.dart';
 import '../../../../core/widgets/trip_date_picker_sheet.dart';
@@ -75,14 +76,12 @@ class _CreateTripBottomSheetState extends State<CreateTripBottomSheet> {
           BlocBuilder<SessionBloc, SessionState>(
             builder: (context, session) {
               if (session.isCloudSignedIn) return const SizedBox.shrink();
-              return Column(
-                children: const [
-                  SizedBox(height: AppSpacing.lg),
-                  SheetResultBanner(
-                    caption: 'Cloud sync',
-                    text: 'Sign in to sync this trip across your devices.',
-                  ),
-                ],
+              return const Padding(
+                padding: EdgeInsets.only(top: AppSpacing.md),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: GuestOfflinePill(),
+                ),
               );
             },
           ),

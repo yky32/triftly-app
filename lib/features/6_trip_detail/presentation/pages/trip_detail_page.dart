@@ -5,6 +5,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../../core/bootstrap/app_scope.dart';
 import '../../../../core/models/trip_models.dart';
 import '../../../../core/services/trip_store.dart';
+import '../../../../core/navigation/sign_out_branch_reset.dart';
 import '../../../../core/navigation/spend_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -45,10 +46,12 @@ class TripDetailPage extends StatelessWidget {
     final trip = TripStore.instance.tripById(tripId);
     final effectiveReadOnly = readOnly || !(trip?.canEditTripContent ?? true);
 
-    return BlocProvider(
-      create: (context) =>
-          AppScopeBlocs.createTripDetailBloc(tripId)..add(TripDetailLoadRequested()),
-      child: _View(readOnly: effectiveReadOnly, initialTabIndex: initialTabIndex),
+    return SignOutBranchReset(
+      child: BlocProvider(
+        create: (context) =>
+            AppScopeBlocs.createTripDetailBloc(tripId)..add(TripDetailLoadRequested()),
+        child: _View(readOnly: effectiveReadOnly, initialTabIndex: initialTabIndex),
+      ),
     );
   }
 }
