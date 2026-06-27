@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../navigation/edge_swipe_back.dart';
 import 'sheet_keyboard_dismiss.dart';
 
 /// Shared modal bottom sheet launcher — matches trip/tool sheet chrome.
@@ -10,7 +11,9 @@ abstract final class TriftlyBottomSheet {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => SheetKeyboardDismiss(child: child),
+      builder: (_) => EdgeSwipeBack(
+        child: SheetKeyboardDismiss(child: child),
+      ),
     );
   }
 }

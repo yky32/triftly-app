@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../navigation/edge_swipe_back.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'sheet_keyboard_dismiss.dart';
@@ -38,13 +39,15 @@ class TripDatePickerSheet extends StatefulWidget {
       isScrollControlled: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => SheetKeyboardDismiss(
-        child: TripDatePickerSheet(
-          mode: mode,
-          initialDate: initialDate,
-          minDate: minDate,
-          maxDate: maxDate,
-          rangeStart: rangeStart,
+      builder: (_) => EdgeSwipeBack(
+        child: SheetKeyboardDismiss(
+          child: TripDatePickerSheet(
+            mode: mode,
+            initialDate: initialDate,
+            minDate: minDate,
+            maxDate: maxDate,
+            rangeStart: rangeStart,
+          ),
         ),
       ),
     );

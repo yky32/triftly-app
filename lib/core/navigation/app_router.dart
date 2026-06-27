@@ -64,9 +64,19 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/s/:token',
       name: 'shared_trip',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final token = state.pathParameters['token']!;
-        return SharedTripViewPage(shareToken: token);
+        return triftlyPage(
+          state: state,
+          onEdgeSwipeBack: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppPage.plan.path);
+            }
+          },
+          child: SharedTripViewPage(shareToken: token),
+        );
       },
     ),
     GoRoute(
@@ -107,6 +117,13 @@ final appRouter = GoRouter(
                     };
                     return triftlyPage(
                       state: state,
+                      onEdgeSwipeBack: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(AppPage.plan.path);
+                        }
+                      },
                       child: TripDetailPage(
                         tripId: tripId,
                         initialTabIndex: initialTabIndex,
@@ -128,7 +145,10 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'recent',
                   name: 'spend_recent',
-                  builder: (context, state) => const SpendRecentAllPage(),
+                  pageBuilder: (context, state) => triftlyPage(
+                    state: state,
+                    child: const SpendRecentAllPage(),
+                  ),
                 ),
               ],
             ),
